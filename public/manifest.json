@@ -1,0 +1,14 @@
+{
+  "name": "Darts Tournament Live",
+  "short_name": "Darts Live",
+  "description": "Multi-device darts tournament scoring, broadcast stage and guest companion.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,24 @@
+# Dependencies & build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets — never commit real keys
+.env
+.env.local
+.env.*.local
+
+# Local LAN relay server data (JSON persistence)
+server/data/
+*.tmp
+
+# Logs & OS / editor noise
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+coverage/
+.playwright-mcp/
