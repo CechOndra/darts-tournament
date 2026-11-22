@@ -2,6 +2,7 @@ import type {
   CardSettings,
   GameRules,
   StructureSettings,
+  TableSettings,
   TournamentSettings,
   VisibilitySettings,
 } from './types.ts';
@@ -13,6 +14,13 @@ export const DEFAULT_VISIBILITY: VisibilitySettings = {
   showPlayerFutCards: false,
   statsScope: 'ALL_MATCHES',
   includeCardAffectedThrows: false,
+  stageVisitHistory: true,
+  showBreaksToGuests: true,
+};
+
+export const DEFAULT_TABLE: TableSettings = {
+  dutyRule: 'LOSER_SCORES_NEXT',
+  defaultKeypad: 'MODIFIER',
 };
 
 export const DEFAULT_STRUCTURE: StructureSettings = {
@@ -57,6 +65,7 @@ export const DEFAULT_CARDS: CardSettings = {
 export function createDefaultSettings(): TournamentSettings {
   return structuredClone({
     visibility: DEFAULT_VISIBILITY,
+    table: DEFAULT_TABLE,
     structure: DEFAULT_STRUCTURE,
     rules: DEFAULT_RULES,
     cards: DEFAULT_CARDS,

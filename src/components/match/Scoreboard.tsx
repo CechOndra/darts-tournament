@@ -1,9 +1,9 @@
-import type { MatchView } from '../../engine/match.ts';
+import type { MatchView, VisitView } from '../../engine/match.ts';
 import { dartLabel } from '../../engine/scoring.ts';
 import { playersOfTeam, teamName } from '../../engine/selectors.ts';
 import type { TournamentState } from '../../engine/state.ts';
 import type { Side } from '../../engine/types.ts';
-import { Avatar } from '../ui.tsx';
+import { Avatar, TeamLogo } from '../ui.tsx';
 
 type Size = 'md' | 'xl';
 
@@ -42,7 +42,30 @@ export function VisitSlots({ view, size }: { view: MatchView; size: Size }) {
   );
 }
 
-function TeamPanel({ state, view, side, size }: { state: TournamentState; view: MatchView; side: Side; size: Size }) {
+/** Every completed visit of the current leg for one side, newest first. */
+function VisitHistory({ state, visits }: { state: TournamentState; visits: VisitView[] }) {
+  if (!visits.length) return <p className="text-xl text-text-muted">No visits yet this leg.</p>;
+  return (
+    <ol className="min-h-0 flex-1 space-y-1.5 overflow-hidden" aria-label="Visit history">
+      {visits.map((v, i) => ({ v, n: i + 1 })).reverse().map(({ v, n }) => {
+        const after = v.bust ? v.scoreBefore : v.scoreBefore - v.scored;
+        return (
+          <li key={v.visitIndex} className="grid grid-cols-[3rem_minmax(0,1fr)_auto_6rem_5rem] items-center gap-4 rounded-md bg-bg-elevated/50 px-4 py-1.5 text-2xl">
+            <span className="font-mono text-lg text-text-muted">{n}</span>
+            <span className="truncate text-text-muted">{state.players[v.playerId]?.name}</span>
+            <span className="font-mono text-xl text-text-muted">{v.darts.map(dartLabel).join(' ')}</span>
+            <span className={`text-right font-display font-bold tabular-nums ${v.bust ? 'text-accent-danger' : v.scored >= 100 || v.checkout ? 'text-accent-gold' : ''}`}>
+              {v.bust ? 'BUST' : v.scored}
+            </span>
+            <span className="text-right font-mono tabular-nums text-text-muted">{after}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function TeamPanel({ state, view, side, size, history }: { state: TournamentState; view: MatchView; side: Side; size: Size; history?: boolean }) {
   const teamId = view.teamIds[side];
   const active = view.turn?.side === side;
   const players = playersOfTeam(state, teamId);
@@ -50,19 +73,30 @@ function TeamPanel({ state, view, side, size }: { state: TournamentState; view: 
   const xl = size === 'xl';
   const lastVisit = [...view.currentLeg.visits].reverse().find((v) => v.side === side && v.complete);
   const won = view.winner === side;
+  const team = state.teams.find((t) => t.id === teamId);
+  const visits = view.currentLeg.visits.filter((v) => v.side === side && v.complete);
 
   return (
     <div
-      className={`flex min-w-0 flex-1 flex-col gap-3 rounded-lg border p-4 transition ${
+      className={`flex min-w-0 flex-1 flex-col gap-3 rounded-lg border p-4 transition ${xl ? 'min-h-0 gap-4 p-6' : ''} ${xl && !history ? 'justify-center' : ''} ${
         active ? 'border-accent-gold bg-accent-gold/5 shadow-[0_0_0_1px_var(--accent-gold)]' : won ? 'border-accent-success' : 'border-border-subtle bg-bg-elevated/40'
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className={`min-w-0 truncate font-display font-bold uppercase ${xl ? 'text-4xl' : 'text-xl'}`}>{teamName(state, teamId)}</p>
-        <span className={`shrink-0 font-display font-bold text-accent-gold ${xl ? 'text-4xl' : 'text-xl'}`}>{view.legsWon[side]}</span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-4">
+          {xl && team?.logoDataUrl && <TeamLogo name={team.name} src={team.logoDataUrl} size={88} />}
+          <div className="min-w-0 space-y-2">
+            <p className={`min-w-0 truncate font-display font-bold uppercase ${xl ? 'text-5xl' : 'text-xl'}`}>{teamName(state, teamId)}</p>
+            <LegPips won={view.legsWon[side]} target={view.legsToWin} size={size} />
+          </div>
+        </div>
+        <span className={`shrink-0 font-display font-bold text-accent-gold ${xl ? 'text-7xl' : 'text-xl'}`}>{view.legsWon[side]}</span>
       </div>
-      <LegPips won={view.legsWon[side]} target={view.legsToWin} size={size} />
-      <p className={`font-display leading-none font-bold tabular-nums ${xl ? 'text-[9rem]' : 'text-6xl'} ${active ? 'text-text-primary' : 'text-text-muted'}`}>
+      <p
+        className={`font-display leading-none font-bold tabular-nums ${xl ? (history ? 'text-[11rem]' : 'text-[16rem]') : 'text-6xl'} ${
+          active ? 'text-text-primary' : 'text-text-muted'
+        }`}
+      >
         {remaining}
       </p>
       <div className="flex flex-wrap gap-3">
@@ -70,26 +104,41 @@ function TeamPanel({ state, view, side, size }: { state: TournamentState; view: 
           const throwing = active && view.turn?.playerId === p.id;
           return (
             <div key={p.id} className={`flex items-center gap-2 rounded-full pr-3 ${throwing ? 'bg-accent-gold/15 ring-2 ring-accent-gold' : ''}`}>
-              <Avatar name={p.name} src={p.avatarDataUrl} size={xl ? 64 : 36} />
-              <span className={`max-w-32 truncate ${xl ? 'text-2xl' : 'text-sm'} ${throwing ? 'font-semibold text-text-primary' : 'text-text-muted'}`}>{p.name}</span>
+              <Avatar name={p.name} src={p.avatarDataUrl} size={xl ? 80 : 36} />
+              <span className={`truncate ${xl ? 'max-w-60 text-3xl' : 'max-w-32 text-sm'} ${throwing ? 'font-semibold text-text-primary' : 'text-text-muted'}`}>{p.name}</span>
             </div>
           );
         })}
       </div>
-      <div className={`flex flex-wrap gap-x-4 gap-y-1 text-text-muted ${xl ? 'text-xl' : 'text-xs'}`}>
+      <div className={`flex flex-wrap gap-x-4 gap-y-1 text-text-muted ${xl ? 'gap-x-8 text-2xl' : 'text-xs'}`}>
         <span>Avg {view.stats[side].average.toFixed(2)}</span>
+        {xl && <span>High {view.stats[side].highestVisit}</span>}
         {lastVisit && <span>Last {lastVisit.bust ? 'BUST' : lastVisit.scored}</span>}
         <span>Darts {view.currentLeg.dartsBySide[side]}</span>
       </div>
+      {xl && history && <VisitHistory state={state} visits={visits} />}
     </div>
   );
 }
 
-export function Scoreboard({ state, view, size = 'md' }: { state: TournamentState; view: MatchView; size?: Size }) {
+export function Scoreboard({
+  state,
+  view,
+  size = 'md',
+  history,
+  className = '',
+}: {
+  state: TournamentState;
+  view: MatchView;
+  size?: Size;
+  /** xl only: list the current leg's visits under each team. */
+  history?: boolean;
+  className?: string;
+}) {
   return (
-    <div className="flex w-full gap-3">
-      <TeamPanel state={state} view={view} side="home" size={size} />
-      <TeamPanel state={state} view={view} side="away" size={size} />
+    <div className={`flex w-full gap-3 ${size === 'xl' ? 'gap-6' : ''} ${className}`}>
+      <TeamPanel state={state} view={view} side="home" size={size} history={history} />
+      <TeamPanel state={state} view={view} side="away" size={size} history={history} />
     </div>
   );
 }

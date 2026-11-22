@@ -154,9 +154,9 @@ function InProgressStage({ state, view }: { state: TournamentState; view: MatchV
   const turn = view.turn;
   const thrower = turn ? playersOfTeam(state, turn.teamId).find((p) => p.id === turn.playerId) : null;
   return (
-    <div className="flex h-full flex-col gap-6">
-      <Scoreboard state={state} view={view} size="xl" />
-      <div className="grid flex-1 grid-cols-[1fr_auto] items-center gap-8">
+    <div className="flex h-full min-h-0 flex-col gap-6">
+      <Scoreboard state={state} view={view} size="xl" history={state.settings.visibility.stageVisitHistory} className="min-h-0 flex-1" />
+      <div className="grid shrink-0 grid-cols-[1fr_auto] items-center gap-8">
         <div className="min-w-0">
           {turn ? (
             <>
@@ -221,16 +221,36 @@ function CoinTossOverlay({ state, view }: { state: TournamentState; view: MatchV
         if (e.type !== MATCH_EVENTS.COIN_TOSS) return;
         const { result } = e.payload as { result: Side };
         setToss({ result, revealed: false });
-        setTimeout(() => setToss((t) => (t ? { ...t, revealed: true } : t)), 1800);
-        setTimeout(() => setToss(null), 5000);
+        setTimeout(() => setToss((t) => (t ? { ...t, revealed: true } : t)), 2100);
+        setTimeout(() => setToss(null), 5500);
       }),
     [transport],
   );
   if (!toss || !view) return null;
+  const face = (side: Side) => (
+    <div className={`coin-face ${side === 'away' ? 'coin-back' : ''}`}>
+      <span className="line-clamp-3 font-display text-5xl leading-tight font-bold break-words uppercase">{teamName(state, view.teamIds[side])}</span>
+    </div>
+  );
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-8 bg-bg-overlay">
-      <Coins size={160} className={`text-accent-gold ${toss.revealed ? '' : 'animate-spin'}`} aria-hidden />
-      <p className="font-display text-6xl uppercase">{toss.revealed ? `${teamName(state, view.teamIds[toss.result])} throws first` : 'Coin toss...'}</p>
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-12 rounded-lg bg-bg-primary/95">
+      <div className="coin-stage">
+        <div className={`coin ${toss.result === 'home' ? 'coin-land-home' : 'coin-land-away'}`} aria-hidden>
+          {face('home')}
+          {face('away')}
+        </div>
+      </div>
+      <p className="font-display text-6xl uppercase">
+        {toss.revealed ? (
+          <>
+            <span className="text-accent-gold">{teamName(state, view.teamIds[toss.result])}</span> throws first
+          </>
+        ) : (
+          <span className="inline-flex items-center gap-4 text-text-muted">
+            <Coins size={56} aria-hidden /> Coin toss
+          </span>
+        )}
+      </p>
     </div>
   );
 }

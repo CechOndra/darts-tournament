@@ -225,7 +225,7 @@ export function Notice({ tone = 'warning', children }: { tone?: 'warning' | 'dan
 }
 
 // ---------------------------------------------------------------- Modal
-export function Modal({ title, onClose, children, footer }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -233,7 +233,7 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-bg-overlay p-4 sm:items-center" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="surface-elevated w-full max-w-lg shadow-2xl">
+      <div className={`surface-elevated w-full shadow-2xl ${wide ? 'max-w-3xl' : 'max-w-lg'}`}>
         <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
           <h2 className="font-display text-base tracking-wide uppercase">{title}</h2>
           <button type="button" onClick={onClose} className="touch-target flex items-center justify-center text-text-muted hover:text-text-primary" aria-label="Close">
@@ -266,5 +266,13 @@ export function Avatar({ name, src, size = 40 }: { name: string; src: string | n
     >
       {initials}
     </span>
+  );
+}
+
+// ---------------------------------------------------------------- Team logo
+export function TeamLogo({ name, src, size = 40 }: { name: string; src: string | null; size?: number }) {
+  if (!src) return null;
+  return (
+    <img src={src} alt={`${name} logo`} width={size} height={size} className="shrink-0 rounded-md border border-border-subtle object-cover" style={{ width: size, height: size }} />
   );
 }

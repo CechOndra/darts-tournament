@@ -8,6 +8,7 @@ import type {
   ScorerDutyOverride,
   SpecialRules,
   StructureSettings,
+  TableSettings,
   TournamentSetup,
   VisibilitySettings,
 } from './types.ts';
@@ -23,6 +24,8 @@ export type EngineAction =
   | { type: 'RENAME_TEAM'; teamId: string; name: string }
   | { type: 'RENAME_PLAYER'; playerId: string; name: string }
   | { type: 'SET_PLAYER_AVATAR'; playerId: string; avatarDataUrl: string | null }
+  | { type: 'SET_TEAM_LOGO'; teamId: string; logoDataUrl: string | null }
+  | { type: 'UPDATE_TABLE_SETTINGS'; patch: Partial<TableSettings> }
   | { type: 'APPLY_ROSTER_NAMES'; rows: RosterRow[] }
   | { type: 'UPDATE_VISIBILITY'; patch: Partial<VisibilitySettings> }
   | { type: 'UPDATE_RULES'; patch: RulesPatch }

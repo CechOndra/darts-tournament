@@ -2,6 +2,8 @@ import type {
   CheckoutMode,
   FirstThrowRule,
   FirstThrowTiebreak,
+  KeypadLayout,
+  ScorerDutyRule,
   PlayoffRound,
   StatsScope,
   TournamentMode,
@@ -47,4 +49,18 @@ export const ROUND_LABEL: Record<PlayoffRound, string> = {
 export const STATS_SCOPE_LABEL: Record<StatsScope, string> = {
   ALL_MATCHES: 'All matches',
   GROUP_STAGE_ONLY: 'Group stage only',
+};
+
+export const DUTY_RULE_LABEL: Record<ScorerDutyRule, string> = {
+  LOSER_SCORES_NEXT: 'Loser scores the next match',
+  WINNER_SCORES_NEXT: 'Winner scores the next match',
+  ON_DECK_TEAM: 'Team playing after the next match scores it',
+  ADMIN_ALWAYS: 'Admin (Host) scores every match',
+};
+
+export const KEYPAD_LABEL: Record<KeypadLayout, { name: string; description: string }> = {
+  MODIFIER: { name: 'Numbers + Double/Triple', description: '1-20 only. Tap DOUBLE or TRIPLE, then the number.' },
+  STACKED_ROWS: { name: 'Singles, Doubles, Triples rows', description: 'Two rows of singles, then two rows of doubles, then triples.' },
+  COLUMNS: { name: 'S / D / T columns', description: 'Each number has its single, double and triple side by side.' },
+  ROWS_BY_TEN: { name: 'Classic grid', description: 'S, D, T rows for 1-10, then S, D, T rows for 11-20.' },
 };

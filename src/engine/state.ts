@@ -1,4 +1,4 @@
-import { createDefaultSettings } from './defaults.ts';
+import { createDefaultSettings, DEFAULT_TABLE, DEFAULT_VISIBILITY } from './defaults.ts';
 import type {
   DartThrow,
   LiveMatch,
@@ -11,7 +11,7 @@ import type {
 } from './types.ts';
 
 /** Bump when the persisted shape changes incompatibly (backups are checked against it). */
-export const STATE_SCHEMA_VERSION = 3;
+export const STATE_SCHEMA_VERSION = 4;
 
 /** Root tournament state (pure, JSON-serializable, never mutated in place). */
 export interface TournamentState {
@@ -54,13 +54,22 @@ export function createEmptyState(): TournamentState {
   };
 }
 
-/** Upgrade snapshots written by older versions (v2 -> v3 adds live match fields). */
+/**
+ * Upgrade snapshots written by older versions.
+ * v2 -> v3 adds live match fields; v3 -> v4 adds table settings, new visibility flags and team logos.
+ */
 export function migrateState(state: TournamentState): TournamentState {
-  if (state.schemaVersion === STATE_SCHEMA_VERSION && 'live' in state && 'completedOrder' in state) return state;
+  if (state.schemaVersion === STATE_SCHEMA_VERSION && 'live' in state && state.settings?.table) return state;
   if (state.schemaVersion > STATE_SCHEMA_VERSION) throw new Error(`State version ${state.schemaVersion} is newer than this app`);
   return {
     ...state,
     schemaVersion: STATE_SCHEMA_VERSION,
+    settings: {
+      ...state.settings,
+      visibility: { ...DEFAULT_VISIBILITY, ...state.settings.visibility },
+      table: { ...DEFAULT_TABLE, ...state.settings.table },
+    },
+    teams: state.teams.map((t) => ({ ...t, logoDataUrl: t.logoDataUrl ?? null })),
     live: state.live ?? null,
     completedOrder: state.completedOrder ?? [],
     throws: state.throws ?? [],

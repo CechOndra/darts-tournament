@@ -1,22 +1,34 @@
-import { CalendarClock, Coffee, Eye, KeyRound, LayoutGrid, Layers, ListOrdered, Radio, ScrollText, ShieldAlert, ShieldCheck, Users } from 'lucide-react';
+import { CalendarClock, Coffee, Crosshair, Eye, KeyRound, LayoutGrid, Layers, ListOrdered, Radio, ScrollText, Settings2, ShieldAlert, ShieldCheck, Trophy, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { RouteHeader } from '../../components/RouteHeader.tsx';
 import { ConnectionBadge, PingIndicator } from '../../components/StatusIndicators.tsx';
 import { Badge, Button, Modal, Notice, Section, useMediaQuery } from '../../components/ui.tsx';
+import { TableSettingsForm } from '../../components/admin/TableSettingsForm.tsx';
 import { upNextMatch, describeSlot } from '../../engine/selectors.ts';
 import { useControl } from '../../hooks/ControlProvider.tsx';
-import { useTournamentState, useTransportContext } from '../../hooks/TransportProvider.tsx';
+import { useDispatch, useTournamentState, useTransportContext } from '../../hooks/TransportProvider.tsx';
 import { useAsyncAction, usePresenceRole } from '../../hooks/useTransport.ts';
 import { describeControlError } from '../../services/control/index.ts';
 import { countActiveScorers } from '../../services/presence.ts';
 import { LiveOpsSection, PinRotation } from './sections/LiveOpsSection.tsx';
+import { ResultsSection } from './sections/ResultsSection.tsx';
 import { RosterSection } from './sections/RosterSection.tsx';
 import { RulesSection } from './sections/RulesSection.tsx';
 import { BreakEditor, ScheduleSection } from './sections/ScheduleSection.tsx';
 import { VisibilitySection } from './sections/VisibilitySection.tsx';
 
-type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules';
+type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules' | 'table';
 type QuickSheet = 'pin' | 'break' | null;
+type TabId = 'live' | 'results' | 'teams' | 'settings';
+
+const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
+  { id: 'live', label: 'Live', short: 'Live', icon: Radio },
+  { id: 'results', label: 'Results & Standings', short: 'Results', icon: Trophy },
+  { id: 'teams', label: 'Teams', short: 'Teams', icon: Users },
+  { id: 'settings', label: 'Settings', short: 'Settings', icon: Settings2 },
+];
+
+const TAB_OF: Record<SectionId, TabId> = { live: 'live', schedule: 'live', roster: 'teams', visibility: 'settings', rules: 'settings', table: 'settings' };
 
 export function AdminWorkspace({
   tournamentId,
@@ -34,7 +46,9 @@ export function AdminWorkspace({
   const { transport, hydrated, peers, connectError } = useTransportContext();
   const state = useTournamentState();
   const desktop = useMediaQuery('(min-width: 1024px)');
-  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: false, schedule: false, rules: false });
+  const dispatch = useDispatch();
+  const [tab, setTab] = useState<TabId>('live');
+  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true });
   const [sheet, setSheet] = useState<QuickSheet>(null);
   const { busy, error, run } = useAsyncAction();
 
@@ -48,6 +62,7 @@ export function AdminWorkspace({
 
   const toggle = (id: SectionId) => setOpen((o) => ({ ...o, [id]: !o[id] }));
   const jump = (id: SectionId) => {
+    setTab(TAB_OF[id]);
     setOpen((o) => ({ ...o, [id]: true }));
     requestAnimationFrame(() => document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
@@ -114,28 +129,63 @@ export function AdminWorkspace({
         {!isLive && <Notice tone="info">Not live: stage, scorer and guest devices are showing {activeTournamentId ? 'another tournament' : 'nothing'}.</Notice>}
         {error && <Notice tone="danger">{error}</Notice>}
 
-        <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
-          <div className="space-y-4">
+        <nav aria-label="Admin sections" className="sticky top-0 z-30 -mx-4 grid grid-cols-4 gap-1 border-b border-border-subtle bg-bg-primary px-4 py-2 sm:flex">
+          {TABS.map(({ id, label, short, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              aria-current={tab === id ? 'page' : undefined}
+              onClick={() => setTab(id)}
+              className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-2 text-xs font-medium transition sm:flex-row sm:gap-2 sm:px-4 sm:text-sm ${
+                tab === id ? 'bg-accent-gold text-text-inverse' : 'text-text-muted hover:bg-bg-elevated hover:text-text-primary'
+              }`}
+            >
+              <Icon size={16} aria-hidden />
+              <span className="sm:hidden">{short}</span>
+              <span className="hidden sm:inline">{label}</span>
+              {id === 'live' && scorers > 1 && <span className="h-2 w-2 rounded-full bg-accent-danger" aria-label="alert" />}
+            </button>
+          ))}
+        </nav>
+
+        {tab === 'live' && (
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <Section id="section-live" title="Live Operations" icon={KeyRound} open={open.live} onToggle={() => toggle('live')}
               badge={scorers > 1 ? <Badge tone="danger">{scorers} scorers</Badge> : undefined}>
               <LiveOpsSection state={state} />
             </Section>
-            <Section id="section-visibility" title="Guest Visibility" icon={Eye} open={open.visibility} onToggle={() => toggle('visibility')}>
-              <VisibilitySection state={state} />
-            </Section>
-          </div>
-          <Section id="section-roster" title="Teams & Roster" icon={Users} open={open.roster} onToggle={() => toggle('roster')}>
-            <RosterSection state={state} />
-          </Section>
-          <div className="space-y-4">
             <Section id="section-schedule" title="Schedule Queue" icon={ListOrdered} open={open.schedule} onToggle={() => toggle('schedule')}>
               <ScheduleSection state={state} />
             </Section>
+          </div>
+        )}
+
+        {tab === 'results' && <ResultsSection state={state} />}
+
+        {tab === 'teams' && (
+          <Section id="section-roster" title="Teams & Roster" icon={Users} open={open.roster} onToggle={() => toggle('roster')}>
+            <RosterSection state={state} />
+          </Section>
+        )}
+
+        {tab === 'settings' && (
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+            <div className="space-y-4">
+              <Section id="section-table" title="Scorer Tablet" icon={Crosshair} open={open.table} onToggle={() => toggle('table')}>
+                <TableSettingsForm
+                  value={state.settings.table}
+                  onPatch={(patch) => void dispatch({ type: 'UPDATE_TABLE_SETTINGS', patch }, { persist: 'immediate' })}
+                />
+              </Section>
+              <Section id="section-visibility" title="Visibility" icon={Eye} open={open.visibility} onToggle={() => toggle('visibility')}>
+                <VisibilitySection state={state} />
+              </Section>
+            </div>
             <Section id="section-rules" title="Format & Rules" icon={ScrollText} open={open.rules} onToggle={() => toggle('rules')}>
               <RulesSection state={state} />
             </Section>
           </div>
-        </div>
+        )}
       </main>
 
       {!desktop && (

@@ -1,6 +1,7 @@
 import { Download, KeyRound, ShieldAlert, Smartphone, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Badge, Button, Field, Modal, Notice, Select, TextInput } from '../../../components/ui.tsx';
+import { DUTY_RULE_LABEL } from '../../../components/admin/labels.ts';
 import { useControl } from '../../../hooks/ControlProvider.tsx';
 import { useDispatch, useTransportContext } from '../../../hooks/TransportProvider.tsx';
 import { useAsyncAction } from '../../../hooks/useTransport.ts';
@@ -112,14 +113,14 @@ export function LiveOpsSection({ state }: { state: TournamentState }) {
 
       <PinRotation />
 
-      <Field label="Table scorer duty (next match)" hint="Automatic = loser of the previous match scores next (Match 1: Admin).">
+      <Field label="Table scorer duty (next match)" hint="Automatic follows the rule set in Settings. Pick a team or Admin to override it.">
         {(id) => (
           <Select
             id={id}
             value={state.scorerDutyOverride ?? ''}
             onChange={(e) => void dispatch({ type: 'SET_SCORER_DUTY_OVERRIDE', value: e.target.value || null }, { persist: 'immediate' })}
           >
-            <option value="">Automatic (loser scores next)</option>
+            <option value="">Automatic: {DUTY_RULE_LABEL[state.settings.table.dutyRule]}</option>
             <option value="ADMIN">Admin (Host)</option>
             {state.teams.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>

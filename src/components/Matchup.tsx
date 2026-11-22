@@ -1,13 +1,17 @@
 import { describeSlot, matchLabel, playersOfSlot } from '../engine/selectors.ts';
 import type { TournamentState } from '../engine/state.ts';
 import type { Match, TeamSlot } from '../engine/types.ts';
-import { Avatar } from './ui.tsx';
+import { resolveSlot } from '../engine/standings.ts';
+import { Avatar, TeamLogo } from './ui.tsx';
 
 function Side({ state, slot, size, align }: { state: TournamentState; slot: TeamSlot; size: 'md' | 'xl'; align: 'start' | 'end' }) {
   const players = playersOfSlot(state, slot);
   const xl = size === 'xl';
+  const teamId = resolveSlot(state, slot);
+  const team = teamId ? state.teams.find((t) => t.id === teamId) : undefined;
   return (
     <div className={`flex min-w-0 flex-1 flex-col gap-3 ${align === 'end' ? 'items-end text-right' : 'items-start text-left'}`}>
+      {team?.logoDataUrl && <TeamLogo name={team.name} src={team.logoDataUrl} size={xl ? 128 : 40} />}
       <p className={`max-w-full truncate font-display font-bold uppercase ${xl ? 'text-5xl' : 'text-xl'}`}>{describeSlot(state, slot)}</p>
       <div className={`flex flex-wrap gap-3 ${align === 'end' ? 'justify-end' : ''}`}>
         {players.map((p) => (

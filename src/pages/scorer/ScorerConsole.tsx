@@ -1,4 +1,4 @@
-import { ArrowLeft, Crosshair, FastForward, Lock, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
+import { ArrowLeft, Crosshair, Dumbbell, FastForward, Keyboard, Lock, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { CheckoutRoutes } from '../../components/match/CheckoutRoutes.tsx';
 import { DartKeypad } from '../../components/match/DartKeypad.tsx';
@@ -8,7 +8,7 @@ import { Scoreboard, VisitSlots } from '../../components/match/Scoreboard.tsx';
 import { Matchup } from '../../components/Matchup.tsx';
 import { Placeholder, RouteHeader } from '../../components/RouteHeader.tsx';
 import { ConnectionBadge, FullscreenButton, PingIndicator } from '../../components/StatusIndicators.tsx';
-import { Button, Notice } from '../../components/ui.tsx';
+import { Button, Modal, Notice } from '../../components/ui.tsx';
 import { startableTeams } from '../../engine/matchReducer.ts';
 import { playersOfTeam, teamName, upNextMatch } from '../../engine/selectors.ts';
 import type { Multiplier } from '../../engine/scoring.ts';
@@ -16,7 +16,10 @@ import { useDispatch, useTournamentState, useTransportContext } from '../../hook
 import { useDuty, useMatchView } from '../../hooks/useMatch.ts';
 import { throwDart, undoDart } from '../../services/matchOps.ts';
 import { countActiveScorers } from '../../services/presence.ts';
+import { useKeypadPrefs } from '../../hooks/useKeypadPrefs.ts';
+import { KeypadSettings, type KeypadControl } from './KeypadSettings.tsx';
 import { LegStartPanel } from './LegStartPanel.tsx';
+import { PracticePanel } from './PracticePanel.tsx';
 
 /** Unlocked scorer: 16:9 zero-scroll split grid that follows the 4-phase match state machine. */
 export function ScorerConsole({ onLock }: { onLock: () => void }) {
@@ -24,6 +27,13 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
   const state = useTournamentState()!;
   const scorers = countActiveScorers(peers);
   const phase = state.live?.phase ?? 'UP_NEXT';
+  const tournamentDefault = state.settings.table.defaultKeypad;
+  const keypad = useKeypadPrefs(tournamentDefault);
+  const [practice, setPractice] = useState(false);
+  const [keypadOpen, setKeypadOpen] = useState(false);
+  // Practice is only offered while no darts are being scored for real.
+  const practiceAllowed = phase === 'UP_NEXT' || phase === 'PRE_MATCH';
+  const inPractice = practice && practiceAllowed;
 
   return (
     <div className="touch-route flex h-dvh flex-col overflow-hidden bg-bg-primary">
@@ -41,6 +51,14 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
           <>
             <PingIndicator />
             <ConnectionBadge />
+            {practiceAllowed && !inPractice && (
+              <Button size="sm" icon={Dumbbell} onClick={() => setPractice(true)}>
+                <span className="hidden lg:inline">Practice</span>
+              </Button>
+            )}
+            <Button size="sm" icon={Keyboard} onClick={() => setKeypadOpen(true)} aria-label="Keypad layout">
+              <span className="hidden lg:inline">Keypad</span>
+            </Button>
             <FullscreenButton />
             <Button size="sm" icon={Lock} onClick={onLock} aria-label="Lock scorer">
               <span className="hidden xl:inline">Lock</span>
@@ -49,11 +67,33 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
         }
       />
       <main className="grid min-h-0 flex-1 grid-cols-2 gap-3 p-3">
-        {phase === 'UP_NEXT' && <UpNextPhase />}
-        {phase === 'PRE_MATCH' && <PreMatchPhase />}
-        {phase === 'IN_PROGRESS' && <InProgressPhase />}
-        {phase === 'POST_MATCH' && <PostMatchPhase />}
+        {inPractice ? (
+          <PracticePanel state={state} keypad={keypad} onExit={() => setPractice(false)} />
+        ) : (
+          <>
+            {phase === 'UP_NEXT' && <UpNextPhase onPractice={() => setPractice(true)} />}
+            {phase === 'PRE_MATCH' && <PreMatchPhase />}
+            {phase === 'IN_PROGRESS' && <InProgressPhase keypad={keypad} />}
+            {phase === 'POST_MATCH' && <PostMatchPhase />}
+          </>
+        )}
       </main>
+      {keypadOpen && (
+        <Modal title="Keypad layout" wide onClose={() => setKeypadOpen(false)}>
+          <KeypadSettings
+            keypad={keypad}
+            tournamentDefault={tournamentDefault}
+            onPractice={
+              practiceAllowed
+                ? () => {
+                    setKeypadOpen(false);
+                    setPractice(true);
+                  }
+                : undefined
+            }
+          />
+        </Modal>
+      )}
     </div>
   );
 }
@@ -62,7 +102,7 @@ const Panel = ({ children, className = '' }: { children: ReactNode; className?: 
   <section className={`surface flex min-h-0 flex-col gap-3 overflow-hidden p-4 ${className}`}>{children}</section>
 );
 
-function UpNextPhase() {
+function UpNextPhase({ onPractice }: { onPractice: () => void }) {
   const state = useTournamentState()!;
   const dispatch = useDispatch();
   const { next, duty } = useDuty(state);
@@ -105,6 +145,9 @@ function UpNextPhase() {
         >
           Skip / Defer Match
         </Button>
+        <Button size="lg" icon={Dumbbell} onClick={onPractice}>
+          Practice the Keypad (not counted)
+        </Button>
       </Panel>
     </>
   );
@@ -139,7 +182,7 @@ function PreMatchPhase() {
   );
 }
 
-function InProgressPhase() {
+function InProgressPhase({ keypad }: { keypad: KeypadControl }) {
   const state = useTournamentState()!;
   const { transport } = useTransportContext();
   const view = useMatchView(state);
@@ -178,7 +221,14 @@ function InProgressPhase() {
         )}
       </Panel>
       <Panel className="p-3">
-        <DartKeypad onDart={onDart} onUndo={() => void undoDart(transport)} disabled={!turn} canUndo={canUndo} />
+        <DartKeypad
+          layout={keypad.layout}
+          stickyModifier={keypad.prefs.stickyModifier}
+          onDart={onDart}
+          onUndo={() => void undoDart(transport)}
+          disabled={!turn}
+          canUndo={canUndo}
+        />
       </Panel>
     </>
   );

@@ -71,6 +71,13 @@ export function tournamentReducer(input: TournamentState, action: EngineAction):
       return { ...state, players: { ...state.players, [player.id]: { ...player, avatarDataUrl: action.avatarDataUrl } } };
     }
 
+    case 'SET_TEAM_LOGO':
+      if (!state.teams.some((t) => t.id === action.teamId)) return state;
+      return { ...state, teams: state.teams.map((t) => (t.id === action.teamId ? { ...t, logoDataUrl: action.logoDataUrl } : t)) };
+
+    case 'UPDATE_TABLE_SETTINGS':
+      return { ...state, settings: { ...state.settings, table: { ...state.settings.table, ...action.patch } } };
+
     case 'APPLY_ROSTER_NAMES': {
       let next = state;
       action.rows.forEach((row, i) => {

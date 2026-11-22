@@ -2,12 +2,13 @@ import { Dices, FileSpreadsheet, Plus } from 'lucide-react';
 import { useMemo, useState, type FormEvent } from 'react';
 import { RulesForm } from '../../components/admin/RulesForm.tsx';
 import { StructureForm } from '../../components/admin/StructureForm.tsx';
+import { TableSettingsForm } from '../../components/admin/TableSettingsForm.tsx';
 import { Button, Field, Notice, TextInput, Toggle } from '../../components/ui.tsx';
-import { DEFAULT_RULES, DEFAULT_STRUCTURE, LIMITS } from '../../engine/defaults.ts';
+import { DEFAULT_RULES, DEFAULT_STRUCTURE, DEFAULT_TABLE, LIMITS } from '../../engine/defaults.ts';
 import { mergeRules } from '../../engine/reducer.ts';
 import { maxPlayersInRoster, parseRosterText } from '../../engine/roster.ts';
 import { makeTournamentId, validateStructure } from '../../engine/tournament.ts';
-import type { GameRules, StructureSettings } from '../../engine/types.ts';
+import type { GameRules, StructureSettings, TableSettings } from '../../engine/types.ts';
 import { useControl } from '../../hooks/ControlProvider.tsx';
 import { useAsyncAction } from '../../hooks/useTransport.ts';
 import { describeControlError } from '../../services/control/index.ts';
@@ -29,6 +30,7 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
   const [csv, setCsv] = useState('');
   const [structure, setStructure] = useState<StructureSettings>(() => structuredClone(DEFAULT_STRUCTURE));
   const [rules, setRules] = useState<GameRules>(() => structuredClone(DEFAULT_RULES));
+  const [table, setTable] = useState<TableSettings>(() => ({ ...DEFAULT_TABLE }));
   const [makeLive, setMakeLive] = useState(!hasLive);
   const { busy, error, run } = useAsyncAction();
 
@@ -55,7 +57,7 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
       await createTournamentFromSetup(
         api,
         hostToken,
-        { id, name: tournamentName, createdAt: Date.now(), structure, rules, roster },
+        { id, name: tournamentName, createdAt: Date.now(), structure, rules, table, roster },
         pin,
         getClientId(),
       );
@@ -130,6 +132,11 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
       <fieldset className="space-y-3">
         <legend className="mb-2 font-display text-sm tracking-widest text-text-muted uppercase">Game rules</legend>
         <RulesForm value={rules} onPatch={(p) => setRules((r) => mergeRules(r, p))} />
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="mb-2 font-display text-sm tracking-widest text-text-muted uppercase">Scorer tablet</legend>
+        <TableSettingsForm value={table} onPatch={(p) => setTable((t) => ({ ...t, ...p }))} />
       </fieldset>
 
       <Toggle

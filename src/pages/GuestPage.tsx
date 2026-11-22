@@ -1,4 +1,4 @@
-import { CalendarClock, Layers, Radio, Trophy, Volume2, type LucideIcon } from 'lucide-react';
+import { CalendarClock, Coffee, Layers, Radio, Trophy, Volume2, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { CheckoutRoutes } from '../components/match/CheckoutRoutes.tsx';
 import { DutyBanner } from '../components/match/DutyBanner.tsx';
@@ -13,6 +13,7 @@ import { Placeholder } from '../components/RouteHeader.tsx';
 import { ConnectionBadge } from '../components/StatusIndicators.tsx';
 import { describeSlot, matchLabel, matchNumber, queuedMatches, upNextMatch } from '../engine/selectors.ts';
 import type { TournamentState } from '../engine/state.ts';
+import type { ScheduledBreak } from '../engine/types.ts';
 import { useLiveTournamentId } from '../hooks/ControlProvider.tsx';
 import { TournamentScope, useTournamentState } from '../hooks/TransportProvider.tsx';
 import { usePresenceRole } from '../hooks/useTransport.ts';
@@ -38,19 +39,37 @@ export function GuestPage() {
   );
 }
 
+function BreakRow({ b }: { b: ScheduledBreak }) {
+  return (
+    <div className="flex items-center gap-3 rounded-md border border-dashed border-accent-gold/50 px-3 py-2 text-sm text-accent-gold">
+      <Coffee size={16} aria-hidden className="shrink-0" />
+      <span className="min-w-0 flex-1 truncate">{b.name}</span>
+      {b.durationMinutes && <span className="shrink-0 text-xs">{b.durationMinutes} min</span>}
+    </div>
+  );
+}
+
+const visibleBreaks = (state: TournamentState, matchId: string) =>
+  state.settings.visibility.showBreaksToGuests ? state.breaks.filter((b) => b.afterMatchId === matchId && !b.completed) : [];
+
 function ScheduleList({ state }: { state: TournamentState }) {
   const queue = queuedMatches(state);
   return (
     <ol className="space-y-2">
       {queue.map((m) => (
-        <li key={m.id} className="surface flex items-center gap-3 p-3">
-          <span className="w-9 shrink-0 font-mono text-xs text-text-muted">M{matchNumber(state, m.id)}</span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">
-              {describeSlot(state, m.home)} <span className="text-text-muted">vs</span> {describeSlot(state, m.away)}
-            </p>
-            <p className="truncate text-xs text-text-muted">{matchLabel(state, m)} · {m.format}</p>
+        <li key={m.id} className="space-y-2">
+          <div className="surface flex items-center gap-3 p-3">
+            <span className="w-9 shrink-0 font-mono text-xs text-text-muted">M{matchNumber(state, m.id)}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">
+                {describeSlot(state, m.home)} <span className="text-text-muted">vs</span> {describeSlot(state, m.away)}
+              </p>
+              <p className="truncate text-xs text-text-muted">{matchLabel(state, m)} · {m.format}</p>
+            </div>
           </div>
+          {visibleBreaks(state, m.id).map((b) => (
+            <BreakRow key={b.id} b={b} />
+          ))}
         </li>
       ))}
     </ol>
@@ -101,6 +120,13 @@ function GuestView() {
               )}
             </div>
             <DutyBanner state={state} duty={duty} match={dutyMatch} />
+            {(view?.match ?? next) &&
+              visibleBreaks(state, (view?.match ?? next)!.id).map((b) => (
+                <div key={b.id} className="space-y-1">
+                  <p className="text-xs tracking-wide text-text-muted uppercase">After this match</p>
+                  <BreakRow b={b} />
+                </div>
+              ))}
           </div>
         )}
         {tab === 'schedule' && <ScheduleList state={state} />}

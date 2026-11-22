@@ -77,6 +77,7 @@ export function buildRoster(
       groupIndex: i % groups,
       playerIds,
       hand: prevTeam?.hand ?? [],
+      logoDataUrl: prevTeam?.logoDataUrl ?? null,
     });
   }
   return { teams, players };
@@ -91,6 +92,7 @@ export function buildTournament(setup: TournamentSetup): TournamentState {
   settings.structure = structuredClone(setup.structure);
   settings.rules = structuredClone(setup.rules);
   settings.visibility = { ...settings.visibility, ...setup.visibility };
+  settings.table = { ...settings.table, ...setup.table };
   const { teams, players } = buildRoster(setup.structure, setup.roster);
   const matches = buildSchedule(setup.structure, teams);
   return {

@@ -116,27 +116,53 @@ export function allGroupStandings(state: TournamentState): StandingRow[][] {
 // ------------------------------------------------------------------ table duty
 
 export type ScorerDuty =
-  | { kind: 'ADMIN'; reason: 'FIRST_MATCH' | 'OVERRIDE' | 'FALLBACK' }
-  | { kind: 'TEAM'; teamId: string; reason: 'LOSER' | 'OVERRIDE' };
+  | { kind: 'ADMIN'; reason: 'FIRST_MATCH' | 'OVERRIDE' | 'FALLBACK' | 'RULE' }
+  | { kind: 'TEAM'; teamId: string; reason: 'LOSER' | 'WINNER' | 'ON_DECK' | 'OVERRIDE' };
+
+/** The first unplayed match queued after `match` (the team "on deck"). */
+export function matchAfter(state: TournamentState, match: Match): Match | null {
+  const i = state.queue.indexOf(match.id);
+  if (i === -1) return null;
+  for (const id of state.queue.slice(i + 1)) {
+    const m = state.matches.find((x) => x.id === id);
+    if (m && m.status !== 'COMPLETED') return m;
+  }
+  return null;
+}
 
 /**
- * "Loser scores next": the losing team of the most recently completed match scores
- * the next one. Match 1 = Admin. If that loser must play the next match itself,
- * fall back to Admin. The Admin override always wins.
+ * Who keeps score for `nextMatch`, by the tournament's duty rule:
+ *  - LOSER_SCORES_NEXT: loser of the most recently completed match (Match 1: Admin).
+ *  - WINNER_SCORES_NEXT: winner of the most recently completed match (Match 1: Admin).
+ *  - ON_DECK_TEAM: a team from the match queued after `nextMatch` (they are about to play anyway).
+ *  - ADMIN_ALWAYS: the host scores every match.
+ * A team that plays `nextMatch` itself never scores it (falls back to Admin).
+ * The Admin override always wins.
  */
 export function scorerDutyFor(state: TournamentState, nextMatch: Match | null): ScorerDuty {
   const o = state.scorerDutyOverride;
   if (o === 'ADMIN') return { kind: 'ADMIN', reason: 'OVERRIDE' };
   if (o && state.teams.some((t) => t.id === o)) return { kind: 'TEAM', teamId: o, reason: 'OVERRIDE' };
+  const rule = state.settings.table?.dutyRule ?? 'LOSER_SCORES_NEXT';
+  if (rule === 'ADMIN_ALWAYS') return { kind: 'ADMIN', reason: 'RULE' };
+
+  const playing = nextMatch ? matchTeams(state, nextMatch) : { home: null, away: null };
+  const plays = (id: string) => playing.home === id || playing.away === id;
+
+  if (rule === 'ON_DECK_TEAM') {
+    const after = nextMatch ? matchAfter(state, nextMatch) : null;
+    if (!after) return { kind: 'ADMIN', reason: 'FALLBACK' };
+    const t = matchTeams(state, after);
+    const pick = [t.home, t.away].find((id): id is string => !!id && !plays(id));
+    return pick ? { kind: 'TEAM', teamId: pick, reason: 'ON_DECK' } : { kind: 'ADMIN', reason: 'FALLBACK' };
+  }
+
   const lastId = state.completedOrder[state.completedOrder.length - 1];
   const last = lastId ? state.matches.find((m) => m.id === lastId) : null;
   if (!last || !last.winnerTeamId) return { kind: 'ADMIN', reason: 'FIRST_MATCH' };
   const { home, away } = matchTeams(state, last);
   const loser = last.winnerTeamId === home ? away : home;
-  if (!loser) return { kind: 'ADMIN', reason: 'FALLBACK' };
-  if (nextMatch) {
-    const next = matchTeams(state, nextMatch);
-    if (next.home === loser || next.away === loser) return { kind: 'ADMIN', reason: 'FALLBACK' };
-  }
-  return { kind: 'TEAM', teamId: loser, reason: 'LOSER' };
+  const teamId = rule === 'WINNER_SCORES_NEXT' ? last.winnerTeamId : loser;
+  if (!teamId || plays(teamId)) return { kind: 'ADMIN', reason: 'FALLBACK' };
+  return { kind: 'TEAM', teamId, reason: rule === 'WINNER_SCORES_NEXT' ? 'WINNER' : 'LOSER' };
 }

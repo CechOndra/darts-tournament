@@ -1,6 +1,6 @@
-import { Camera, FileSpreadsheet, Trash2 } from 'lucide-react';
+import { Camera, FileSpreadsheet, ImagePlus, Shield, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type InputHTMLAttributes } from 'react';
-import { Avatar, Badge, Button, Field, Notice, TextInput } from '../../../components/ui.tsx';
+import { Avatar, Badge, Button, Field, Notice, TeamLogo, TextInput } from '../../../components/ui.tsx';
 import { parseRosterText } from '../../../engine/roster.ts';
 import { groupLabel, placeholderCount } from '../../../engine/selectors.ts';
 import type { TournamentState } from '../../../engine/state.ts';
@@ -108,10 +108,36 @@ function PlayerRow({ player }: { player: Player }) {
 
 function TeamCard({ team, state }: { team: Team; state: TournamentState }) {
   const dispatch = useDispatch();
+  const logoRef = useRef<HTMLInputElement>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const showGroup = state.settings.structure.mode !== 'PLAYOFFS_ONLY' && state.settings.structure.groupCount > 1;
+
+  const onLogo = async (file: File | undefined) => {
+    if (!file) return;
+    setLogoBusy(true);
+    setLogoError(null);
+    try {
+      const logoDataUrl = await compressAvatar(file);
+      await dispatch({ type: 'SET_TEAM_LOGO', teamId: team.id, logoDataUrl }, { persist: 'immediate' });
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLogoBusy(false);
+      if (logoRef.current) logoRef.current.value = '';
+    }
+  };
+
   return (
     <div className="surface-elevated space-y-3 p-3">
       <div className="flex items-center gap-2">
+        {team.logoDataUrl ? (
+          <TeamLogo name={team.name} src={team.logoDataUrl} size={44} />
+        ) : (
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-dashed border-border-strong text-text-muted" aria-hidden>
+            <Shield size={20} />
+          </span>
+        )}
         <CommitInput
           aria-label={`Team name (${team.id})`}
           value={team.isPlaceholderName ? '' : team.name}
@@ -122,7 +148,28 @@ function TeamCard({ team, state }: { team: Team; state: TournamentState }) {
           onCommit={(name) => void dispatch({ type: 'RENAME_TEAM', teamId: team.id, name })}
         />
         {showGroup && <Badge tone="gold">{groupLabel(team.groupIndex)}</Badge>}
+        <Button
+          size="sm"
+          icon={ImagePlus}
+          busy={logoBusy}
+          aria-label={`Upload logo for ${team.name}`}
+          title="Upload team logo"
+          onClick={() => logoRef.current?.click()}
+          className="shrink-0"
+        />
+        {team.logoDataUrl && (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={Trash2}
+            aria-label={`Remove logo of ${team.name}`}
+            onClick={() => void dispatch({ type: 'SET_TEAM_LOGO', teamId: team.id, logoDataUrl: null }, { persist: 'immediate' })}
+            className="shrink-0"
+          />
+        )}
+        <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onLogo(e.target.files?.[0])} />
       </div>
+      {logoError && <Notice tone="danger">{logoError}</Notice>}
       {team.playerIds.map((pid) => {
         const p = state.players[pid];
         return p ? <PlayerRow key={pid} player={p} /> : null;
@@ -164,7 +211,7 @@ export function RosterSection({ state }: { state: TournamentState }) {
         </Notice>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {state.teams.map((t) => (
           <TeamCard key={t.id} team={t} state={state} />
         ))}

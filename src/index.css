@@ -41,6 +41,11 @@
   --rarity-rare: #3b82f6;
   --rarity-legendary: #f59e0b;
 
+  /* Coin toss coin */
+  --coin-shine: #fde68a;
+  --coin-face: #f59e0b;
+  --coin-edge: #b45309;
+
   /* FUT frame typography */
   --fut-ink-dark: #3e3114;
   --fut-ink-light: #f8fafc;
@@ -143,5 +148,74 @@
   .touch-target {
     min-width: var(--touch-min);
     min-height: var(--touch-min);
+  }
+
+  /* Stage coin toss: a 3D coin with one team per face. Lands on the front (home) or back (away). */
+  .coin-stage {
+    perspective: 1600px;
+    animation: coin-toss-arc 2s cubic-bezier(0.3, 0, 0.4, 1) both;
+  }
+  .coin {
+    position: relative;
+    width: 26rem;
+    height: 26rem;
+    transform-style: preserve-3d;
+    animation: 2s cubic-bezier(0.15, 0.6, 0.3, 1) both;
+  }
+  .coin-land-home {
+    animation-name: coin-spin-home;
+  }
+  .coin-land-away {
+    animation-name: coin-spin-away;
+  }
+  .coin-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    border-radius: 9999px;
+    border: 0.75rem solid var(--accent-gold);
+    background: radial-gradient(circle at 35% 30%, var(--coin-shine) 0%, var(--coin-face) 55%, var(--coin-edge) 100%);
+    color: var(--fut-ink-dark);
+    text-align: center;
+    backface-visibility: hidden;
+  }
+  .coin-back {
+    transform: rotateY(180deg);
+  }
+  @keyframes coin-spin-home {
+    from {
+      transform: rotateY(0deg);
+    }
+    to {
+      transform: rotateY(2160deg);
+    }
+  }
+  @keyframes coin-spin-away {
+    from {
+      transform: rotateY(0deg);
+    }
+    to {
+      transform: rotateY(2340deg);
+    }
+  }
+  @keyframes coin-toss-arc {
+    0% {
+      transform: translateY(0) scale(0.7);
+    }
+    45% {
+      transform: translateY(-6rem) scale(1.05);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .coin-stage,
+    .coin {
+      animation-duration: 1ms;
+    }
   }
 }

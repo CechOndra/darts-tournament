@@ -11,6 +11,18 @@ export function VisibilitySection({ state }: { state: TournamentState }) {
 
   return (
     <div className="divide-y divide-border-subtle">
+      <Toggle
+        label="Stage: visit history"
+        description="List every visit of the current leg under each team on the projector."
+        checked={v.stageVisitHistory}
+        onChange={(stageVisitHistory) => set({ stageVisitHistory })}
+      />
+      <Toggle
+        label="Breaks on guest phones"
+        description="Show scheduled breaks between matches in the guest schedule."
+        checked={v.showBreaksToGuests}
+        onChange={(showBreaksToGuests) => set({ showBreaksToGuests })}
+      />
       <Toggle label="Basic stats" description="3-dart average, high visit, checkouts on guest phones." checked={v.showBasicStats} onChange={(showBasicStats) => set({ showBasicStats })} />
       <Toggle label="Match ETAs" description="Estimated start times once Round 1 completes." checked={v.showMatchEtas} onChange={(showMatchEtas) => set({ showMatchEtas })} />
       <Toggle label="Awards preview" description="Keep OFF so winners stay secret until the ceremony." checked={v.showAwardsPreview} onChange={(showAwardsPreview) => set({ showAwardsPreview })} />

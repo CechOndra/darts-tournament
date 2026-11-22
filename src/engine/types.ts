@@ -53,6 +53,8 @@ export interface Team {
   groupIndex: number;
   playerIds: string[];
   hand: CardInstance[];
+  /** Optional team logo (compressed square WebP/JPEG data URL). */
+  logoDataUrl: string | null;
 }
 
 export interface Player {
@@ -126,6 +128,10 @@ export interface VisibilitySettings {
   showPlayerFutCards: boolean;
   statsScope: StatsScope;
   includeCardAffectedThrows: boolean;
+  /** Stage: list every visit of the current leg under each team. */
+  stageVisitHistory: boolean;
+  /** Guest phones: show scheduled breaks in the schedule. */
+  showBreaksToGuests: boolean;
 }
 
 export interface StructureSettings {
@@ -169,8 +175,22 @@ export interface CardSettings {
   supplyMode: SupplyMode;
 }
 
+/** Scorer tablet keypad layouts (tournament default; each tablet may override locally). */
+export type KeypadLayout = 'ROWS_BY_TEN' | 'STACKED_ROWS' | 'COLUMNS' | 'MODIFIER';
+export const KEYPAD_LAYOUTS: KeypadLayout[] = ['MODIFIER', 'STACKED_ROWS', 'COLUMNS', 'ROWS_BY_TEN'];
+
+/** Who keeps score for the next match (the Admin override still wins). */
+export type ScorerDutyRule = 'LOSER_SCORES_NEXT' | 'WINNER_SCORES_NEXT' | 'ON_DECK_TEAM' | 'ADMIN_ALWAYS';
+export const SCORER_DUTY_RULES: ScorerDutyRule[] = ['LOSER_SCORES_NEXT', 'WINNER_SCORES_NEXT', 'ON_DECK_TEAM', 'ADMIN_ALWAYS'];
+
+export interface TableSettings {
+  dutyRule: ScorerDutyRule;
+  defaultKeypad: KeypadLayout;
+}
+
 export interface TournamentSettings {
   visibility: VisibilitySettings;
+  table: TableSettings;
   structure: StructureSettings;
   rules: GameRules;
   cards: CardSettings;
@@ -193,6 +213,7 @@ export interface TournamentSetup {
   structure: StructureSettings;
   rules: GameRules;
   visibility?: Partial<VisibilitySettings>;
+  table?: Partial<TableSettings>;
   roster: RosterRow[];
 }
 
