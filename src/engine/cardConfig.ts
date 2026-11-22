@@ -42,6 +42,17 @@ export function printedCopies(settings: CardSettings, id: CardTypeId): number {
   return c.enabled ? Math.max(0, Math.round(c.copies)) : 0;
 }
 
+/** Stage animation timings in ms (older tournaments fall back to the defaults). */
+export function animationMs(params: Partial<CardSettings['params']>) {
+  const sec = (v: number | undefined, d: number) => Math.round((typeof v === 'number' && v > 0 ? v : d) * 1000);
+  return {
+    caseOpening: sec(params.caseOpeningSeconds, 5.5),
+    wheel: sec(params.wheelSeconds, 5.5),
+    randomPower: sec(params.randomPowerSeconds, 3.5),
+    reveal: sec(params.revealSeconds, 3.8),
+  };
+}
+
 /** Migrate the v5 `copies` map into per-card configs. */
 export function configsFromCopies(copies: Partial<Record<CardTypeId, number>> | undefined): Record<CardTypeId, CardTypeConfig> {
   const out = defaultCardConfigs();

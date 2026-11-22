@@ -2,12 +2,22 @@ import { AlertTriangle, Shuffle } from 'lucide-react';
 import { useState } from 'react';
 import { MODE_LABEL } from '../../../components/admin/labels.ts';
 import { RulesForm } from '../../../components/admin/RulesForm.tsx';
+import { SettingsDraft } from '../../../components/admin/SettingsDraft.tsx';
+import { mergeRules } from '../../../engine/reducer.ts';
 import { RoundFormatPicker, StructureForm } from '../../../components/admin/StructureForm.tsx';
 import { Button, Modal, Notice } from '../../../components/ui.tsx';
 import { hasStarted } from '../../../engine/selectors.ts';
 import type { TournamentState } from '../../../engine/state.ts';
 import { validateStructure } from '../../../engine/tournament.ts';
-import type { StructureSettings } from '../../../engine/types.ts';
+import type { GameRules, MatchFormat, PlayoffRound, StructureSettings } from '../../../engine/types.ts';
+
+interface RulesDraft {
+  groupFormat: MatchFormat;
+  playoffFormats: Record<PlayoffRound, MatchFormat>;
+  rules: GameRules;
+}
+
+const LABELS: Record<string, string> = { groupFormat: 'Group stage format', playoffFormats: 'Playoff format', rules: 'Rules', specialRules: 'Special rules', THIRD_PLACE: '3rd place' };
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
 
 export function RulesSection({ state }: { state: TournamentState }) {
@@ -31,21 +41,36 @@ export function RulesSection({ state }: { state: TournamentState }) {
         </Button>
       </div>
 
-      <div>
-        <p className="mb-2 text-xs font-medium tracking-wide text-text-muted uppercase">Match formats (unplayed matches)</p>
-        <RoundFormatPicker
-          structure={s}
-          onGroupFormat={(format) => void dispatch({ type: 'SET_GROUP_FORMAT', format }, { persist: 'immediate' })}
-          onRoundFormat={(round, format) => void dispatch({ type: 'SET_PLAYOFF_FORMAT', round, format }, { persist: 'immediate' })}
-        />
-      </div>
-
-      {state.live && (
-        <p className="mb-2 rounded-md border border-accent-info/40 bg-accent-info/10 px-3 py-2 text-xs text-text-muted">
-          A match is live: it keeps the rules it started with. Rule changes apply from the next match; finished matches are never rescored.
-        </p>
-      )}
-      <RulesForm value={state.settings.rules} onPatch={(patch) => void dispatch({ type: 'UPDATE_RULES', patch }, { persist: 'immediate' })} />
+      <SettingsDraft<RulesDraft>
+        value={{ groupFormat: s.groupFormat, playoffFormats: s.playoff.formats, rules: state.settings.rules }}
+        labels={LABELS}
+        liveWarning={
+          state.live
+            ? 'A match is live right now. It keeps the rules it started with: these changes apply from the next match. Format changes only affect unplayed matches. Finished matches are never rescored.'
+            : null
+        }
+        onApply={async (d) => {
+          if (d.groupFormat !== s.groupFormat) await dispatch({ type: 'SET_GROUP_FORMAT', format: d.groupFormat }, { persist: 'immediate' });
+          for (const round of Object.keys(d.playoffFormats) as PlayoffRound[]) {
+            if (d.playoffFormats[round] !== s.playoff.formats[round]) await dispatch({ type: 'SET_PLAYOFF_FORMAT', round, format: d.playoffFormats[round] }, { persist: 'immediate' });
+          }
+          await dispatch({ type: 'UPDATE_RULES', patch: d.rules }, { persist: 'immediate' });
+        }}
+      >
+        {(d, set) => (
+          <>
+            <div>
+              <p className="mb-2 text-xs font-medium tracking-wide text-text-muted uppercase">Match formats (unplayed matches)</p>
+              <RoundFormatPicker
+                structure={{ ...s, groupFormat: d.groupFormat, playoff: { ...s.playoff, formats: d.playoffFormats } }}
+                onGroupFormat={(groupFormat) => set({ ...d, groupFormat })}
+                onRoundFormat={(round, format) => set({ ...d, playoffFormats: { ...d.playoffFormats, [round]: format } })}
+              />
+            </div>
+            <RulesForm value={d.rules} onPatch={(patch) => set({ ...d, rules: mergeRules(d.rules, patch) })} />
+          </>
+        )}
+      </SettingsDraft>
 
       {draft && (
         <Modal

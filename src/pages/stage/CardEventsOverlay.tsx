@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CaseOpening, SpinWheel, type Candidate } from '../../components/cards/DrawAnimations.tsx';
 import { PowerCard } from '../../components/cards/PowerCard.tsx';
 import { CARD_BY_ID, RANDOM_OPP, RANDOM_OWN } from '../../engine/cardCatalog.ts';
+import { animationMs } from '../../engine/cardConfig.ts';
 import { drawWeights } from '../../engine/cards.ts';
 import { teamName } from '../../engine/selectors.ts';
 import type { TournamentState } from '../../engine/state.ts';
@@ -23,7 +24,7 @@ export function CardEventsOverlay({ state }: { state: TournamentState }) {
   const [event, setEvent] = useState<StageEvent | null>(null);
   const [phase, setPhase] = useState<Phase>('spin');
   const rarityOf = useRarityOf();
-  const drawMs = Math.round(state.settings.cards.params.drawAnimationSeconds * 1000);
+  const ms = animationMs(state.settings.cards.params);
 
   useEffect(() => {
     const cur = { draw: lastDraw?.id ?? null, play: lastPlay?.id ?? null };
@@ -47,7 +48,7 @@ export function CardEventsOverlay({ state }: { state: TournamentState }) {
     if (!event || phase === 'spin') return;
     const id = event.kind === 'draw' ? event.draw.cardTypeId : event.play.effectCardTypeId;
     if (phase === 'reveal') playReveal(rarityOf(id));
-    const t = setTimeout(() => setEvent(null), phase === 'reveal' ? 3800 : 3000);
+    const t = setTimeout(() => setEvent(null), phase === 'reveal' ? ms.reveal : Math.max(2000, ms.reveal - 800));
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event, phase]);
@@ -92,13 +93,13 @@ export function CardEventsOverlay({ state }: { state: TournamentState }) {
       <p className="text-center font-display text-6xl tracking-wide uppercase">{title}</p>
       {phase === 'spin' ? (
         event.kind === 'draw' && wheel ? (
-          <SpinWheel winner={resultId} seed={event.draw.id} candidates={candidates} durationMs={drawMs} onDone={() => setPhase('reveal')} />
+          <SpinWheel winner={resultId} seed={event.draw.id} candidates={candidates} durationMs={ms.wheel} onDone={() => setPhase('reveal')} />
         ) : (
           <CaseOpening
             winner={resultId}
             seed={event.kind === 'draw' ? event.draw.id : event.play.id}
             candidates={candidates}
-            durationMs={event.kind === 'draw' ? drawMs : Math.round(drawMs * 0.65)}
+            durationMs={event.kind === 'draw' ? ms.caseOpening : ms.randomPower}
             onDone={() => setPhase('reveal')}
           />
         )

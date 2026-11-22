@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { RouteHeader } from '../../components/RouteHeader.tsx';
 import { ConnectionBadge, PingIndicator } from '../../components/StatusIndicators.tsx';
 import { Badge, Button, Modal, Notice, Section, useMediaQuery } from '../../components/ui.tsx';
+import { SettingsDraft } from '../../components/admin/SettingsDraft.tsx';
 import { TableSettingsForm } from '../../components/admin/TableSettingsForm.tsx';
 import { upNextMatch, describeSlot } from '../../engine/selectors.ts';
 import { useControl } from '../../hooks/ControlProvider.tsx';
@@ -176,10 +177,13 @@ export function AdminWorkspace({
           <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <div className="space-y-4">
               <Section id="section-table" title="Scorer Tablet" icon={Crosshair} open={open.table} onToggle={() => toggle('table')}>
-                <TableSettingsForm
+                <SettingsDraft
                   value={state.settings.table}
-                  onPatch={(patch) => void dispatch({ type: 'UPDATE_TABLE_SETTINGS', patch }, { persist: 'immediate' })}
-                />
+                  liveWarning={state.live ? 'A match is live. A new scorer rule decides who keeps score for the next match.' : null}
+                  onApply={(d) => dispatch({ type: 'UPDATE_TABLE_SETTINGS', patch: d }, { persist: 'immediate' })}
+                >
+                  {(d, set) => <TableSettingsForm value={d} onPatch={(patch) => set({ ...d, ...patch })} />}
+                </SettingsDraft>
               </Section>
               <Section id="section-visibility" title="Visibility" icon={Eye} open={open.visibility} onToggle={() => toggle('visibility')}>
                 <VisibilitySection state={state} />

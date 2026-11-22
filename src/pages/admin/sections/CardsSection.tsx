@@ -1,6 +1,8 @@
 import { ArrowRightLeft, Gift, Layers, Plus, Settings2, Undo2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { CardSettingsForm } from '../../../components/admin/CardSettingsForm.tsx';
+import { SettingsDraft } from '../../../components/admin/SettingsDraft.tsx';
+import type { CardSettings } from '../../../engine/types.ts';
 import { CardIcon, RARITY_VAR } from '../../../components/cards/PowerCard.tsx';
 import { Badge, Button, Field, Notice, Section, Select } from '../../../components/ui.tsx';
 import { CARD_BY_ID, CARD_TYPES, type CardPool, type CardTypeId } from '../../../engine/cardCatalog.ts';
@@ -168,7 +170,18 @@ export function CardsSection({ state }: { state: TournamentState }) {
           <Inventory state={state} />
         </Section>
         <Section id="section-cards-settings" title="Card Settings" icon={Settings2} open={open.settings} onToggle={() => setOpen((o) => ({ ...o, settings: !o.settings }))}>
-          <CardSettingsForm value={s} onPatch={(patch) => void dispatch({ type: 'UPDATE_CARD_SETTINGS', patch }, { persist: 'immediate' })} />
+          <SettingsDraft<CardSettings>
+            value={s}
+            labels={{ config: 'Card', params: 'Card numbers' }}
+            liveWarning={
+              state.live
+                ? 'A match is live right now. Card numbers (All or Nothing quota and bonus, Showboat bonus, shot clock), the Double-Edged finish rule and which cards are allowed take effect in this match immediately, including cards already played.'
+                : null
+            }
+            onApply={(d) => dispatch({ type: 'UPDATE_CARD_SETTINGS', patch: d }, { persist: 'immediate' })}
+          >
+            {(d, set) => <CardSettingsForm value={d} onPatch={(patch) => set({ ...d, ...patch })} />}
+          </SettingsDraft>
         </Section>
       </div>
       <Section id="section-cards-tools" title="Minigame Transfers" icon={Layers} open={open.tools} onToggle={() => setOpen((o) => ({ ...o, tools: !o.tools }))}>

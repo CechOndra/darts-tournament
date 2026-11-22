@@ -214,8 +214,12 @@ export interface CardParams {
   allOrNothingBonus: number;
   showboatBonus: number;
   shotClockSeconds: number;
-  /** Case opening / wheel length on the stage. */
-  drawAnimationSeconds: number;
+  /** Stage animation lengths (seconds). */
+  caseOpeningSeconds: number;
+  wheelSeconds: number;
+  randomPowerSeconds: number;
+  /** How long the drawn / played card stays on screen afterwards. */
+  revealSeconds: number;
   /** DOUBLE_EDGED_SWORD: may a boosted dart finish the leg? (Default: no, it busts.) */
   allowCheckoutOnBoostedDart: boolean;
 }

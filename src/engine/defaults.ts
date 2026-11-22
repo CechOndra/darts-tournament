@@ -55,7 +55,10 @@ export const DEFAULT_CARD_PARAMS: CardParams = {
   allOrNothingBonus: 25,
   showboatBonus: 0.5,
   shotClockSeconds: 10,
-  drawAnimationSeconds: 5.5,
+  caseOpeningSeconds: 5.5,
+  wheelSeconds: 5.5,
+  randomPowerSeconds: 3.5,
+  revealSeconds: 3.8,
   allowCheckoutOnBoostedDart: false,
 };
 

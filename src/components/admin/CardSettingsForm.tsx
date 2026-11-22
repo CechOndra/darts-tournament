@@ -1,6 +1,6 @@
 import { RotateCcw } from 'lucide-react';
 import { CARD_TYPES, RARITY_COPIES, RARITY_LABEL, type CardRarity, type CardTypeId } from '../../engine/cardCatalog.ts';
-import { cardConfig, defaultCardConfigs } from '../../engine/cardConfig.ts';
+import { animationMs, cardConfig, defaultCardConfigs } from '../../engine/cardConfig.ts';
 import { circulationEstimate } from '../../engine/cards.ts';
 import type { CardSettings, CardTypeConfig } from '../../engine/types.ts';
 import { CardIcon, RARITY_VAR } from '../cards/PowerCard.tsx';
@@ -140,6 +140,7 @@ export function CardSettingsForm({ value, onPatch }: { value: CardSettings; onPa
   const fixed = value.supplyMode === 'FIXED_PROBABILITIES';
   const setCard = (id: CardTypeId, c: CardTypeConfig) => onPatch({ config: { ...value.config, [id]: c } });
   const params = value.params;
+  const anim = animationMs(params);
   return (
     <div className="space-y-5">
       <CardBasicsForm value={value} onPatch={onPatch} />
@@ -157,14 +158,16 @@ export function CardSettingsForm({ value, onPatch }: { value: CardSettings; onPa
             />
           )}
         </Field>
-        <Stepper
-          label="Draw animation length (seconds)"
-          value={params.drawAnimationSeconds}
-          min={2}
-          max={12}
-          step={0.5}
-          onChange={(drawAnimationSeconds) => onPatch({ params: { ...params, drawAnimationSeconds } })}
-        />
+      </div>
+
+      <div>
+        <p className="mb-2 text-xs font-medium tracking-wide text-text-muted uppercase">Stage animation lengths (seconds)</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stepper label="Case opening" value={anim.caseOpening / 1000} min={1} max={30} step={0.5} onChange={(caseOpeningSeconds) => onPatch({ params: { ...params, caseOpeningSeconds } })} />
+          <Stepper label="Spinning wheel" value={anim.wheel / 1000} min={1} max={30} step={0.5} onChange={(wheelSeconds) => onPatch({ params: { ...params, wheelSeconds } })} />
+          <Stepper label="Random Power roulette" value={anim.randomPower / 1000} min={1} max={30} step={0.5} onChange={(randomPowerSeconds) => onPatch({ params: { ...params, randomPowerSeconds } })} />
+          <Stepper label="Card stays on screen" value={anim.reveal / 1000} min={1} max={30} step={0.5} onChange={(revealSeconds) => onPatch({ params: { ...params, revealSeconds } })} />
+        </div>
       </div>
 
       <div>
