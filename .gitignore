@@ -22,3 +22,6 @@ Thumbs.db
 .idea/
 coverage/
 .playwright-mcp/
+
+# Source music folder (only the files copied into public/audio are published)
+music/

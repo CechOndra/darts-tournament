@@ -1,4 +1,5 @@
 import type { EngineAction, RulesPatch } from './actions.ts';
+import { cardsReducer, isCardAction } from './cards.ts';
 import { isMatchAction, matchReducer } from './matchReducer.ts';
 import { createEmptyState, migrateState, type TournamentState } from './state.ts';
 import {
@@ -31,6 +32,7 @@ const isMovable = (m: Match | undefined) => !!m && m.status === 'SCHEDULED';
 export function tournamentReducer(input: TournamentState, action: EngineAction): TournamentState {
   const state = migrateState(input);
   if (isMatchAction(action)) return matchReducer(state, action);
+  if (isCardAction(action)) return cardsReducer(state, action);
   switch (action.type) {
     case 'INITIALIZE':
       return buildTournament(action.setup);

@@ -1,6 +1,6 @@
 import { Trophy } from 'lucide-react';
 import { qualifiersPerGroup, StandingsTable } from '../../../components/match/StandingsTable.tsx';
-import { replayMatch } from '../../../engine/match.ts';
+import { matchMods, replayMatch } from '../../../engine/match.ts';
 import { matchLabel, matchNumber, teamName } from '../../../engine/selectors.ts';
 import { allGroupStandings, matchTeams } from '../../../engine/standings.ts';
 import type { TournamentState } from '../../../engine/state.ts';
@@ -10,7 +10,7 @@ function ResultRow({ state, match }: { state: TournamentState; match: Match }) {
   const ids = matchTeams(state, match);
   if (!ids.home || !ids.away) return null;
   const teamIds = { home: ids.home, away: ids.away };
-  const replay = replayMatch(state.throws, match, teamIds, state.settings.rules);
+  const replay = replayMatch(state.throws, match, teamIds, state.settings.rules, matchMods(state, match.id));
   const side = (s: Side) => {
     const won = match.winnerTeamId === teamIds[s];
     const st = replay.stats[s];

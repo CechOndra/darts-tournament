@@ -1,3 +1,4 @@
+import { dealStartingHands, emptyCards, hashString, syncInstances } from './cardPool.ts';
 import { createDefaultSettings, LIMITS } from './defaults.ts';
 import { buildSchedule, nextPowerOfTwo } from './schedule.ts';
 import { createEmptyState, type TournamentState } from './state.ts';
@@ -76,7 +77,6 @@ export function buildRoster(
       isPlaceholderName: !name,
       groupIndex: i % groups,
       playerIds,
-      hand: prevTeam?.hand ?? [],
       logoDataUrl: prevTeam?.logoDataUrl ?? null,
     });
   }
@@ -93,10 +93,21 @@ export function buildTournament(setup: TournamentSetup): TournamentState {
   settings.rules = structuredClone(setup.rules);
   settings.visibility = { ...settings.visibility, ...setup.visibility };
   settings.table = { ...settings.table, ...setup.table };
+  settings.cards = {
+    ...settings.cards,
+    ...setup.cards,
+    copies: { ...settings.cards.copies, ...setup.cards?.copies },
+    params: { ...settings.cards.params, ...setup.cards?.params },
+  };
   const { teams, players } = buildRoster(setup.structure, setup.roster);
   const matches = buildSchedule(setup.structure, teams);
+  let cards = syncInstances(emptyCards(), settings.cards);
+  if (settings.cards.mode !== 'OFF' && settings.cards.startingHandSize > 0) {
+    cards = dealStartingHands(cards, teams.map((t) => t.id), Math.min(settings.cards.startingHandSize, settings.cards.maxHandSize), hashString(setup.id));
+  }
   return {
     ...base,
+    cards,
     meta: { id: setup.id, name: setup.name.trim() || 'Tournament', createdAt: setup.createdAt },
     settings,
     teams,
@@ -124,6 +135,14 @@ export function restructureTournament(state: TournamentState, structure: Structu
     scorerDutyOverride: null,
     live: null,
     completedOrder: [],
+    // Teams that no longer exist hand their cards back; plays/draws belonged to the old schedule.
+    cards: {
+      ...state.cards,
+      plays: [],
+      draws: [],
+      pendingDiscard: null,
+      instances: state.cards.instances.map((i) => (i.ownerTeamId && !teams.some((t) => t.id === i.ownerTeamId) ? { ...i, ownerTeamId: null, status: 'IN_POOL' } : i)),
+    },
   };
 }
 

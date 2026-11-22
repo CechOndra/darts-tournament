@@ -1,12 +1,14 @@
 import { ArrowLeft, Crosshair, Dumbbell, FastForward, Keyboard, Lock, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { ActiveEffects } from '../../components/cards/ActiveEffects.tsx';
+import { CardHands } from '../../components/cards/CardHands.tsx';
 import { CheckoutRoutes } from '../../components/match/CheckoutRoutes.tsx';
 import { DartKeypad } from '../../components/match/DartKeypad.tsx';
 import { DutyBanner } from '../../components/match/DutyBanner.tsx';
 import { MatchSummary } from '../../components/match/MatchSummary.tsx';
 import { Scoreboard, VisitSlots } from '../../components/match/Scoreboard.tsx';
 import { Matchup } from '../../components/Matchup.tsx';
-import { Placeholder, RouteHeader } from '../../components/RouteHeader.tsx';
+import { RouteHeader } from '../../components/RouteHeader.tsx';
 import { ConnectionBadge, FullscreenButton, PingIndicator } from '../../components/StatusIndicators.tsx';
 import { Button, Modal, Notice } from '../../components/ui.tsx';
 import { startableTeams } from '../../engine/matchReducer.ts';
@@ -18,6 +20,7 @@ import { throwDart, undoDart } from '../../services/matchOps.ts';
 import { countActiveScorers } from '../../services/presence.ts';
 import { useKeypadPrefs } from '../../hooks/useKeypadPrefs.ts';
 import { KeypadSettings, type KeypadControl } from './KeypadSettings.tsx';
+import { CardDrawPanel } from './CardDrawPanel.tsx';
 import { LegStartPanel } from './LegStartPanel.tsx';
 import { PracticePanel } from './PracticePanel.tsx';
 
@@ -156,6 +159,7 @@ function UpNextPhase({ onPractice }: { onPractice: () => void }) {
 function PreMatchPhase() {
   const state = useTournamentState()!;
   const dispatch = useDispatch();
+  const { transport } = useTransportContext();
   const view = useMatchView(state);
   const { duty, next } = useDuty(state);
   if (!view) return null;
@@ -165,7 +169,12 @@ function PreMatchPhase() {
       <Panel className="justify-center">
         <Matchup state={state} match={view.match} />
         <DutyBanner state={state} duty={duty} match={next} />
-        <Placeholder milestone={4}>[ PLAY CARD: FIRST THROW ] appears here when a team holds it.</Placeholder>
+        <CardHands state={state} view={view} only="PRE_MATCH" />
+        {view.plays.length > 0 && (
+          <Button icon={RotateCcw} className="border-accent-warning/60 text-accent-warning" onClick={() => void undoDart(transport)}>
+            Undo {view.plays.length > 1 ? 'Last Card' : 'First Throw Card'}
+          </Button>
+        )}
       </Panel>
       <Panel>
         <LegStartPanel state={state} view={view} />
@@ -189,7 +198,7 @@ function InProgressPhase({ keypad }: { keypad: KeypadControl }) {
   const [busy, setBusy] = useState(false);
   if (!view) return null;
   const turn = view.turn;
-  const canUndo = state.throws.some((t) => t.matchId === view.match.id);
+  const canUndo = state.throws.some((t) => t.matchId === view.match.id) || view.plays.length > 0;
   const thrower = turn ? playersOfTeam(state, turn.teamId).find((p) => p.id === turn.playerId) : null;
 
   const onDart = async (segment: number, multiplier: Multiplier) => {
@@ -211,6 +220,8 @@ function InProgressPhase({ keypad }: { keypad: KeypadControl }) {
         ) : (
           <CheckoutRoutes state={state} view={view} />
         )}
+        <ActiveEffects state={state} view={view} />
+        <CardHands state={state} view={view} />
         {turn && (
           <div className="mt-auto flex items-center justify-between gap-3">
             <p className="min-w-0 truncate text-sm text-text-muted">
@@ -248,8 +259,8 @@ function PostMatchPhase() {
         <DutyBanner state={state} duty={duty} match={next} />
       </Panel>
       <Panel className="justify-center">
-        <Placeholder milestone={4}>Post-match Power Card draws (Draw Loser Card / Draw Winner Card) appear here.</Placeholder>
-        <Button size="lg" variant="primary" icon={FastForward} className="min-h-24 text-2xl" onClick={() => void dispatch({ type: 'CONTINUE_TO_NEXT' }, { persist: 'immediate' })}>
+        <CardDrawPanel state={state} />
+        <Button size="lg" variant="primary" icon={FastForward} className="min-h-24 text-2xl" disabled={!!state.cards.pendingDiscard} onClick={() => void dispatch({ type: 'CONTINUE_TO_NEXT' }, { persist: 'immediate' })}>
           Continue to Next Match
         </Button>
         <Button size="lg" icon={RotateCcw} className="min-h-16 border-accent-warning/60 text-accent-warning" onClick={() => void undoDart(transport)}>

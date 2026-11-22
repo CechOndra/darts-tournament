@@ -1,5 +1,7 @@
-import { createDefaultSettings, DEFAULT_TABLE, DEFAULT_VISIBILITY } from './defaults.ts';
+import { emptyCards, syncInstances } from './cardPool.ts';
+import { createDefaultSettings, DEFAULT_CARDS, DEFAULT_TABLE, DEFAULT_VISIBILITY } from './defaults.ts';
 import type {
+  CardsState,
   DartThrow,
   LiveMatch,
   Match,
@@ -11,7 +13,7 @@ import type {
 } from './types.ts';
 
 /** Bump when the persisted shape changes incompatibly (backups are checked against it). */
-export const STATE_SCHEMA_VERSION = 4;
+export const STATE_SCHEMA_VERSION = 5;
 
 /** Root tournament state (pure, JSON-serializable, never mutated in place). */
 export interface TournamentState {
@@ -34,6 +36,8 @@ export interface TournamentState {
   live: LiveMatch | null;
   /** Completed match ids in completion order ("loser scores next" duty). */
   completedOrder: string[];
+  /** Power Cards: physical pool, hands, plays and draws. */
+  cards: CardsState;
 }
 
 export function createEmptyState(): TournamentState {
@@ -51,16 +55,24 @@ export function createEmptyState(): TournamentState {
     throws: [],
     live: null,
     completedOrder: [],
+    cards: emptyCards(),
   };
 }
 
 /**
  * Upgrade snapshots written by older versions.
- * v2 -> v3 adds live match fields; v3 -> v4 adds table settings, new visibility flags and team logos.
+ * v2 -> v3 adds live match fields; v3 -> v4 adds table settings, new visibility flags and team logos;
+ * v4 -> v5 adds the Power Card pool (hands move from Team.hand to cards.instances).
  */
 export function migrateState(state: TournamentState): TournamentState {
-  if (state.schemaVersion === STATE_SCHEMA_VERSION && 'live' in state && state.settings?.table) return state;
+  if (state.schemaVersion === STATE_SCHEMA_VERSION && 'live' in state && state.settings?.table && state.cards) return state;
   if (state.schemaVersion > STATE_SCHEMA_VERSION) throw new Error(`State version ${state.schemaVersion} is newer than this app`);
+  const cardSettings = {
+    ...DEFAULT_CARDS,
+    ...state.settings.cards,
+    copies: { ...DEFAULT_CARDS.copies, ...state.settings.cards?.copies },
+    params: { ...DEFAULT_CARDS.params, ...state.settings.cards?.params },
+  };
   return {
     ...state,
     schemaVersion: STATE_SCHEMA_VERSION,
@@ -68,8 +80,11 @@ export function migrateState(state: TournamentState): TournamentState {
       ...state.settings,
       visibility: { ...DEFAULT_VISIBILITY, ...state.settings.visibility },
       table: { ...DEFAULT_TABLE, ...state.settings.table },
+      cards: cardSettings,
     },
-    teams: state.teams.map((t) => ({ ...t, logoDataUrl: t.logoDataUrl ?? null })),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    teams: state.teams.map(({ hand: _legacyHand, ...t }: TournamentState['teams'][number] & { hand?: unknown }) => ({ ...t, logoDataUrl: t.logoDataUrl ?? null })),
+    cards: state.cards ?? syncInstances(emptyCards(), cardSettings),
     live: state.live ?? null,
     completedOrder: state.completedOrder ?? [],
     throws: state.throws ?? [],

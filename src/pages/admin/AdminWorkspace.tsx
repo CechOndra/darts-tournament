@@ -11,24 +11,26 @@ import { useAsyncAction, usePresenceRole } from '../../hooks/useTransport.ts';
 import { describeControlError } from '../../services/control/index.ts';
 import { countActiveScorers } from '../../services/presence.ts';
 import { LiveOpsSection, PinRotation } from './sections/LiveOpsSection.tsx';
+import { CardsSection } from './sections/CardsSection.tsx';
 import { ResultsSection } from './sections/ResultsSection.tsx';
 import { RosterSection } from './sections/RosterSection.tsx';
 import { RulesSection } from './sections/RulesSection.tsx';
 import { BreakEditor, ScheduleSection } from './sections/ScheduleSection.tsx';
 import { VisibilitySection } from './sections/VisibilitySection.tsx';
 
-type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules' | 'table';
+type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules' | 'table' | 'cards';
 type QuickSheet = 'pin' | 'break' | null;
-type TabId = 'live' | 'results' | 'teams' | 'settings';
+type TabId = 'live' | 'results' | 'teams' | 'cards' | 'settings';
 
 const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
   { id: 'live', label: 'Live', short: 'Live', icon: Radio },
   { id: 'results', label: 'Results & Standings', short: 'Results', icon: Trophy },
   { id: 'teams', label: 'Teams', short: 'Teams', icon: Users },
+  { id: 'cards', label: 'Power Cards', short: 'Cards', icon: Layers },
   { id: 'settings', label: 'Settings', short: 'Settings', icon: Settings2 },
 ];
 
-const TAB_OF: Record<SectionId, TabId> = { live: 'live', schedule: 'live', roster: 'teams', visibility: 'settings', rules: 'settings', table: 'settings' };
+const TAB_OF: Record<SectionId, TabId> = { live: 'live', schedule: 'live', roster: 'teams', visibility: 'settings', rules: 'settings', table: 'settings', cards: 'cards' };
 
 export function AdminWorkspace({
   tournamentId,
@@ -48,7 +50,7 @@ export function AdminWorkspace({
   const desktop = useMediaQuery('(min-width: 1024px)');
   const dispatch = useDispatch();
   const [tab, setTab] = useState<TabId>('live');
-  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true });
+  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true, cards: true });
   const [sheet, setSheet] = useState<QuickSheet>(null);
   const { busy, error, run } = useAsyncAction();
 
@@ -129,7 +131,7 @@ export function AdminWorkspace({
         {!isLive && <Notice tone="info">Not live: stage, scorer and guest devices are showing {activeTournamentId ? 'another tournament' : 'nothing'}.</Notice>}
         {error && <Notice tone="danger">{error}</Notice>}
 
-        <nav aria-label="Admin sections" className="sticky top-0 z-30 -mx-4 grid grid-cols-4 gap-1 border-b border-border-subtle bg-bg-primary px-4 py-2 sm:flex">
+        <nav aria-label="Admin sections" className="sticky top-0 z-30 -mx-4 grid grid-cols-5 gap-1 border-b border-border-subtle bg-bg-primary px-4 py-2 sm:flex">
           {TABS.map(({ id, label, short, icon: Icon }) => (
             <button
               key={id}
@@ -168,6 +170,8 @@ export function AdminWorkspace({
           </Section>
         )}
 
+        {tab === 'cards' && <CardsSection state={state} />}
+
         {tab === 'settings' && (
           <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <div className="space-y-4">
@@ -196,7 +200,7 @@ export function AdminWorkspace({
         >
           <QuickAction icon={Eye} label="Visibility" onClick={() => jump('visibility')} />
           <QuickAction icon={CalendarClock} label="Next Match" onClick={() => jump('schedule')} />
-          <QuickAction icon={Layers} label="Cards" disabled title="Card transfers arrive in Milestone 4" />
+          <QuickAction icon={Layers} label="Cards" onClick={() => jump('cards')} />
           <QuickAction icon={KeyRound} label="PIN" alert={scorers > 1} onClick={() => setSheet('pin')} />
           <QuickAction icon={Coffee} label="Breaks" onClick={() => setSheet('break')} />
         </nav>

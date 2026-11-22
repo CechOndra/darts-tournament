@@ -1,5 +1,6 @@
-import { Coins, Target } from 'lucide-react';
+import { Coins, Target, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ActiveEffects } from '../components/cards/ActiveEffects.tsx';
 import { CheckoutRoutes } from '../components/match/CheckoutRoutes.tsx';
 import { DutyBanner } from '../components/match/DutyBanner.tsx';
 import { MatchSummary } from '../components/match/MatchSummary.tsx';
@@ -17,15 +18,44 @@ import { useLiveTournamentId } from '../hooks/ControlProvider.tsx';
 import { TournamentScope, useTournamentState, useTransportContext } from '../hooks/TransportProvider.tsx';
 import { useDuty, useMatchView } from '../hooks/useMatch.ts';
 import { usePresenceRole } from '../hooks/useTransport.ts';
+import { useSoundState, useWinSong } from '../hooks/useSound.ts';
+import { setMuted, unlockAudio } from '../services/audio/sound.ts';
 import { MATCH_EVENTS } from '../services/matchOps.ts';
+import { CardEventsOverlay } from './stage/CardEventsOverlay.tsx';
+
+function SoundButton() {
+  const { muted, unlocked } = useSoundState();
+  const off = muted || !unlocked;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void unlockAudio();
+        if (unlocked) setMuted(!muted);
+        else setMuted(false);
+      }}
+      className="flex min-h-11 items-center gap-2 rounded-md border border-border-subtle bg-bg-elevated px-3 text-sm font-medium"
+      aria-label={off ? 'Turn sound on' : 'Mute sound'}
+    >
+      {off ? <VolumeX size={18} aria-hidden /> : <Volume2 size={18} aria-hidden />}
+      {off ? 'Sound off' : 'Sound on'}
+    </button>
+  );
+}
 
 export function StagePage() {
   const id = useLiveTournamentId();
   return (
-    <div className="touch-route group relative h-dvh overflow-hidden bg-bg-primary [background:var(--surface-gradient)]">
-      <div className="absolute top-4 right-4 z-30 opacity-0 transition-opacity group-hover:opacity-100">
+    <div
+      className="touch-route group relative h-dvh overflow-hidden bg-bg-primary [background:var(--surface-gradient)]"
+      // Browsers only allow audio after a gesture: any click on the stage enables sound.
+      onPointerDown={() => void unlockAudio()}
+    >
+      <div className="absolute top-4 right-4 z-40 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+        <SoundButton />
         <FullscreenButton />
       </div>
+      <SoundHint />
       {id === undefined ? (
         <NoTournament loading />
       ) : id === null ? (
@@ -37,6 +67,13 @@ export function StagePage() {
       )}
     </div>
   );
+}
+
+/** Small reminder until someone clicks the stage once (needed for the win song and card sounds). */
+function SoundHint() {
+  const { muted, unlocked } = useSoundState();
+  if (unlocked || muted) return null;
+  return <p className="absolute right-4 bottom-3 z-40 text-sm text-text-muted">Click anywhere once to enable sound</p>;
 }
 
 function Clock({ className = 'text-4xl' }: { className?: string }) {
@@ -65,6 +102,7 @@ function StageLive() {
   const { status } = useTransportContext();
   const state = useTournamentState();
   const view = useMatchView(state);
+  useWinSong(state);
   if (!state) return <StageIdle />;
   const phase = state.live?.phase ?? 'UP_NEXT';
 
@@ -89,6 +127,7 @@ function StageLive() {
         {phase === 'IN_PROGRESS' && view && <InProgressStage state={state} view={view} />}
         {phase === 'POST_MATCH' && view && <PostMatchStage state={state} view={view} />}
         <CoinTossOverlay state={state} view={view} />
+        <CardEventsOverlay state={state} />
       </main>
       <span className={`absolute bottom-3 left-3 h-2.5 w-2.5 rounded-full ${status === 'connected' ? 'bg-accent-success' : 'bg-accent-warning'}`} title={status} />
     </div>
@@ -163,6 +202,9 @@ function InProgressStage({ state, view }: { state: TournamentState; view: MatchV
               <p className="mb-3 font-display text-3xl tracking-wide uppercase">
                 <span className="text-text-muted">Throwing:</span> {thrower?.name} <span className="text-text-muted">· needs</span> {turn.remaining}
               </p>
+              <div className="mb-3">
+                <ActiveEffects state={state} view={view} size="xl" sound />
+              </div>
               <CheckoutRoutes state={state} view={view} size="xl" />
             </>
           ) : (

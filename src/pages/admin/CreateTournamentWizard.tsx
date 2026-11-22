@@ -2,13 +2,14 @@ import { Dices, FileSpreadsheet, Plus } from 'lucide-react';
 import { useMemo, useState, type FormEvent } from 'react';
 import { RulesForm } from '../../components/admin/RulesForm.tsx';
 import { StructureForm } from '../../components/admin/StructureForm.tsx';
+import { CardBasicsForm } from '../../components/admin/CardSettingsForm.tsx';
 import { TableSettingsForm } from '../../components/admin/TableSettingsForm.tsx';
 import { Button, Field, Notice, TextInput, Toggle } from '../../components/ui.tsx';
-import { DEFAULT_RULES, DEFAULT_STRUCTURE, DEFAULT_TABLE, LIMITS } from '../../engine/defaults.ts';
+import { DEFAULT_CARDS, DEFAULT_RULES, DEFAULT_STRUCTURE, DEFAULT_TABLE, LIMITS } from '../../engine/defaults.ts';
 import { mergeRules } from '../../engine/reducer.ts';
 import { maxPlayersInRoster, parseRosterText } from '../../engine/roster.ts';
 import { makeTournamentId, validateStructure } from '../../engine/tournament.ts';
-import type { GameRules, StructureSettings, TableSettings } from '../../engine/types.ts';
+import type { CardSettings, GameRules, StructureSettings, TableSettings } from '../../engine/types.ts';
 import { useControl } from '../../hooks/ControlProvider.tsx';
 import { useAsyncAction } from '../../hooks/useTransport.ts';
 import { describeControlError } from '../../services/control/index.ts';
@@ -31,6 +32,7 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
   const [structure, setStructure] = useState<StructureSettings>(() => structuredClone(DEFAULT_STRUCTURE));
   const [rules, setRules] = useState<GameRules>(() => structuredClone(DEFAULT_RULES));
   const [table, setTable] = useState<TableSettings>(() => ({ ...DEFAULT_TABLE }));
+  const [cards, setCards] = useState<CardSettings>(() => structuredClone(DEFAULT_CARDS));
   const [makeLive, setMakeLive] = useState(!hasLive);
   const { busy, error, run } = useAsyncAction();
 
@@ -57,7 +59,7 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
       await createTournamentFromSetup(
         api,
         hostToken,
-        { id, name: tournamentName, createdAt: Date.now(), structure, rules, table, roster },
+        { id, name: tournamentName, createdAt: Date.now(), structure, rules, table, cards, roster },
         pin,
         getClientId(),
       );
@@ -137,6 +139,12 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
       <fieldset className="space-y-3">
         <legend className="mb-2 font-display text-sm tracking-widest text-text-muted uppercase">Scorer tablet</legend>
         <TableSettingsForm value={table} onPatch={(p) => setTable((t) => ({ ...t, ...p }))} />
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="mb-2 font-display text-sm tracking-widest text-text-muted uppercase">Power Cards</legend>
+        <CardBasicsForm value={cards} onPatch={(p) => setCards((c) => ({ ...c, ...p }))} />
+        <p className="text-xs text-text-muted">Hand sizes, draws per match, copies per card and pools are in the Power Cards tab after creating.</p>
       </fieldset>
 
       <Toggle

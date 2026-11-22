@@ -1,4 +1,4 @@
-import { replayMatch } from './match.ts';
+import { matchMods, replayMatch } from './match.ts';
 import type { TournamentState } from './state.ts';
 import type { Match, Side, TeamSlot } from './types.ts';
 
@@ -70,7 +70,7 @@ export function groupStandings(state: TournamentState, groupIndex: number): Stan
     if (m.stage !== 'GROUP' || m.groupIndex !== groupIndex || m.status !== 'COMPLETED') continue;
     if (m.home.kind !== 'TEAM' || m.away.kind !== 'TEAM') continue;
     const ids: Record<Side, string> = { home: m.home.teamId, away: m.away.teamId };
-    const replay = replayMatch(state.throws, m, ids, rules);
+    const replay = replayMatch(state.throws, m, ids, rules, matchMods(state, m.id));
     for (const side of ['home', 'away'] as Side[]) {
       const row = rows.get(ids[side]);
       if (!row) continue;

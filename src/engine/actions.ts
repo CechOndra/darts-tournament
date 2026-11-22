@@ -1,3 +1,4 @@
+import type { CardAction } from './cards.ts';
 import type { MatchAction } from './matchReducer.ts';
 import type { TournamentState } from './state.ts';
 import type {
@@ -40,4 +41,5 @@ export type EngineAction =
   | { type: 'SET_PIN_VERSION'; pinVersion: number }
   | { type: 'REPLACE_STATE'; state: TournamentState } // Import Backup (.json)
   | { type: 'RESET_STATE' }
-  | MatchAction;
+  | MatchAction
+  | CardAction;

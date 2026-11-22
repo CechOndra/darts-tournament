@@ -53,8 +53,9 @@ export async function undoDart(transport: AppTransport): Promise<void> {
   const live = state?.live;
   if (!state || !live) return;
   const last = [...state.throws].reverse().find((t) => t.matchId === live.matchId);
-  if (!last) return;
-  await transport.dispatch({ type: 'UNDO_DART' }, { persist: 'immediate' });
+  const env = await transport.dispatch({ type: 'UNDO_DART' }, { persist: 'immediate' });
+  // UNDO_DART may have undone a card play instead of a dart; only log removed darts.
+  if (!last || env.state.throws.some((t) => t.id === last.id)) return;
   void transport.emitLiveEvent(MATCH_EVENTS.DART_UNDONE, { id: last.id });
   void transport.appendThrowLog([{ ...last, undone: true }]).catch(() => undefined);
 }

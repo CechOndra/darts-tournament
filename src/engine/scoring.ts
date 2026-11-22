@@ -61,7 +61,11 @@ export type DartOutcome = 'SCORE' | 'BUST' | 'CHECKOUT';
 
 /** Outcome of throwing `d` when the team needs `scoreBeforeDart`. */
 export function evaluateDart(d: DartInput, scoreBeforeDart: number, mode: CheckoutMode): { outcome: DartOutcome; remaining: number } {
-  const points = dartPoints(d);
+  return evaluatePoints(d, dartPoints(d), scoreBeforeDart, mode);
+}
+
+/** Like evaluateDart, but with the dart worth `points` (Power Card modifiers). Finish validity still uses the dart's ring. */
+export function evaluatePoints(d: DartInput, points: number, scoreBeforeDart: number, mode: CheckoutMode): { outcome: DartOutcome; remaining: number } {
   const remaining = scoreBeforeDart - points;
   if (remaining < 0) return { outcome: 'BUST', remaining: scoreBeforeDart };
   if (remaining === 0) {

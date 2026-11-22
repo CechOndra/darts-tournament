@@ -1,6 +1,10 @@
 import { CalendarClock, Coffee, Layers, Radio, Trophy, Volume2, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import { ActiveEffects } from '../components/cards/ActiveEffects.tsx';
+import { CardIcon, RARITY_VAR } from '../components/cards/PowerCard.tsx';
 import { CheckoutRoutes } from '../components/match/CheckoutRoutes.tsx';
+import { CARD_BY_ID, CARD_TYPES, RARITY_LABEL } from '../engine/cardCatalog.ts';
+import { handOf } from '../engine/cardPool.ts';
 import { DutyBanner } from '../components/match/DutyBanner.tsx';
 import { MatchSummary } from '../components/match/MatchSummary.tsx';
 import { Scoreboard } from '../components/match/Scoreboard.tsx';
@@ -36,6 +40,56 @@ export function GuestPage() {
     <TournamentScope tournamentId={id}>
       <GuestView />
     </TournamentScope>
+  );
+}
+
+function GuestCards({ state }: { state: TournamentState }) {
+  if (state.settings.cards.mode === 'OFF') return <p className="text-sm text-text-muted">Power Cards are off for this tournament.</p>;
+  return (
+    <div className="space-y-4">
+      <ul className="space-y-2">
+        {state.teams.map((t) => {
+          const hand = handOf(state.cards, t.id);
+          return (
+            <li key={t.id} className="surface p-3">
+              <p className="mb-2 truncate text-sm font-semibold">{t.name}</p>
+              {hand.length === 0 ? (
+                <p className="text-xs text-text-muted">No cards</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {hand.map((i) => (
+                    <span key={i.instanceId} className="inline-flex items-center gap-1.5 rounded-md border-2 bg-bg-elevated px-2 py-1 text-xs font-semibold" style={{ borderColor: RARITY_VAR[CARD_BY_ID[i.cardTypeId].rarity] }}>
+                      <span style={{ color: RARITY_VAR[CARD_BY_ID[i.cardTypeId].rarity] }}>
+                        <CardIcon id={i.cardTypeId} size={14} />
+                      </span>
+                      {CARD_BY_ID[i.cardTypeId].name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <details className="surface p-3">
+        <summary className="cursor-pointer text-sm font-medium">What every card does</summary>
+        <ul className="mt-3 space-y-3">
+          {CARD_TYPES.map((c) => (
+            <li key={c.id} className="flex gap-3">
+              <span className="mt-0.5 shrink-0" style={{ color: RARITY_VAR[c.rarity] }}>
+                <CardIcon id={c.id} size={20} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">
+                  {c.name} <span className="text-xs font-normal text-text-muted">{RARITY_LABEL[c.rarity]}</span>
+                </span>
+                <span className="block text-xs text-text-muted">{c.rules}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </details>
+    </div>
   );
 }
 
@@ -107,6 +161,7 @@ function GuestView() {
               {phase === 'IN_PROGRESS' && view ? (
                 <>
                   <Scoreboard state={state} view={view} />
+                  <ActiveEffects state={state} view={view} />
                   <CheckoutRoutes state={state} view={view} />
                 </>
               ) : phase === 'POST_MATCH' && view ? (
@@ -136,7 +191,8 @@ function GuestView() {
           ) : (
             <Placeholder milestone={5}>Playoff bracket view arrives in Milestone 5.</Placeholder>
           ))}
-        {(tab === 'cards' || tab === 'sound') && (
+        {tab === 'cards' && <GuestCards state={state} />}
+        {tab === 'sound' && (
           <Placeholder milestone={5}>The {active.label.toLowerCase()} view arrives in Milestone 5.</Placeholder>
         )}
       </main>

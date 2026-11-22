@@ -1,4 +1,6 @@
+import { defaultCopies } from './cardCatalog.ts';
 import type {
+  CardParams,
   CardSettings,
   GameRules,
   StructureSettings,
@@ -20,7 +22,7 @@ export const DEFAULT_VISIBILITY: VisibilitySettings = {
 
 export const DEFAULT_TABLE: TableSettings = {
   dutyRule: 'LOSER_SCORES_NEXT',
-  defaultKeypad: 'MODIFIER',
+  defaultKeypad: 'STACKED_ROWS',
 };
 
 export const DEFAULT_STRUCTURE: StructureSettings = {
@@ -48,7 +50,11 @@ export const DEFAULT_RULES: GameRules = {
   },
 };
 
+export const DEFAULT_CARD_PARAMS: CardParams = { allOrNothingQuota: 50, allOrNothingBonus: 25, showboatBonus: 0.5, shotClockSeconds: 10 };
+
 export const DEFAULT_CARDS: CardSettings = {
+  copies: defaultCopies(),
+  params: DEFAULT_CARD_PARAMS,
   mode: 'ALL_STAGES',
   drawAnimationStyle: 'CS2_CASE_OPENING',
   startingHandSize: 1,

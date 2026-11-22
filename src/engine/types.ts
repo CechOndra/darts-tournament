@@ -4,6 +4,8 @@
  * renaming mid-tournament can never corrupt schedules, stats or standings.
  */
 
+import type { CardPool, CardTypeId } from './cardCatalog.ts';
+
 // ------------------------------------------------------------------ enums
 export type MatchFormat = 'BO1' | 'BO3' | 'BO5' | 'BO7';
 export const MATCH_FORMATS: MatchFormat[] = ['BO1', 'BO3', 'BO5', 'BO7'];
@@ -40,10 +42,53 @@ export type SupplyMode = 'FINITE_PHYSICAL_POOL' | 'FIXED_PROBABILITIES';
 // ------------------------------------------------------------------ entities
 export interface CardInstance {
   instanceId: string;
-  cardTypeId: string;
-  pool: 'LOSER' | 'WINNER';
+  cardTypeId: CardTypeId;
+  pool: CardPool;
   ownerTeamId: string | null;
   status: 'IN_POOL' | 'IN_HAND' | 'DISCARDED';
+}
+
+export type Parity = 'EVEN' | 'ODD';
+
+/** A card played during a match (the replay applies its effect to the target visit). */
+export interface CardPlay {
+  id: string;
+  instanceId: string;
+  cardTypeId: CardTypeId;
+  /** The effect that actually applies (RANDOM_POWER resolves to another card). */
+  effectCardTypeId: CardTypeId;
+  teamId: string;
+  matchId: string;
+  /** Target leg / visit (FIRST_THROW: leg 0, visit -1; mulligans: the voided dart's visit). */
+  legIndex: number;
+  visitIndex: number;
+  parity: Parity | null;
+  voidedThrowId: string | null;
+  /** Throws logged in this match when the card was played (strict undo order). */
+  afterThrowCount: number;
+  at: number;
+}
+
+export type CardDrawKind = 'LOSER' | 'WINNER' | 'GRANT';
+
+export interface CardDraw {
+  id: string;
+  teamId: string;
+  matchId: string | null;
+  kind: CardDrawKind;
+  instanceId: string;
+  cardTypeId: CardTypeId;
+  at: number;
+}
+
+export interface CardsState {
+  instances: CardInstance[];
+  plays: CardPlay[];
+  draws: CardDraw[];
+  /** A team holding more than maxHandSize must discard one before play continues. */
+  pendingDiscard: { teamId: string; drawnInstanceId: string } | null;
+  nextInstanceSeq: number;
+  handsExpired: boolean;
 }
 
 export interface Team {
@@ -52,7 +97,6 @@ export interface Team {
   isPlaceholderName: boolean;
   groupIndex: number;
   playerIds: string[];
-  hand: CardInstance[];
   /** Optional team logo (compressed square WebP/JPEG data URL). */
   logoDataUrl: string | null;
 }
@@ -161,7 +205,17 @@ export interface GameRules {
   specialRules: SpecialRules;
 }
 
+export interface CardParams {
+  allOrNothingQuota: number;
+  allOrNothingBonus: number;
+  showboatBonus: number;
+  shotClockSeconds: number;
+}
+
 export interface CardSettings {
+  /** Printed copies per card type (0 = card not used). Also the weights in FIXED_PROBABILITIES mode. */
+  copies: Record<CardTypeId, number>;
+  params: CardParams;
   mode: CardsMode;
   drawAnimationStyle: CardDrawAnimationStyle;
   startingHandSize: number;
@@ -214,6 +268,7 @@ export interface TournamentSetup {
   rules: GameRules;
   visibility?: Partial<VisibilitySettings>;
   table?: Partial<TableSettings>;
+  cards?: Partial<CardSettings>;
   roster: RosterRow[];
 }
 
@@ -234,7 +289,7 @@ export interface LegSetup {
   /** Decision the tablet must run while firstTeam is null (or that was run). */
   decision: LegDecision | null;
   /** How the starting team was determined (shown on stage). */
-  resolvedBy: 'AUTO' | 'COIN_TOSS' | 'BULL_UP' | 'SHOOTOUT' | 'MANUAL' | null;
+  resolvedBy: 'AUTO' | 'COIN_TOSS' | 'BULL_UP' | 'SHOOTOUT' | 'MANUAL' | 'CARD' | null;
 }
 
 export type LegDecision = 'VIRTUAL_COIN_TOSS' | 'CLOSEST_TO_BULL_1P' | 'CLOSEST_TO_BULL_2P' | 'HIGH_SCORE_2DART_SHOOTOUT' | 'MANUAL_CHOICE';
@@ -249,4 +304,6 @@ export interface LiveMatch {
   startedAt: number;
   completedAt: number | null;
   legSetups: LegSetup[];
+  /** Side that played FIRST_THROW (throws first in every odd leg). */
+  firstThrowCard?: Side | null;
 }

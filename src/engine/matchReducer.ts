@@ -1,5 +1,7 @@
+import { undoLastPlay } from './cards.ts';
+import { giveTo } from './cardPool.ts';
 import { computeMatchView, initialLegSetup, nextLegSetup } from './match.ts';
-import { checkoutTypeOf, dartPoints, evaluateDart, isValidDart, type Multiplier } from './scoring.ts';
+import { checkoutTypeOf, dartPoints, isValidDart, type Multiplier } from './scoring.ts';
 import { matchTeams } from './standings.ts';
 import type { TournamentState } from './state.ts';
 import type { DartThrow, LegSetup, LiveMatch, Match, Side } from './types.ts';
@@ -71,8 +73,19 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
       };
       const withMatch = { ...state, live };
       live.legSetups = [initialLegSetup(withMatch, match, live, 0, 'RULE')];
+      // Optional: all hands return to the pool when the playoffs begin.
+      let cards = state.cards;
+      if (match.stage === 'PLAYOFF' && state.settings.cards.expireHandsBeforePlayoffs && !cards.handsExpired) {
+        cards = {
+          ...cards,
+          handsExpired: true,
+          pendingDiscard: null,
+          instances: cards.instances.map((i) => (i.status === 'IN_HAND' ? { ...i, status: 'IN_POOL', ownerTeamId: null } : i)),
+        };
+      }
       return {
         ...state,
+        cards,
         live,
         matches: updateMatch(state, match.id, { status: 'IN_PROGRESS', legsWon: { home: 0, away: 0 }, winnerTeamId: null }),
         queue: [match.id, ...state.queue.filter((id) => id !== match.id)],
@@ -83,7 +96,11 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
       const live = state.live;
       if (!live || live.phase === 'POST_MATCH') return state;
       if (state.throws.some((t) => t.matchId === live.matchId)) return state;
-      return { ...state, live: null, matches: updateMatch(state, live.matchId, { status: 'SCHEDULED' }) };
+      // Return any pre-match card (FIRST_THROW) to its team.
+      let cards = state.cards;
+      for (const p of cards.plays.filter((x) => x.matchId === live.matchId)) cards = giveTo(cards, p.instanceId, p.teamId);
+      cards = { ...cards, plays: cards.plays.filter((p) => p.matchId !== live.matchId) };
+      return { ...state, cards, live: null, matches: updateMatch(state, live.matchId, { status: 'SCHEDULED' }) };
     }
 
     case 'DEFER_MATCH': {
@@ -136,7 +153,6 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
       if (!view || view.live.phase !== 'IN_PROGRESS' || !view.turn) return state;
       if (state.throws.some((t) => t.id === action.id)) return state;
       const turn = view.turn;
-      const { outcome } = evaluateDart(dart, turn.remaining, state.settings.rules.checkoutMode);
       const raw = dartPoints(dart);
       const thrown: DartThrow = {
         id: action.id,
@@ -151,13 +167,25 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
         rawPoints: raw,
         effectivePoints: raw,
         mulliganed: false,
-        isCheckoutDart: outcome === 'CHECKOUT',
-        checkoutType: outcome === 'CHECKOUT' ? checkoutTypeOf(dart) : 'NONE',
-        activeCardId: null,
+        isCheckoutDart: false,
+        checkoutType: 'NONE',
+        activeCardId: turn.mods.plays[0]?.id ?? null,
         timestamp: action.at,
       };
       let next: TournamentState = { ...state, throws: [...state.throws, thrown] };
-      const after = computeMatchView(next)!;
+      let after = computeMatchView(next)!;
+      // Fill in the card-adjusted outcome from the replay (the replay stays the source of truth).
+      const visit = after.legs[turn.legIndex]?.visits.find((v) => v.visitIndex === turn.visitIndex);
+      const pos = visit ? visit.darts.findIndex((d) => d.id === thrown.id) : -1;
+      const isCheckout = after.legs[turn.legIndex]?.checkoutDart?.id === thrown.id;
+      const final: DartThrow = {
+        ...thrown,
+        effectivePoints: visit && pos >= 0 ? (visit.points[pos] ?? raw) : raw,
+        isCheckoutDart: isCheckout,
+        checkoutType: isCheckout ? checkoutTypeOf(dart) : 'NONE',
+      };
+      next = { ...next, throws: [...state.throws, final] };
+      after = computeMatchView(next)!;
       next = { ...next, matches: updateMatch(next, view.match.id, { legsWon: after.legsWon }) };
 
       if (after.winner) {
@@ -189,6 +217,11 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
           break;
         }
       }
+      // Strict LIFO across darts and cards: a card played after the last dart is undone first.
+      const matchThrows = state.throws.filter((t) => t.matchId === live.matchId).length;
+      const plays = state.cards.plays.filter((p) => p.matchId === live.matchId);
+      const lastPlay = plays[plays.length - 1];
+      if (lastPlay && lastPlay.afterThrowCount >= matchThrows && live.phase !== 'POST_MATCH') return undoLastPlay(state, lastPlay);
       if (idx === -1) return state;
       const throws = state.throws.filter((_, i) => i !== idx);
       let next: TournamentState = { ...state, throws };
@@ -209,7 +242,7 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
     }
 
     case 'CONTINUE_TO_NEXT': {
-      if (state.live?.phase !== 'POST_MATCH') return state;
+      if (state.live?.phase !== 'POST_MATCH' || state.cards.pendingDiscard) return state;
       return { ...state, live: null };
     }
   }
