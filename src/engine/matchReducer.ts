@@ -87,7 +87,7 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
         ...state,
         cards,
         live,
-        matches: updateMatch(state, match.id, { status: 'IN_PROGRESS', legsWon: { home: 0, away: 0 }, winnerTeamId: null }),
+        matches: updateMatch(state, match.id, { status: 'IN_PROGRESS', legsWon: { home: 0, away: 0 }, winnerTeamId: null, rules: structuredClone(state.settings.rules) }),
         queue: [match.id, ...state.queue.filter((id) => id !== match.id)],
       };
     }
@@ -100,7 +100,7 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
       let cards = state.cards;
       for (const p of cards.plays.filter((x) => x.matchId === live.matchId)) cards = giveTo(cards, p.instanceId, p.teamId);
       cards = { ...cards, plays: cards.plays.filter((p) => p.matchId !== live.matchId) };
-      return { ...state, cards, live: null, matches: updateMatch(state, live.matchId, { status: 'SCHEDULED' }) };
+      return { ...state, cards, live: null, matches: updateMatch(state, live.matchId, { status: 'SCHEDULED', rules: undefined }) };
     }
 
     case 'DEFER_MATCH': {

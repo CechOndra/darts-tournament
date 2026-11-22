@@ -18,6 +18,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { CARD_BY_ID, RARITY_LABEL, type CardRarity, type CardTypeId } from '../../engine/cardCatalog.ts';
+import { useRarityOf } from '../../hooks/useCardLook.ts';
+
 
 export const CARD_ICON: Record<CardTypeId, LucideIcon> = {
   ALL_OR_NOTHING: Flame,
@@ -47,7 +49,6 @@ export const RARITY_VAR: Record<CardRarity, string> = {
   LEGENDARY: 'var(--rarity-legendary)',
 };
 
-export const rarityOf = (id: CardTypeId) => CARD_BY_ID[id].rarity;
 export const CardIcon = ({ id, size = 20 }: { id: CardTypeId; size?: number }) => {
   const Icon = CARD_ICON[id] ?? UserRoundCog;
   return <Icon size={size} aria-hidden />;
@@ -64,15 +65,16 @@ const DIM: Record<Size, { box: string; icon: number; title: string; text: string
 /** A Power Card tile: icon, name, rules line and a thick CS2-style rarity bar. */
 export function PowerCard({ id, size = 'md', showRules = true, className = '' }: { id: CardTypeId; size?: Size; showRules?: boolean; className?: string }) {
   const card = CARD_BY_ID[id];
+  const rarity = useRarityOf()(id);
   const d = DIM[size];
-  const color = RARITY_VAR[card.rarity];
+  const color = RARITY_VAR[rarity];
   return (
     <div
       className={`relative flex shrink-0 flex-col items-center overflow-hidden rounded-lg border-2 bg-bg-elevated text-center ${d.box} ${className}`}
-      style={{ borderColor: color, boxShadow: card.rarity === 'LEGENDARY' ? `0 0 24px -6px ${color}` : undefined }}
+      style={{ borderColor: color, boxShadow: rarity === 'LEGENDARY' ? `0 0 24px -6px ${color}` : undefined }}
     >
       <span className="text-[0.65em] font-semibold tracking-widest uppercase" style={{ color }}>
-        <span className={d.text}>{RARITY_LABEL[card.rarity]}</span>
+        <span className={d.text}>{RARITY_LABEL[rarity]}</span>
       </span>
       <span style={{ color }}>
         <CardIcon id={id} size={d.icon} />

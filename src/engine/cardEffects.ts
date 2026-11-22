@@ -120,13 +120,14 @@ export function evaluateCardDart(
   before: number,
   mode: CheckoutMode,
   mods: VisitMods,
+  allowBoostedCheckout = false,
 ): { outcome: DartOutcome; remaining: number; points: number; boosted: boolean } {
   const base = restrictedPoints(d, dartNo, mods);
-  const face = { ...evaluatePoints(d, base, before, mode), points: base, boosted: false };
   const boost = mods.doubleAll || (mods.doubleDart1 && dartNo === 1);
-  // allowCheckoutOnBoostedDart = false: a finish only ever counts at face value,
-  // and a dart that finishes at face value is never spoiled by the boost.
-  if (!boost || base === 0 || face.outcome === 'CHECKOUT') return face;
+  if (!boost || base === 0) return { ...evaluatePoints(d, base, before, mode), points: base, boosted: false };
+  // Boosted darts always count double. A boosted dart that would finish is a bust
+  // unless the organizer allows boosted checkouts (Double-Edged Sword is a risk).
   const r = evaluatePoints(d, base * 2, before, mode);
-  return r.outcome === 'CHECKOUT' ? face : { ...r, points: base * 2, boosted: true };
+  if (r.outcome === 'CHECKOUT' && !allowBoostedCheckout) return { outcome: 'BUST', remaining: before, points: base * 2, boosted: true };
+  return { ...r, points: base * 2, boosted: true };
 }

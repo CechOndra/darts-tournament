@@ -11,7 +11,10 @@ import { Matchup } from '../../components/Matchup.tsx';
 import { RouteHeader } from '../../components/RouteHeader.tsx';
 import { ConnectionBadge, FullscreenButton, PingIndicator } from '../../components/StatusIndicators.tsx';
 import { Button, Modal, Notice } from '../../components/ui.tsx';
+import { restrictedPoints } from '../../engine/cardEffects.ts';
+import { CARD_BY_ID } from '../../engine/cardCatalog.ts';
 import { startableTeams } from '../../engine/matchReducer.ts';
+import { dartPoints } from '../../engine/scoring.ts';
 import { playersOfTeam, teamName, upNextMatch } from '../../engine/selectors.ts';
 import type { Multiplier } from '../../engine/scoring.ts';
 import { useDispatch, useTournamentState, useTransportContext } from '../../hooks/TransportProvider.tsx';
@@ -198,7 +201,14 @@ function InProgressPhase({ keypad }: { keypad: KeypadControl }) {
   const [busy, setBusy] = useState(false);
   if (!view) return null;
   const turn = view.turn;
-  const canUndo = state.throws.some((t) => t.matchId === view.match.id) || view.plays.length > 0;
+  const matchThrows = state.throws.filter((t) => t.matchId === view.match.id).length;
+  const canUndo = matchThrows > 0 || view.plays.length > 0;
+  // Undo is strictly last-in-first-out: say when the next undo takes back a card.
+  const lastPlay = view.plays[view.plays.length - 1];
+  const undoLabel = lastPlay && lastPlay.afterThrowCount >= matchThrows ? `Undo Card: ${CARD_BY_ID[lastPlay.cardTypeId].name}` : undefined;
+  // Bottom Half / Parity Lock: dim darts that would score 0 (still tappable so the real hit is logged).
+  const dartNo = (turn?.darts.length ?? 0) + 1;
+  const isDimmed = turn ? (segment: number, multiplier: Multiplier) => dartPoints({ segment, multiplier }) > 0 && restrictedPoints({ segment, multiplier }, dartNo, turn.mods) === 0 : undefined;
   const thrower = turn ? playersOfTeam(state, turn.teamId).find((p) => p.id === turn.playerId) : null;
 
   const onDart = async (segment: number, multiplier: Multiplier) => {
@@ -239,6 +249,8 @@ function InProgressPhase({ keypad }: { keypad: KeypadControl }) {
           onUndo={() => void undoDart(transport)}
           disabled={!turn}
           canUndo={canUndo}
+          isDimmed={isDimmed}
+          undoLabel={undoLabel}
         />
       </Panel>
     </>

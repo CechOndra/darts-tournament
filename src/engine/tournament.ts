@@ -96,7 +96,7 @@ export function buildTournament(setup: TournamentSetup): TournamentState {
   settings.cards = {
     ...settings.cards,
     ...setup.cards,
-    copies: { ...settings.cards.copies, ...setup.cards?.copies },
+    config: { ...settings.cards.config, ...setup.cards?.config },
     params: { ...settings.cards.params, ...setup.cards?.params },
   };
   const { teams, players } = buildRoster(setup.structure, setup.roster);

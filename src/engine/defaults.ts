@@ -1,4 +1,4 @@
-import { defaultCopies } from './cardCatalog.ts';
+import { defaultCardConfigs } from './cardConfig.ts';
 import type {
   CardParams,
   CardSettings,
@@ -50,10 +50,17 @@ export const DEFAULT_RULES: GameRules = {
   },
 };
 
-export const DEFAULT_CARD_PARAMS: CardParams = { allOrNothingQuota: 50, allOrNothingBonus: 25, showboatBonus: 0.5, shotClockSeconds: 10 };
+export const DEFAULT_CARD_PARAMS: CardParams = {
+  allOrNothingQuota: 50,
+  allOrNothingBonus: 25,
+  showboatBonus: 0.5,
+  shotClockSeconds: 10,
+  drawAnimationSeconds: 5.5,
+  allowCheckoutOnBoostedDart: false,
+};
 
 export const DEFAULT_CARDS: CardSettings = {
-  copies: defaultCopies(),
+  config: defaultCardConfigs(),
   params: DEFAULT_CARD_PARAMS,
   mode: 'ALL_STAGES',
   drawAnimationStyle: 'CS2_CASE_OPENING',

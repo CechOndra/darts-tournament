@@ -4,7 +4,7 @@
  * renaming mid-tournament can never corrupt schedules, stats or standings.
  */
 
-import type { CardPool, CardTypeId } from './cardCatalog.ts';
+import type { CardPool, CardRarity, CardTypeId } from './cardCatalog.ts';
 
 // ------------------------------------------------------------------ enums
 export type MatchFormat = 'BO1' | 'BO3' | 'BO5' | 'BO7';
@@ -76,6 +76,8 @@ export interface CardDraw {
   teamId: string;
   matchId: string | null;
   kind: CardDrawKind;
+  /** Pool the draw came from (for the stage strip / wheel). */
+  pool?: CardPool | 'ANY';
   instanceId: string;
   cardTypeId: CardTypeId;
   at: number;
@@ -151,6 +153,8 @@ export interface Match {
   away: TeamSlot;
   format: MatchFormat;
   status: MatchStatus;
+  /** Rules frozen when the match started (later rule edits never rewrite played matches). */
+  rules?: GameRules;
   winnerTeamId: string | null;
   legsWon: { home: number; away: number };
 }
@@ -210,11 +214,27 @@ export interface CardParams {
   allOrNothingBonus: number;
   showboatBonus: number;
   shotClockSeconds: number;
+  /** Case opening / wheel length on the stage. */
+  drawAnimationSeconds: number;
+  /** DOUBLE_EDGED_SWORD: may a boosted dart finish the leg? (Default: no, it busts.) */
+  allowCheckoutOnBoostedDart: boolean;
+}
+
+/** Organizer tuning per card. */
+export interface CardTypeConfig {
+  enabled: boolean;
+  rarity: CardRarity;
+  pool: CardPool;
+  /** Printed copies (physical deck) or relative odds (fixed odds). */
+  copies: number;
+  /** Allowed in playoff matches. */
+  playoffs: boolean;
+  /** Fixed odds only: a different weight for playoff draws (null = same as groups). */
+  playoffCopies: number | null;
 }
 
 export interface CardSettings {
-  /** Printed copies per card type (0 = card not used). Also the weights in FIXED_PROBABILITIES mode. */
-  copies: Record<CardTypeId, number>;
+  config: Record<CardTypeId, CardTypeConfig>;
   params: CardParams;
   mode: CardsMode;
   drawAnimationStyle: CardDrawAnimationStyle;

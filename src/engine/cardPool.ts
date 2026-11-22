@@ -1,4 +1,5 @@
-import { CARD_BY_ID, CARD_TYPES, type CardPool, type CardTypeId } from './cardCatalog.ts';
+import { CARD_TYPES, type CardPool, type CardTypeId } from './cardCatalog.ts';
+import { poolIn, printedCopies } from './cardConfig.ts';
 import type { CardInstance, CardSettings, CardsState } from './types.ts';
 
 /** Physical card pool bookkeeping (pure, no match logic). */
@@ -9,19 +10,22 @@ export function emptyCards(): CardsState {
 
 export const instanceId = (seq: number) => `card_inst_${String(seq).padStart(3, '0')}`;
 
-export function newInstance(cards: CardsState, cardTypeId: CardTypeId): { cards: CardsState; instance: CardInstance } {
-  const instance: CardInstance = { instanceId: instanceId(cards.nextInstanceSeq), cardTypeId, pool: CARD_BY_ID[cardTypeId].pool, ownerTeamId: null, status: 'IN_POOL' };
+export function newInstance(cards: CardsState, cardTypeId: CardTypeId, pool: CardPool): { cards: CardsState; instance: CardInstance } {
+  const instance: CardInstance = { instanceId: instanceId(cards.nextInstanceSeq), cardTypeId, pool, ownerTeamId: null, status: 'IN_POOL' };
   return { cards: { ...cards, instances: [...cards.instances, instance], nextInstanceSeq: cards.nextInstanceSeq + 1 }, instance };
 }
 
-/** Match the printed copy counts: add missing copies to the pool, remove extra copies that are still in the pool. */
+/**
+ * Match the printed deck: add missing copies to the pool, remove extra copies still in the pool
+ * (disabled cards leave the deck), and move instances to the card's configured pool.
+ */
 export function syncInstances(cards: CardsState, settings: CardSettings): CardsState {
-  let next = cards;
+  let next: CardsState = { ...cards, instances: cards.instances.map((i) => (i.pool === poolIn(settings, i.cardTypeId) ? i : { ...i, pool: poolIn(settings, i.cardTypeId) })) };
   for (const type of CARD_TYPES) {
-    const target = Math.max(0, Math.round(settings.copies[type.id] ?? 0));
+    const target = printedCopies(settings, type.id);
     const mine = next.instances.filter((i) => i.cardTypeId === type.id && i.status !== 'DISCARDED');
     if (mine.length < target) {
-      for (let n = mine.length; n < target; n++) next = newInstance(next, type.id).cards;
+      for (let n = mine.length; n < target; n++) next = newInstance(next, type.id, poolIn(settings, type.id)).cards;
     } else if (mine.length > target) {
       const removable = new Set(
         mine

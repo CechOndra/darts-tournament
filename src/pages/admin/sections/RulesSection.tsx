@@ -40,6 +40,11 @@ export function RulesSection({ state }: { state: TournamentState }) {
         />
       </div>
 
+      {state.live && (
+        <p className="mb-2 rounded-md border border-accent-info/40 bg-accent-info/10 px-3 py-2 text-xs text-text-muted">
+          A match is live: it keeps the rules it started with. Rule changes apply from the next match; finished matches are never rescored.
+        </p>
+      )}
       <RulesForm value={state.settings.rules} onPatch={(patch) => void dispatch({ type: 'UPDATE_RULES', patch }, { persist: 'immediate' })} />
 
       {draft && (

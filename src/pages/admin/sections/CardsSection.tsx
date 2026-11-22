@@ -9,11 +9,13 @@ import { canDraw } from '../../../engine/cards.ts';
 import type { TournamentState } from '../../../engine/state.ts';
 import { useDispatch, useTransportContext } from '../../../hooks/TransportProvider.tsx';
 import { drawCard, grantCard } from '../../../services/cardOps.ts';
+import { useRarityOf } from '../../../hooks/useCardLook.ts';
 import { DiscardPrompt } from '../../scorer/CardDrawPanel.tsx';
 
 function Inventory({ state }: { state: TournamentState }) {
   const dispatch = useDispatch();
   const [moving, setMoving] = useState<string | null>(null);
+  const rarityOf = useRarityOf();
   const max = state.settings.cards.maxHandSize;
   return (
     <div className="space-y-3">
@@ -33,8 +35,8 @@ function Inventory({ state }: { state: TournamentState }) {
               {hand.map((inst) => {
                 const card = CARD_BY_ID[inst.cardTypeId];
                 return (
-                  <div key={inst.instanceId} className="flex items-center gap-2 rounded-md border-l-4 bg-bg-primary px-2 py-1" style={{ borderColor: RARITY_VAR[card.rarity] }}>
-                    <span style={{ color: RARITY_VAR[card.rarity] }}>
+                  <div key={inst.instanceId} className="flex items-center gap-2 rounded-md border-l-4 bg-bg-primary px-2 py-1" style={{ borderColor: RARITY_VAR[rarityOf(inst.cardTypeId)] }}>
+                    <span style={{ color: RARITY_VAR[rarityOf(inst.cardTypeId)] }}>
                       <CardIcon id={inst.cardTypeId} size={16} />
                     </span>
                     <span className="min-w-0 flex-1 truncate text-sm" title={card.rules}>
@@ -84,10 +86,10 @@ function Inventory({ state }: { state: TournamentState }) {
 function GrantTools({ state }: { state: TournamentState }) {
   const { transport } = useTransportContext();
   const [teamId, setTeamId] = useState(state.teams[0]?.id ?? '');
-  const [card, setCard] = useState<CardTypeId>('EXTRA_DART');
+  const [card, setCard] = useState<CardTypeId | 'RANDOM'>('RANDOM');
   const [pool, setPool] = useState<CardPool | 'ANY'>('LOSER');
   const fixed = state.settings.cards.supplyMode === 'FIXED_PROBABILITIES';
-  const available = (id: CardTypeId) => fixed || state.cards.instances.some((i) => i.status === 'IN_POOL' && i.cardTypeId === id);
+  const available = (id: CardTypeId | 'RANDOM') => (id === 'RANDOM' ? canDraw(state, 'ANY') : fixed || state.cards.instances.some((i) => i.status === 'IN_POOL' && i.cardTypeId === id));
   const blocked = !!state.cards.pendingDiscard;
 
   return (
@@ -104,9 +106,10 @@ function GrantTools({ state }: { state: TournamentState }) {
         )}
       </Field>
       <div className="grid grid-cols-[1fr_auto] items-end gap-2">
-        <Field label="Grant a specific card">
+        <Field label="Give a card (no animation)">
           {(id) => (
-            <Select id={id} value={card} onChange={(e) => setCard(e.target.value as CardTypeId)}>
+            <Select id={id} value={card} onChange={(e) => setCard(e.target.value as CardTypeId | 'RANDOM')}>
+              <option value="RANDOM">Random card (current odds)</option>
               {CARD_TYPES.map((c) => (
                 <option key={c.id} value={c.id} disabled={!available(c.id)}>
                   {c.name}

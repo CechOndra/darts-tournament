@@ -212,10 +212,4 @@
       transform: translateY(0) scale(1);
     }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .coin-stage,
-    .coin {
-      animation-duration: 1ms;
-    }
-  }
 }

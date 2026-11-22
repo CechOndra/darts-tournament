@@ -6,6 +6,7 @@ import type { MatchView } from '../../engine/match.ts';
 import { teamName } from '../../engine/selectors.ts';
 import type { TournamentState } from '../../engine/state.ts';
 import { playCountdown } from '../../services/audio/sound.ts';
+import { useRarityOf } from '../../hooks/useCardLook.ts';
 import { CardIcon, RARITY_VAR } from './PowerCard.tsx';
 
 type Size = 'md' | 'xl';
@@ -57,6 +58,7 @@ export function ShotClock({ seconds, size, sound }: { seconds: number; size: Siz
 /** Card effects on the visit being thrown now, plus cards already queued for upcoming visits. */
 export function ActiveEffects({ state, view, size = 'md', sound }: { state: TournamentState; view: MatchView; size?: Size; sound?: boolean }) {
   const turn = view.turn;
+  const rarityOf = useRarityOf();
   if (!turn) return null;
   const xl = size === 'xl';
   const mods = turn.mods;
@@ -68,7 +70,7 @@ export function ActiveEffects({ state, view, size = 'md', sound }: { state: Tour
   return (
     <div className={`flex flex-wrap items-center gap-2 ${xl ? 'gap-4' : ''}`}>
       {mods.plays.map((p) => {
-        const color = RARITY_VAR[CARD_BY_ID[p.effectCardTypeId].rarity];
+        const color = RARITY_VAR[rarityOf(p.effectCardTypeId)];
         return (
           <span key={p.id} className={`inline-flex items-center gap-2 rounded-md border-2 bg-bg-elevated px-3 font-display uppercase ${xl ? 'py-2 text-3xl' : 'py-1 text-sm'}`} style={{ borderColor: color }}>
             <span style={{ color }}>

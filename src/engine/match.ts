@@ -107,7 +107,7 @@ function emptyLeg(index: number, start: number): LegView {
 }
 
 /** Replay one leg's throws into visits, remaining scores and a winner (applying card effects). */
-export function replayLeg(index: number, throws: DartThrow[], teamIds: Record<Side, string>, rules: GameRules, mods?: ModsMap): LegView {
+export function replayLeg(index: number, throws: DartThrow[], teamIds: Record<Side, string>, rules: GameRules, mods?: ModsMap, allowBoostedCheckout = false): LegView {
   const leg = emptyLeg(index, rules.startingScore);
   let cap = rules.specialRules.visitCap.enabled ? Math.max(1, rules.specialRules.visitCap.maxVisits) : Infinity;
   const visitCount: Record<Side, number> = { home: 0, away: 0 };
@@ -150,7 +150,7 @@ export function replayLeg(index: number, throws: DartThrow[], teamIds: Record<Si
     visit.darts.push(t);
     leg.dartsBySide[side]++;
     const before = visit.scoreBefore - visit.scored;
-    const r = evaluateCardDart(t, visit.darts.length, before, rules.checkoutMode, visit.mods);
+    const r = evaluateCardDart(t, visit.darts.length, before, rules.checkoutMode, visit.mods, allowBoostedCheckout);
     visit.before.push(before);
     visit.points.push(r.points);
     if (visit.mods.showboat && !visit.bonus && isDoubleDart(t)) visit.bonus = visit.mods.showboat;
@@ -226,14 +226,14 @@ export interface MatchReplay {
 }
 
 /** Replay a whole match from the log (used by live view, standings and stats). */
-export function replayMatch(throws: DartThrow[], match: Match, teamIds: Record<Side, string>, rules: GameRules, mods?: ModsMap): MatchReplay {
+export function replayMatch(throws: DartThrow[], match: Match, teamIds: Record<Side, string>, rules: GameRules, mods?: ModsMap, allowBoostedCheckout = false): MatchReplay {
   const target = legsToWin(match.format);
   const legs: LegView[] = [];
   const legsWon: Record<Side, number> = { home: 0, away: 0 };
   let winner: Side | null = null;
   throwsByLeg(throws, match.id).forEach((legThrows, i) => {
     if (winner || !legThrows) return;
-    const leg = replayLeg(i, legThrows, teamIds, rules, mods);
+    const leg = replayLeg(i, legThrows, teamIds, rules, mods, allowBoostedCheckout);
     legs[i] = leg;
     if (leg.winner) {
       legsWon[leg.winner]++;
@@ -258,6 +258,14 @@ export function replayMatch(throws: DartThrow[], match: Match, teamIds: Record<S
   }
   for (const s of Object.values(stats)) s.average = s.darts ? Math.round((s.points / s.darts) * 300) / 100 : 0;
   return { legs, legsWon, winner, stats };
+}
+
+/** The rules a match is played under: frozen at START_MATCH, else the current tournament rules. */
+export const rulesFor = (state: TournamentState, match: Match): GameRules => match.rules ?? state.settings.rules;
+
+/** Replay a stored match with its own rules and card effects (standings, results, stats). */
+export function replayStoredMatch(state: TournamentState, match: Match, teamIds: Record<Side, string>): MatchReplay {
+  return replayMatch(state.throws, match, teamIds, rulesFor(state, match), matchMods(state, match.id), state.settings.cards.params.allowCheckoutOnBoostedDart);
 }
 
 /** Card modifiers of a stored match (for standings and results). */
@@ -347,10 +355,10 @@ export function computeMatchView(state: TournamentState): MatchView | null {
   const match = state.matches.find((m) => m.id === live.matchId);
   if (!match) return null;
   const teamIds: Record<Side, string> = { home: live.homeTeamId, away: live.awayTeamId };
-  const rules = state.settings.rules;
+  const rules = rulesFor(state, match);
   const plays = (state.cards?.plays ?? []).filter((p) => p.matchId === match.id);
   const mods = buildVisitMods(plays, state.settings.cards.params);
-  const { legs, legsWon, winner, stats } = replayMatch(state.throws, match, teamIds, rules, mods);
+  const { legs, legsWon, winner, stats } = replayMatch(state.throws, match, teamIds, rules, mods, state.settings.cards.params.allowCheckoutOnBoostedDart);
 
   const lastLeg = legs[legs.length - 1];
   const currentLegIndex = winner ? legs.length - 1 : lastLeg?.winner ? legs.length : Math.max(0, legs.length - 1);

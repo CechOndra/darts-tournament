@@ -144,6 +144,13 @@ export function useTournamentState(): TournamentState | null {
   return useMemo(() => (envelope?.state.meta ? migrateState(envelope.state) : null), [envelope]);
 }
 
+/** Like useTournamentState, but returns null outside a <TournamentScope> instead of throwing. */
+export function useOptionalTournamentState(): TournamentState | null {
+  const ctx = useContext(TransportContext);
+  const envelope = ctx?.envelope ?? null;
+  return useMemo(() => (envelope?.state.meta ? migrateState(envelope.state) : null), [envelope]);
+}
+
 export function useDispatch() {
   const { transport } = useTransportContext();
   return useCallback(

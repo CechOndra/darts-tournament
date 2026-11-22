@@ -8,6 +8,7 @@ import type { TournamentState } from '../../engine/state.ts';
 import type { CardInstance, Parity, Side } from '../../engine/types.ts';
 import { useTransportContext } from '../../hooks/TransportProvider.tsx';
 import { playCard } from '../../services/cardOps.ts';
+import { useRarityOf } from '../../hooks/useCardLook.ts';
 import { Button, Modal } from '../ui.tsx';
 import { CardIcon, RARITY_VAR } from './PowerCard.tsx';
 
@@ -16,6 +17,7 @@ export function CardHands({ state, view, only }: { state: TournamentState; view:
   const { transport } = useTransportContext();
   const [parityFor, setParityFor] = useState<CardInstance | null>(null);
   const [busy, setBusy] = useState(false);
+  const rarityOf = useRarityOf();
   const sides: Side[] = ['home', 'away'];
 
   const play = async (inst: CardInstance, parity?: Parity) => {
@@ -46,7 +48,7 @@ export function CardHands({ state, view, only }: { state: TournamentState; view:
             {cards.map((inst) => {
               const card = CARD_BY_ID[inst.cardTypeId];
               const check = checkPlay(state, teamId, inst.instanceId, view);
-              const color = RARITY_VAR[card.rarity];
+              const color = RARITY_VAR[rarityOf(inst.cardTypeId)];
               return (
                 <button
                   key={inst.instanceId}

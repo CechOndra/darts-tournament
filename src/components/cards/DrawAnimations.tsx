@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { CARD_BY_ID, CARD_TYPES, type CardTypeId } from '../../engine/cardCatalog.ts';
 import { hashString, seededRandom } from '../../engine/cardPool.ts';
 import { pickWeighted } from '../../engine/cards.ts';
+import { useRarityOf } from '../../hooks/useCardLook.ts';
 import { playTick } from '../../services/audio/sound.ts';
 import { CardIcon, RARITY_VAR } from './PowerCard.tsx';
 
@@ -41,19 +42,21 @@ export function CaseOpening({ winner, seed, candidates, durationMs = 5500, onDon
   const viewRef = useRef<HTMLDivElement>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+  const rarityOf = useRarityOf();
 
   const tiles = useMemo(() => {
     const rand = seededRandom(hashString(seed));
     const pool = candidates.length ? candidates : [{ cardTypeId: winner, weight: 1 }];
     const items = pool.map((c) => ({ item: c.cardTypeId, weight: c.weight }));
     const list = Array.from({ length: TILES }, () => pickWeighted(items, rand()) ?? winner);
-    const legendary = CARD_TYPES.filter((c) => c.rarity === 'LEGENDARY').map((c) => c.id);
+    const legendary = CARD_TYPES.filter((c) => rarityOf(c.id) === 'LEGENDARY').map((c) => c.id);
+    if (!legendary.length) legendary.push(winner);
     const decoy = () => legendary[Math.floor(rand() * legendary.length)]!;
     list[WIN_INDEX - 1] = decoy();
     list[WIN_INDEX + 1] = decoy();
     list[WIN_INDEX] = winner;
     return { list, jitter: (rand() - 0.5) * TILE * 0.7 };
-  }, [seed, candidates, winner]);
+  }, [seed, candidates, winner, rarityOf]);
 
   useEffect(() => {
     const strip = stripRef.current;
@@ -81,7 +84,7 @@ export function CaseOpening({ winner, seed, candidates, durationMs = 5500, onDon
     <div ref={viewRef} className="relative w-full overflow-hidden rounded-xl border border-border-strong bg-bg-primary py-6">
       <div ref={stripRef} className="flex will-change-transform" style={{ gap: GAP }}>
         {tiles.list.map((id, i) => {
-          const color = RARITY_VAR[CARD_BY_ID[id].rarity];
+          const color = RARITY_VAR[rarityOf(id)];
           return (
             <div key={i} className="relative flex shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-md bg-bg-elevated pb-4" style={{ width: TILE, height: 200 }}>
               <span style={{ color }}>
@@ -103,6 +106,7 @@ export function SpinWheel({ winner, seed, candidates, durationMs = 5500, onDone 
   const wheelRef = useRef<SVGGElement>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+  const rarityOf = useRarityOf();
 
   const slices = useMemo(() => {
     const byType = new Map<CardTypeId, number>();
@@ -158,7 +162,7 @@ export function SpinWheel({ winner, seed, candidates, durationMs = 5500, onDone 
           {slices.map((s, i) => {
             const large = s.sweep > 180 ? 1 : 0;
             const mid = s.start + s.sweep / 2;
-            const color = RARITY_VAR[CARD_BY_ID[s.id].rarity];
+            const color = RARITY_VAR[rarityOf(s.id)];
             return (
               <g key={s.id}>
                 <path
@@ -175,7 +179,7 @@ export function SpinWheel({ winner, seed, candidates, durationMs = 5500, onDone 
                   fill={color}
                   style={{ font: '600 15px var(--font-display)', textTransform: 'uppercase' }}
                 >
-                  {s.sweep > 10 ? CARD_BY_ID[s.id].name.slice(0, 16) : ''}
+                  {s.sweep > 16 ? CARD_BY_ID[s.id].name.slice(0, 16) : ''}
                 </text>
               </g>
             );

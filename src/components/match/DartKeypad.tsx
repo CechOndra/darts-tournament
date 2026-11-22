@@ -11,6 +11,10 @@ export interface KeypadProps {
   onUndo: () => void;
   disabled?: boolean;
   canUndo: boolean;
+  /** Card restrictions (Bottom Half / Parity Lock): darts that score 0 are dimmed but still tappable. */
+  isDimmed?: (segment: number, multiplier: Multiplier) => boolean;
+  /** Text for the undo key (e.g. "Undo Card: Extra Dart" when the last action was a card). */
+  undoLabel?: string;
 }
 
 const TONE: Record<number, string> = {
@@ -22,22 +26,30 @@ const PREFIX: Record<number, string> = { 1: 'S', 2: 'D', 3: 'T' };
 const KEY = 'flex min-h-11 min-w-0 items-center justify-center rounded-md border font-mono font-bold transition active:scale-95 disabled:opacity-40';
 const range = (from: number, n = 10) => Array.from({ length: n }, (_, i) => from + i);
 
-function DartKey({ seg, mult, disabled, onDart, className = '' }: { seg: number; mult: Multiplier; disabled?: boolean; onDart: KeypadProps['onDart']; className?: string }) {
+const DIM = 'opacity-30 saturate-0';
+
+function DartKey({ seg, mult, disabled, onDart, dim, className = '' }: { seg: number; mult: Multiplier; disabled?: boolean; onDart: KeypadProps['onDart']; dim?: KeypadProps['isDimmed']; className?: string }) {
   return (
-    <button type="button" disabled={disabled} onClick={() => onDart(seg, mult)} className={`${KEY} text-base ${TONE[mult]} ${className}`} aria-label={`${PREFIX[mult]}${seg}`}>
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onDart(seg, mult)}
+      className={`${KEY} text-base ${TONE[mult]} ${dim?.(seg, mult) ? DIM : ''} ${className}`}
+      aria-label={`${PREFIX[mult]}${seg}`}
+    >
       <span className="text-[0.65em] opacity-70">{PREFIX[mult]}</span>
       {seg}
     </button>
   );
 }
 
-function Rows({ rows, disabled, onDart }: { rows: { mult: Multiplier; from: number }[]; disabled?: boolean; onDart: KeypadProps['onDart'] }) {
+function Rows({ rows, disabled, onDart, dim }: { rows: { mult: Multiplier; from: number }[]; disabled?: boolean; onDart: KeypadProps['onDart']; dim?: KeypadProps['isDimmed'] }) {
   return (
     <>
       {rows.map(({ mult, from }) => (
         <div key={`${mult}-${from}`} className="grid grid-cols-10 gap-1.5">
           {range(from).map((seg) => (
-            <DartKey key={seg} seg={seg} mult={mult} disabled={disabled} onDart={onDart} />
+            <DartKey key={seg} seg={seg} mult={mult} disabled={disabled} onDart={onDart} dim={dim} />
           ))}
         </div>
       ))}
@@ -45,24 +57,24 @@ function Rows({ rows, disabled, onDart }: { rows: { mult: Multiplier; from: numb
   );
 }
 
-function SpecialRow({ disabled, onDart, onUndo, canUndo, after }: Omit<KeypadProps, 'layout'> & { after?: () => void }) {
+function SpecialRow({ disabled, onDart, onUndo, canUndo, after, isDimmed, undoLabel }: Omit<KeypadProps, 'layout'> & { after?: () => void }) {
   const hit = (seg: number, mult: Multiplier) => {
     onDart(seg, mult);
     after?.();
   };
   return (
     <div className="grid grid-cols-10 gap-1.5">
-      <button type="button" disabled={disabled} onClick={() => hit(25, 1)} aria-label="Outer bull 25" className={`${KEY} col-span-2 border-border-subtle bg-bg-elevated text-lg`}>
+      <button type="button" disabled={disabled} onClick={() => hit(25, 1)} aria-label="Outer bull 25" className={`${KEY} col-span-2 border-border-subtle bg-bg-elevated text-lg ${isDimmed?.(25, 1) ? DIM : ''}`}>
         25
       </button>
-      <button type="button" disabled={disabled} onClick={() => hit(50, 1)} aria-label="Bullseye 50" className={`${KEY} col-span-2 border-accent-gold/60 bg-accent-gold/15 text-lg text-accent-gold`}>
+      <button type="button" disabled={disabled} onClick={() => hit(50, 1)} aria-label="Bullseye 50" className={`${KEY} col-span-2 border-accent-gold/60 bg-accent-gold/15 text-lg text-accent-gold ${isDimmed?.(50, 1) ? DIM : ''}`}>
         BULL
       </button>
       <button type="button" disabled={disabled} onClick={() => hit(0, 0)} aria-label="Miss" className={`${KEY} col-span-3 border-border-strong bg-bg-primary text-lg text-text-muted`}>
         MISS 0
       </button>
       <button type="button" disabled={!canUndo} onClick={onUndo} className={`${KEY} col-span-3 gap-2 border-accent-warning/60 bg-accent-warning/10 font-sans text-sm text-accent-warning`}>
-        <Undo2 size={18} aria-hidden /> Undo Last Dart
+        <Undo2 size={18} aria-hidden /> <span className="truncate">{undoLabel ?? 'Undo Last Dart'}</span>
       </button>
     </div>
   );
@@ -77,7 +89,7 @@ function Shell({ rows, children }: { rows: number; children: ReactNode }) {
 }
 
 function ModifierPad(props: KeypadProps) {
-  const { disabled, onDart, stickyModifier } = props;
+  const { disabled, onDart, stickyModifier, isDimmed } = props;
   const [mod, setMod] = useState<Multiplier>(1);
   const toggle = (m: Multiplier) => setMod((cur) => (cur === m ? 1 : m));
   const reset = () => !stickyModifier && setMod(1);
@@ -113,7 +125,7 @@ function ModifierPad(props: KeypadProps) {
                 reset();
               }}
               aria-label={`${PREFIX[mod]}${seg}`}
-              className={`${KEY} text-2xl ${TONE[mod]}`}
+              className={`${KEY} text-2xl ${TONE[mod]} ${isDimmed?.(seg, mod) ? DIM : ''}`}
             >
               {mod !== 1 && <span className="text-[0.6em] opacity-70">{PREFIX[mod]}</span>}
               {seg}
@@ -127,13 +139,13 @@ function ModifierPad(props: KeypadProps) {
 }
 
 function ColumnsPad(props: KeypadProps) {
-  const { disabled, onDart } = props;
+  const { disabled, onDart, isDimmed } = props;
   const block = (from: number) => (
     <div className="grid min-h-0 gap-1.5" style={{ gridTemplateRows: 'repeat(10, minmax(0, 1fr))' }}>
       {range(from).map((seg) => (
         <div key={seg} className="grid grid-cols-3 gap-1.5">
           {([1, 2, 3] as Multiplier[]).map((m) => (
-            <DartKey key={m} seg={seg} mult={m} disabled={disabled} onDart={onDart} />
+            <DartKey key={m} seg={seg} mult={m} disabled={disabled} onDart={onDart} dim={isDimmed} />
           ))}
         </div>
       ))}
@@ -152,7 +164,7 @@ function ColumnsPad(props: KeypadProps) {
 
 /** 1-tap per-dart keypad in four layouts (every tap is one dart). */
 export function DartKeypad(props: KeypadProps) {
-  const { layout, disabled, onDart } = props;
+  const { layout, disabled, onDart, isDimmed } = props;
   if (layout === 'MODIFIER') return <ModifierPad {...props} />;
   if (layout === 'COLUMNS') return <ColumnsPad {...props} />;
   const rows: { mult: Multiplier; from: number }[] =
@@ -175,7 +187,7 @@ export function DartKeypad(props: KeypadProps) {
         ];
   return (
     <Shell rows={7}>
-      <Rows rows={rows} disabled={disabled} onDart={onDart} />
+      <Rows rows={rows} disabled={disabled} onDart={onDart} dim={isDimmed} />
       <SpecialRow {...props} />
     </Shell>
   );

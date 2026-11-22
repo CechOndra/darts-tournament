@@ -7,6 +7,7 @@ import { teamName } from '../../engine/selectors.ts';
 import type { TournamentState } from '../../engine/state.ts';
 import type { CardDraw, CardPlay } from '../../engine/types.ts';
 import { playCardStinger, playReveal } from '../../services/audio/sound.ts';
+import { useRarityOf } from '../../hooks/useCardLook.ts';
 import { DiscardPrompt } from '../scorer/CardDrawPanel.tsx';
 
 type StageEvent = { kind: 'draw'; draw: CardDraw } | { kind: 'play'; play: CardPlay };
@@ -21,6 +22,8 @@ export function CardEventsOverlay({ state }: { state: TournamentState }) {
   const seen = useRef<{ draw: string | null; play: string | null } | null>(null);
   const [event, setEvent] = useState<StageEvent | null>(null);
   const [phase, setPhase] = useState<Phase>('spin');
+  const rarityOf = useRarityOf();
+  const drawMs = Math.round(state.settings.cards.params.drawAnimationSeconds * 1000);
 
   useEffect(() => {
     const cur = { draw: lastDraw?.id ?? null, play: lastPlay?.id ?? null };
@@ -43,9 +46,10 @@ export function CardEventsOverlay({ state }: { state: TournamentState }) {
   useEffect(() => {
     if (!event || phase === 'spin') return;
     const id = event.kind === 'draw' ? event.draw.cardTypeId : event.play.effectCardTypeId;
-    if (phase === 'reveal') playReveal(CARD_BY_ID[id].rarity);
+    if (phase === 'reveal') playReveal(rarityOf(id));
     const t = setTimeout(() => setEvent(null), phase === 'reveal' ? 3800 : 3000);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event, phase]);
 
   const candidates = useMemo<Candidate[]>(() => {
@@ -55,7 +59,7 @@ export function CardEventsOverlay({ state }: { state: TournamentState }) {
       return list.map((cardTypeId) => ({ cardTypeId, weight: 1 }));
     }
     const tiered = state.settings.cards.poolStructure === 'TIERED_POOLS';
-    const pool = !tiered ? 'ANY' : event.draw.kind === 'LOSER' ? 'LOSER' : event.draw.kind === 'WINNER' ? 'WINNER' : 'ANY';
+    const pool = event.draw.pool ?? (!tiered ? 'ANY' : event.draw.kind === 'LOSER' ? 'LOSER' : event.draw.kind === 'WINNER' ? 'WINNER' : 'ANY');
     return [...drawWeights(state, pool), { cardTypeId: event.draw.cardTypeId, weight: 1 }];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event]);
@@ -88,13 +92,13 @@ export function CardEventsOverlay({ state }: { state: TournamentState }) {
       <p className="text-center font-display text-6xl tracking-wide uppercase">{title}</p>
       {phase === 'spin' ? (
         event.kind === 'draw' && wheel ? (
-          <SpinWheel winner={resultId} seed={event.draw.id} candidates={candidates} onDone={() => setPhase('reveal')} />
+          <SpinWheel winner={resultId} seed={event.draw.id} candidates={candidates} durationMs={drawMs} onDone={() => setPhase('reveal')} />
         ) : (
           <CaseOpening
             winner={resultId}
             seed={event.kind === 'draw' ? event.draw.id : event.play.id}
             candidates={candidates}
-            durationMs={event.kind === 'draw' ? 5500 : 3500}
+            durationMs={event.kind === 'draw' ? drawMs : Math.round(drawMs * 0.65)}
             onDone={() => setPhase('reveal')}
           />
         )

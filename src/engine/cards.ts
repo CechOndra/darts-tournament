@@ -1,7 +1,9 @@
 import { CARD_BY_ID, CARD_TYPES, isCardTypeId, RANDOM_OPP, RANDOM_OWN, type CardPool, type CardTypeId } from './cardCatalog.ts';
+import { cardAllowed, oddsWeight, poolIn, type CardStage } from './cardConfig.ts';
 import { modsFor } from './cardEffects.ts';
 import { giveTo, handOf, newInstance, poolInstances, syncInstances } from './cardPool.ts';
 import { computeMatchView, initialLegSetup, type MatchView } from './match.ts';
+import { upNextMatch } from './selectors.ts';
 import type { TournamentState } from './state.ts';
 import type { CardDrawKind, CardPlay, CardSettings, CardsState, Match, Parity, Side } from './types.ts';
 import { otherSide } from './types.ts';
@@ -15,7 +17,7 @@ export type CardAction =
   | { type: 'PLAY_CARD'; id: string; instanceId: string; parity?: Parity; roll?: number; at: number }
   | { type: 'DRAW_CARD'; id: string; teamId: string; kind: CardDrawKind; pool?: CardPool | 'ANY'; roll: number; at: number }
   | { type: 'RESOLVE_DISCARD'; instanceId: string }
-  | { type: 'GRANT_CARD'; id: string; teamId: string; cardTypeId: CardTypeId; at: number }
+  | { type: 'GRANT_CARD'; id: string; teamId: string; cardTypeId: CardTypeId | 'RANDOM'; roll?: number; at: number }
   | { type: 'TRANSFER_CARD'; instanceId: string; toTeamId: string }
   | { type: 'VOID_CARD'; instanceId: string }
   | { type: 'UPDATE_CARD_SETTINGS'; patch: Partial<CardSettings> };
@@ -56,11 +58,14 @@ export function randomPowerPool(state: TournamentState, view: MatchView, side: S
   const turn = view.turn;
   if (!turn) return [];
   const opp = otherSide(side);
+  // Only cards the organizer allows at this stage can come out of the roulette.
+  const allowed = (c: CardTypeId) => cardAllowed(state.settings.cards, c, view.match.stage);
   if (turn.side === side) {
-    return RANDOM_OWN.filter((c) => c !== 'ALL_OR_NOTHING' || turn.remaining > 85);
+    return RANDOM_OWN.filter((c) => allowed(c) && (c !== 'ALL_OR_NOTHING' || turn.remaining > 85));
   }
   const oppPlayers = state.teams.find((t) => t.id === view.teamIds[opp])?.playerIds.length ?? 1;
   return RANDOM_OPP.filter((c) => {
+    if (!allowed(c)) return false;
     if (c === 'PARITY_LOCK_FULL' || c === 'BOTTOM_HALF_FULL') return turn.remaining > 60;
     if (c === 'TEAMMATE_SWAP') return oppPlayers > 1;
     return true;
@@ -78,6 +83,7 @@ export function checkPlay(state: TournamentState, teamId: string, instanceId: st
   if (!side) return no('Team is not playing');
   const card = CARD_BY_ID[inst.cardTypeId];
   const settings = state.settings.cards;
+  if (view.match.stage === 'PLAYOFF' && !cardAllowed(settings, inst.cardTypeId, 'PLAYOFF')) return no('Not allowed in the playoffs');
   const mine = view.plays.filter((p) => p.teamId === teamId);
   if (mine.length >= settings.maxCardsPlayedPerMatch) return no(`Limit: ${settings.maxCardsPlayedPerMatch} per match`);
   const phase = view.live.phase;
@@ -167,13 +173,22 @@ const poolForKind = (state: TournamentState, kind: CardDrawKind, pool?: CardPool
 };
 
 /** Draw odds per card type (for the stage strip and the admin estimator). */
-export function drawWeights(state: TournamentState, pool: CardPool | 'ANY'): { cardTypeId: CardTypeId; weight: number }[] {
+/** Stage the next draw belongs to: the live match, else the next match in the queue. */
+export function drawStage(state: TournamentState): CardStage {
+  return (liveMatch(state) ?? upNextMatch(state))?.stage ?? 'GROUP';
+}
+
+/**
+ * Draw odds per card type. Printed deck: the copies still in the pool (cards not allowed at
+ * this stage are skipped). Fixed odds: the configured weight (playoffs may have their own).
+ */
+export function drawWeights(state: TournamentState, pool: CardPool | 'ANY', stage: CardStage = drawStage(state)): { cardTypeId: CardTypeId; weight: number }[] {
   const s = state.settings.cards;
-  const types = CARD_TYPES.filter((c) => pool === 'ANY' || c.pool === pool);
-  if (s.supplyMode === 'FIXED_PROBABILITIES') return types.map((c) => ({ cardTypeId: c.id, weight: Math.max(0, s.copies[c.id] ?? 0) })).filter((w) => w.weight > 0);
+  const types = CARD_TYPES.filter((c) => pool === 'ANY' || poolIn(s, c.id) === pool);
+  if (s.supplyMode === 'FIXED_PROBABILITIES') return types.map((c) => ({ cardTypeId: c.id, weight: oddsWeight(s, c.id, stage) })).filter((w) => w.weight > 0);
   const counts = new Map<CardTypeId, number>();
   for (const i of poolInstances(state.cards, pool)) counts.set(i.cardTypeId, (counts.get(i.cardTypeId) ?? 0) + 1);
-  return types.map((c) => ({ cardTypeId: c.id, weight: counts.get(c.id) ?? 0 })).filter((w) => w.weight > 0);
+  return types.map((c) => ({ cardTypeId: c.id, weight: cardAllowed(s, c.id, stage) ? (counts.get(c.id) ?? 0) : 0 })).filter((w) => w.weight > 0);
 }
 
 export function canDraw(state: TournamentState, pool: CardPool | 'ANY'): boolean {
@@ -203,7 +218,7 @@ function takeFromPool(state: TournamentState, cards: CardsState, cardTypeId: Car
   const existing = cards.instances.find((i) => i.status === 'IN_POOL' && i.cardTypeId === cardTypeId);
   if (existing) return { cards, instanceId: existing.instanceId };
   if (state.settings.cards.supplyMode !== 'FIXED_PROBABILITIES') return null;
-  const made = newInstance(cards, cardTypeId);
+  const made = newInstance(cards, cardTypeId, poolIn(state.settings.cards, cardTypeId));
   return { cards: made.cards, instanceId: made.instance.instanceId };
 }
 
@@ -273,14 +288,19 @@ export function cardsReducer(state: TournamentState, action: CardAction): Tourna
       if (!typeId) return state;
       const taken = takeFromPool(state, cards, typeId);
       if (!taken) return state;
-      const draw = { id: action.id, teamId: action.teamId, matchId, kind: action.kind, instanceId: taken.instanceId, cardTypeId: typeId, at: action.at };
+      const draw = { id: action.id, teamId: action.teamId, matchId, kind: action.kind, pool, instanceId: taken.instanceId, cardTypeId: typeId, at: action.at };
       return { ...state, cards: { ...receive(state, taken.cards, action.teamId, taken.instanceId), draws: [...taken.cards.draws, draw] } };
     }
 
     case 'GRANT_CARD': {
-      if (cards.pendingDiscard || !isCardTypeId(action.cardTypeId) || !state.teams.some((t) => t.id === action.teamId)) return state;
-      if (cards.draws.some((d) => d.id === action.id)) return state;
-      const taken = takeFromPool(state, cards, action.cardTypeId);
+      if (cards.pendingDiscard || !state.teams.some((t) => t.id === action.teamId)) return state;
+      // RANDOM: any card by the current odds, silently (no stage animation).
+      const typeId =
+        action.cardTypeId === 'RANDOM'
+          ? pickWeighted(drawWeights(state, 'ANY').map((w) => ({ item: w.cardTypeId, weight: w.weight })), action.roll ?? 0)
+          : action.cardTypeId;
+      if (!typeId || !isCardTypeId(typeId)) return state;
+      const taken = takeFromPool(state, cards, typeId);
       if (!taken) return state;
       // Granted cards are logged without a draw animation (kind GRANT, no match).
       return { ...state, cards: receive(state, taken.cards, action.teamId, taken.instanceId) };
@@ -312,7 +332,7 @@ export function cardsReducer(state: TournamentState, action: CardAction): Tourna
       const settings: CardSettings = {
         ...cur,
         ...action.patch,
-        copies: { ...cur.copies, ...action.patch.copies },
+        config: { ...cur.config, ...action.patch.config },
         params: { ...cur.params, ...action.patch.params },
       };
       return { ...state, settings: { ...state.settings, cards: settings }, cards: syncInstances(cards, settings) };

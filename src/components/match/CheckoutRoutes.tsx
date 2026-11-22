@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { dualCheckout } from '../../engine/checkout.ts';
-import type { MatchView } from '../../engine/match.ts';
+import { rulesFor, type MatchView } from '../../engine/match.ts';
 import type { TournamentState } from '../../engine/state.ts';
 
 function Route({ labels, title, tone, xl }: { labels: string[]; title: string; tone: 'gold' | 'white'; xl: boolean }) {
@@ -22,13 +22,17 @@ function Route({ labels, title, tone, xl }: { labels: string[]; title: string; t
 /** Live Dual-Path Checkout Solver for the current thrower (score <= 180). */
 export function CheckoutRoutes({ state, view, size = 'md' }: { state: TournamentState; view: MatchView; size?: 'md' | 'xl' }) {
   const turn = view.turn;
-  const rules = state.settings.rules;
+  const rules = rulesFor(state, view.match);
+  const m = turn?.mods;
+  // Cards that change what a dart is worth make the normal routes misleading.
+  const cardAltersScoring = !!m && (m.bottomHalf || !!m.parity || m.doubleAll || m.doubleDart1 || !!m.allOrNothing);
   const dual = useMemo(() => {
     if (!turn || turn.remaining > 180) return null;
     return dualCheckout(turn.remaining, turn.maxDarts - turn.darts.length, rules.checkoutMode, rules.specialRules);
   }, [turn, rules]);
   if (!turn || turn.remaining > 180 || !dual) return null;
   const xl = size === 'xl';
+  if (cardAltersScoring) return <p className={`text-text-muted ${xl ? 'text-xl' : 'text-xs'}`}>Power Card active: normal checkout routes do not apply this visit.</p>;
   if (!dual.safe && !dual.bonus) {
     return <p className={`text-text-muted ${xl ? 'text-xl' : 'text-xs'}`}>No checkout this visit — set up a finish.</p>;
   }

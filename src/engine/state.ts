@@ -1,3 +1,4 @@
+import { configsFromCopies } from './cardConfig.ts';
 import { emptyCards, syncInstances } from './cardPool.ts';
 import { createDefaultSettings, DEFAULT_CARDS, DEFAULT_TABLE, DEFAULT_VISIBILITY } from './defaults.ts';
 import type {
@@ -13,7 +14,7 @@ import type {
 } from './types.ts';
 
 /** Bump when the persisted shape changes incompatibly (backups are checked against it). */
-export const STATE_SCHEMA_VERSION = 5;
+export const STATE_SCHEMA_VERSION = 6;
 
 /** Root tournament state (pure, JSON-serializable, never mutated in place). */
 export interface TournamentState {
@@ -62,16 +63,19 @@ export function createEmptyState(): TournamentState {
 /**
  * Upgrade snapshots written by older versions.
  * v2 -> v3 adds live match fields; v3 -> v4 adds table settings, new visibility flags and team logos;
- * v4 -> v5 adds the Power Card pool (hands move from Team.hand to cards.instances).
+ * v4 -> v5 adds the Power Card pool (hands move from Team.hand to cards.instances);
+ * v5 -> v6 replaces card copies with per-card configs (rarity, pool, playoffs).
  */
 export function migrateState(state: TournamentState): TournamentState {
-  if (state.schemaVersion === STATE_SCHEMA_VERSION && 'live' in state && state.settings?.table && state.cards) return state;
+  if (state.schemaVersion === STATE_SCHEMA_VERSION && 'live' in state && state.settings?.table && state.cards && state.settings.cards?.config) return state;
   if (state.schemaVersion > STATE_SCHEMA_VERSION) throw new Error(`State version ${state.schemaVersion} is newer than this app`);
+  const legacy = state.settings.cards as (typeof state.settings.cards & { copies?: Record<string, number> }) | undefined;
+  const { copies: legacyCopies, ...restCards } = legacy ?? {};
   const cardSettings = {
     ...DEFAULT_CARDS,
-    ...state.settings.cards,
-    copies: { ...DEFAULT_CARDS.copies, ...state.settings.cards?.copies },
-    params: { ...DEFAULT_CARDS.params, ...state.settings.cards?.params },
+    ...restCards,
+    config: { ...(legacy?.config ?? configsFromCopies(legacyCopies)) },
+    params: { ...DEFAULT_CARDS.params, ...legacy?.params },
   };
   return {
     ...state,

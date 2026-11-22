@@ -73,9 +73,9 @@ describe('card pool', () => {
 
   it('syncs copies when the admin edits them', () => {
     let s = make();
-    s = run(s, { type: 'UPDATE_CARD_SETTINGS', patch: { copies: { ...s.settings.cards.copies, EXTRA_DART: 3 } } });
+    s = run(s, { type: 'UPDATE_CARD_SETTINGS', patch: { config: { ...s.settings.cards.config, EXTRA_DART: { ...s.settings.cards.config.EXTRA_DART, copies: 3 } } } });
     expect(s.cards.instances.filter((i) => i.cardTypeId === 'EXTRA_DART')).toHaveLength(3);
-    s = run(s, { type: 'UPDATE_CARD_SETTINGS', patch: { copies: { ...s.settings.cards.copies, EXTRA_DART: 0 } } });
+    s = run(s, { type: 'UPDATE_CARD_SETTINGS', patch: { config: { ...s.settings.cards.config, EXTRA_DART: { ...s.settings.cards.config.EXTRA_DART, enabled: false } } } });
     expect(s.cards.instances.filter((i) => i.cardTypeId === 'EXTRA_DART')).toHaveLength(0);
   });
 });
@@ -108,16 +108,38 @@ describe('visit cards', () => {
     expect(view(s).currentLeg.remaining.away).toBe(501 - 40 - 20 - 20);
   });
 
-  it('a boosted dart cannot check out: the finish counts at face value', () => {
+  it('a boosted dart that would finish busts (unless boosted checkouts are allowed)', () => {
     let s = start(make({}, 1));
     const t = ids(s);
     // home to 40 (501 - 461): 7 visits of 60 (420) + 41
     for (let i = 0; i < 7; i++) s = run(s, D(20), D(20), D(20), MISS(), MISS(), MISS());
     s = run(s, D(20), D(20), D(1), MISS(), MISS(), MISS());
     expect(view(s).currentLeg.remaining.home).toBe(40);
-    s = play(s, t.home, 'DOUBLE_EDGED_SWORD');
-    s = run(s, D(20, 2)); // D20 = 40 checks out at face value (boost ignored for the finish)
-    expect(view(s).legsWon.home).toBe(1);
+    const armed = play(s, t.home, 'DOUBLE_EDGED_SWORD');
+    let busted = run(armed, D(20, 2)); // D20 boosted = 80 -> bust
+    expect(view(busted).legsWon.home).toBe(0);
+    expect(view(busted).currentLeg.remaining.home).toBe(40);
+    busted = run(armed, D(10, 2)); // D10 boosted = 40 would finish -> bust by default
+    expect(view(busted).legsWon.home).toBe(0);
+    const allowed = run(armed, { type: 'UPDATE_CARD_SETTINGS', patch: { params: { ...armed.settings.cards.params, allowCheckoutOnBoostedDart: true } } }, D(10, 2));
+    expect(view(allowed).legsWon.home).toBe(1);
+  });
+
+  it('organizer config: disabled cards leave the deck, playoff-only rules, rarity/pool overrides', () => {
+    let s = make();
+    const cfg = s.settings.cards.config;
+    s = run(s, {
+      type: 'UPDATE_CARD_SETTINGS',
+      patch: { config: { ...cfg, STEAL_DART: { ...cfg.STEAL_DART, enabled: false }, SHOT_CLOCK: { ...cfg.SHOT_CLOCK, rarity: 'LEGENDARY', pool: 'WINNER' } } },
+    });
+    expect(s.cards.instances.some((i) => i.cardTypeId === 'STEAL_DART')).toBe(false);
+    expect(s.cards.instances.filter((i) => i.cardTypeId === 'SHOT_CLOCK').every((i) => i.pool === 'WINNER')).toBe(true);
+  });
+
+  it('matches keep the rules they started with', () => {
+    let s = start(make());
+    s = run(s, { type: 'UPDATE_RULES', patch: { startingScore: 301 } });
+    expect(view(s).currentLeg.remaining.home).toBe(501);
   });
 
   it('PARITY_LOCK and BOTTOM_HALF zero the wrong darts', () => {

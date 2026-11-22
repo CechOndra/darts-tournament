@@ -26,6 +26,7 @@ export async function drawCard(transport: AppTransport, teamId: string, kind: Ca
   return env.state.cards.draws.some((d) => d.id === id);
 }
 
-export async function grantCard(transport: AppTransport, teamId: string, cardTypeId: CardTypeId): Promise<void> {
-  await transport.dispatch({ type: 'GRANT_CARD', id: createId('grant'), teamId, cardTypeId, at: Date.now() }, { persist: 'immediate' });
+/** Give a team a card without an animation ('RANDOM' = by the current odds). */
+export async function grantCard(transport: AppTransport, teamId: string, cardTypeId: CardTypeId | 'RANDOM'): Promise<void> {
+  await transport.dispatch({ type: 'GRANT_CARD', id: createId('grant'), teamId, cardTypeId, roll: secureRoll(), at: Date.now() }, { persist: 'immediate' });
 }

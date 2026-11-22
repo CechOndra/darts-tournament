@@ -5,6 +5,7 @@ import { CardIcon, RARITY_VAR } from '../components/cards/PowerCard.tsx';
 import { CheckoutRoutes } from '../components/match/CheckoutRoutes.tsx';
 import { CARD_BY_ID, CARD_TYPES, RARITY_LABEL } from '../engine/cardCatalog.ts';
 import { handOf } from '../engine/cardPool.ts';
+import { useRarityOf } from '../hooks/useCardLook.ts';
 import { DutyBanner } from '../components/match/DutyBanner.tsx';
 import { MatchSummary } from '../components/match/MatchSummary.tsx';
 import { Scoreboard } from '../components/match/Scoreboard.tsx';
@@ -44,6 +45,7 @@ export function GuestPage() {
 }
 
 function GuestCards({ state }: { state: TournamentState }) {
+  const rarityOf = useRarityOf();
   if (state.settings.cards.mode === 'OFF') return <p className="text-sm text-text-muted">Power Cards are off for this tournament.</p>;
   return (
     <div className="space-y-4">
@@ -58,8 +60,8 @@ function GuestCards({ state }: { state: TournamentState }) {
               ) : (
                 <div className="flex flex-wrap gap-1.5">
                   {hand.map((i) => (
-                    <span key={i.instanceId} className="inline-flex items-center gap-1.5 rounded-md border-2 bg-bg-elevated px-2 py-1 text-xs font-semibold" style={{ borderColor: RARITY_VAR[CARD_BY_ID[i.cardTypeId].rarity] }}>
-                      <span style={{ color: RARITY_VAR[CARD_BY_ID[i.cardTypeId].rarity] }}>
+                    <span key={i.instanceId} className="inline-flex items-center gap-1.5 rounded-md border-2 bg-bg-elevated px-2 py-1 text-xs font-semibold" style={{ borderColor: RARITY_VAR[rarityOf(i.cardTypeId)] }}>
+                      <span style={{ color: RARITY_VAR[rarityOf(i.cardTypeId)] }}>
                         <CardIcon id={i.cardTypeId} size={14} />
                       </span>
                       {CARD_BY_ID[i.cardTypeId].name}
@@ -74,14 +76,14 @@ function GuestCards({ state }: { state: TournamentState }) {
       <details className="surface p-3">
         <summary className="cursor-pointer text-sm font-medium">What every card does</summary>
         <ul className="mt-3 space-y-3">
-          {CARD_TYPES.map((c) => (
+          {CARD_TYPES.filter((c) => state.settings.cards.config[c.id]?.enabled !== false).map((c) => (
             <li key={c.id} className="flex gap-3">
-              <span className="mt-0.5 shrink-0" style={{ color: RARITY_VAR[c.rarity] }}>
+              <span className="mt-0.5 shrink-0" style={{ color: RARITY_VAR[rarityOf(c.id)] }}>
                 <CardIcon id={c.id} size={20} />
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-semibold">
-                  {c.name} <span className="text-xs font-normal text-text-muted">{RARITY_LABEL[c.rarity]}</span>
+                  {c.name} <span className="text-xs font-normal text-text-muted">{RARITY_LABEL[rarityOf(c.id)]}</span>
                 </span>
                 <span className="block text-xs text-text-muted">{c.rules}</span>
               </span>
