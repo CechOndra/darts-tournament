@@ -1,5 +1,6 @@
 import { Activity, Maximize, Minimize, Wifi, WifiOff } from 'lucide-react';
-import { useTransportContext } from '../hooks/TransportProvider.tsx';
+import { appEnv } from '../hooks/ControlProvider.tsx';
+import { useOptionalTransportContext } from '../hooks/TransportProvider.tsx';
 import { useFullscreen, usePing } from '../hooks/useTransport.ts';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -18,26 +19,28 @@ const MODE_LABEL: Record<string, string> = {
 };
 
 export function ConnectionBadge() {
-  const { status, env } = useTransportContext();
+  const ctx = useOptionalTransportContext();
+  const status = ctx?.status ?? 'idle';
   const live = status === 'connected';
   const Icon = live ? Wifi : WifiOff;
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-bg-elevated px-2.5 py-1 text-xs font-medium"
-      title={env.fallbackReason ?? `Transport: ${env.mode}`}
+      className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-bg-elevated px-2.5 py-1 text-xs font-medium whitespace-nowrap"
+      title={appEnv.fallbackReason ?? `Transport: ${appEnv.mode}`}
     >
       <Icon size={14} className={live ? 'text-accent-success' : 'text-accent-warning'} aria-hidden />
-      <span>{STATUS_LABEL[status]}</span>
-      <span className="text-text-muted">· {MODE_LABEL[env.mode]}</span>
+      <span>{ctx ? STATUS_LABEL[status] : 'Ready'}</span>
+      <span className="text-text-muted">· {MODE_LABEL[appEnv.mode]}</span>
     </span>
   );
 }
 
 export function PingIndicator() {
   const ping = usePing();
-  const tone = ping === null ? 'text-text-muted' : ping < 100 ? 'text-accent-success' : ping < 250 ? 'text-accent-warning' : 'text-accent-danger';
+  const tone =
+    ping === null ? 'text-text-muted' : ping < 100 ? 'text-accent-success' : ping < 250 ? 'text-accent-warning' : 'text-accent-danger';
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-bg-elevated px-2.5 py-1 font-mono text-xs">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-bg-elevated px-2.5 py-1 font-mono text-xs whitespace-nowrap">
       <Activity size={14} className={tone} aria-hidden />
       <span>Ping: {ping === null ? '--' : ping} ms</span>
     </span>
@@ -56,7 +59,7 @@ export function FullscreenButton() {
       aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
     >
       <Icon size={18} aria-hidden />
-      <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+      <span className="hidden xl:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
     </button>
   );
 }

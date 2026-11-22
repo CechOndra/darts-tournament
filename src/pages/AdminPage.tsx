@@ -1,78 +1,132 @@
-import { ServerCog, ShieldCheck, Users } from 'lucide-react';
-import { Placeholder, RouteHeader } from '../components/RouteHeader.tsx';
-import { ConnectionBadge, PingIndicator } from '../components/StatusIndicators.tsx';
-import { useTransportContext } from '../hooks/TransportProvider.tsx';
-import { usePresenceRole } from '../hooks/useTransport.ts';
-import { countActiveScorers, countByRole } from '../services/presence.ts';
+import { LayoutGrid, Lock, ShieldCheck } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { RouteHeader } from '../components/RouteHeader.tsx';
+import { ConnectionBadge } from '../components/StatusIndicators.tsx';
+import { Button, Notice } from '../components/ui.tsx';
+import { useControl } from '../hooks/ControlProvider.tsx';
+import { TournamentScope } from '../hooks/TransportProvider.tsx';
+import { AdminWorkspace } from './admin/AdminWorkspace.tsx';
+import { CreateTournamentWizard } from './admin/CreateTournamentWizard.tsx';
+import { HostGate } from './admin/HostGate.tsx';
+import { TournamentList } from './admin/TournamentList.tsx';
+
+const SELECTED_KEY = 'darts.admin.selected';
+const readSelected = () => {
+  try {
+    return globalThis.sessionStorage?.getItem(SELECTED_KEY) ?? null;
+  } catch {
+    return null;
+  }
+};
 
 export function AdminPage() {
-  usePresenceRole('admin');
-  const { env, envelope, status, peers, connectError, transport } = useTransportContext();
-  const roles = countByRole(peers);
+  const { hostToken } = useControl();
+  return hostToken ? <AdminConsole /> : <HostGate />;
+}
 
-  const rows: [string, string][] = [
-    ['Transport', env.mode + (env.requestedMode !== env.mode ? ` (requested: ${env.requestedMode})` : '')],
-    ['Status', status],
-    ['Tournament ID', env.tournamentId],
-    ['State version', envelope ? String(envelope.version) : 'none yet'],
-    ['Client ID', transport.clientId],
-    ['Active scorers', String(countActiveScorers(peers))],
-  ];
+type View = 'list' | 'create' | 'manage';
+
+function AdminConsole() {
+  const { api, hostToken, setHostToken, activeTournamentId, env } = useControl();
+  const [selectedId, setSelectedIdState] = useState<string | null>(readSelected);
+  const [view, setView] = useState<View>(() => (readSelected() ? 'manage' : 'list'));
+
+  const setSelectedId = useCallback((id: string | null) => {
+    try {
+      if (id) globalThis.sessionStorage?.setItem(SELECTED_KEY, id);
+      else globalThis.sessionStorage?.removeItem(SELECTED_KEY);
+    } catch {
+      /* ignore */
+    }
+    setSelectedIdState(id);
+  }, []);
+
+  // Default to the live tournament when nothing is selected yet.
+  useEffect(() => {
+    if (!selectedId && activeTournamentId && view === 'list') {
+      setSelectedId(activeTournamentId);
+      setView('manage');
+    }
+  }, [activeTournamentId, selectedId, view, setSelectedId]);
+
+  // Drop expired / revoked host sessions.
+  useEffect(() => {
+    if (!hostToken) return;
+    api.validateSession(hostToken, null).then(
+      (s) => !s.valid && setHostToken(null),
+      () => undefined,
+    );
+  }, [api, hostToken, setHostToken]);
+
+  const lock = async () => {
+    if (hostToken) await api.logout(hostToken).catch(() => undefined);
+    setHostToken(null);
+  };
+
+  const lockButton = (
+    <Button size="sm" variant="danger" icon={Lock} onClick={lock}>
+      Lock Session
+    </Button>
+  );
+
+  if (view === 'manage' && selectedId) {
+    return (
+      <TournamentScope tournamentId={selectedId}>
+        <AdminWorkspace
+          tournamentId={selectedId}
+          onShowList={() => setView('list')}
+          onDeleted={() => {
+            setSelectedId(null);
+            setView('list');
+          }}
+          lockButton={lockButton}
+        />
+      </TournamentScope>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-bg-primary">
       <RouteHeader
         icon={ShieldCheck}
         title="Admin Control"
-        subtitle="Tournament setup & live operations"
+        subtitle={view === 'create' ? 'New tournament' : 'All tournaments'}
         actions={
           <>
-            <PingIndicator />
             <ConnectionBadge />
+            {selectedId && view !== 'manage' && (
+              <Button size="sm" icon={LayoutGrid} onClick={() => setView('manage')}>
+                Back to tournament
+              </Button>
+            )}
+            {lockButton}
           </>
         }
       />
-      <main className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-3">
-        <section className="surface p-4 lg:col-span-2">
-          <h2 className="mb-3 flex items-center gap-2 font-display text-sm tracking-widest text-text-muted uppercase">
-            <ServerCog size={16} aria-hidden /> Realtime Diagnostics
-          </h2>
-          {(env.fallbackReason || connectError) && (
-            <p className="mb-3 rounded-md border border-accent-warning/40 bg-accent-warning/10 px-3 py-2 text-sm text-accent-warning">
-              {connectError ?? env.fallbackReason}
-            </p>
-          )}
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-            {rows.map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-3 border-b border-border-subtle py-1.5">
-                <dt className="text-text-muted">{k}</dt>
-                <dd className="truncate font-mono">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <section className="surface p-4">
-          <h2 className="mb-3 flex items-center gap-2 font-display text-sm tracking-widest text-text-muted uppercase">
-            <Users size={16} aria-hidden /> Connected Devices ({peers.length})
-          </h2>
-          <ul className="space-y-1.5 text-sm">
-            {Object.entries(roles).map(([role, n]) => (
-              <li key={role} className="flex justify-between rounded-md bg-bg-elevated px-3 py-2">
-                <span className="capitalize">{role}</span>
-                <span className="font-mono">{n}</span>
-              </li>
-            ))}
-            {peers.length === 0 && <li className="text-text-muted">No presence data yet.</li>}
-          </ul>
-        </section>
-
-        <div className="lg:col-span-3">
-          <Placeholder milestone={2}>
-            Admin login, tournament creation, CSV roster import, photo compressor, Scorer PIN rotation and
-            visibility toggles arrive in Milestone 2.
-          </Placeholder>
-        </div>
+      <main className="mx-auto max-w-6xl space-y-4 p-4">
+        {env.fallbackReason && <Notice tone="info">{env.fallbackReason}</Notice>}
+        {view === 'create' ? (
+          <div className="surface p-4 sm:p-6">
+            <h2 className="mb-4 font-display text-lg tracking-wide uppercase">New Tournament</h2>
+            <CreateTournamentWizard
+              hasLive={!!activeTournamentId}
+              onCancel={() => setView('list')}
+              onCreated={(id) => {
+                setSelectedId(id);
+                setView('manage');
+              }}
+            />
+          </div>
+        ) : (
+          <TournamentList
+            selectedId={selectedId}
+            onCreate={() => setView('create')}
+            onOpen={(id) => {
+              setSelectedId(id);
+              setView('manage');
+            }}
+          />
+        )}
       </main>
     </div>
   );

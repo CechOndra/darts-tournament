@@ -1,5 +1,5 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { TransportProvider } from './hooks/TransportProvider.tsx';
+import { ControlProvider } from './hooks/ControlProvider.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
 import { BoardMapPage } from './pages/BoardMapPage.tsx';
 import { GuestPage } from './pages/GuestPage.tsx';
@@ -9,8 +9,8 @@ import { StagePage } from './pages/StagePage.tsx';
 
 export function App() {
   return (
-    <TransportProvider>
-      <HashRouter>
+    <HashRouter>
+      <ControlProvider>
         <Routes>
           <Route path="/" element={<GuestPage />} />
           <Route path="/scorer" element={<ScorerPage />} />
@@ -20,7 +20,7 @@ export function App() {
           <Route path="/board-map" element={<BoardMapPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </HashRouter>
-    </TransportProvider>
+      </ControlProvider>
+    </HashRouter>
   );
 }

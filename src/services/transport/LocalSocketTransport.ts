@@ -82,7 +82,7 @@ export class LocalSocketTransport<S, A> extends BaseTransport<S, A> {
     if (!this.socket?.connected) return;
     const ack = (await this.socket
       .timeout(ACK_TIMEOUT_MS)
-      .emitWithAck(SOCKET_EVENTS.STATE_PUSH, envelope)) as PushAck<S>;
+      .emitWithAck(SOCKET_EVENTS.STATE_PUSH, { envelope, token: this.authToken })) as PushAck<S>;
     if (!ack.ok) {
       console.warn(`[local] relay rejected snapshot (${ack.reason ?? 'unknown'})`);
       this.acceptAuthoritativeEnvelope(ack.current);
@@ -98,7 +98,7 @@ export class LocalSocketTransport<S, A> extends BaseTransport<S, A> {
     if (!this.socket?.connected) return;
     await this.socket
       .timeout(ACK_TIMEOUT_MS)
-      .emitWithAck(SOCKET_EVENTS.THROWS_APPEND, { tournamentId: this.tournamentId, entries });
+      .emitWithAck(SOCKET_EVENTS.THROWS_APPEND, { tournamentId: this.tournamentId, entries, token: this.authToken });
   }
 
   protected async publishLiveEvent(event: LiveEvent): Promise<void> {

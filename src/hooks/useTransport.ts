@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ClientRole } from '../services/transport/index.ts';
-import { useTransportContext } from './TransportProvider.tsx';
+import { useOptionalTransportContext, useTransportContext } from './TransportProvider.tsx';
 
 /** Announce which route/role this client is on (drives Presence-based alerts). */
-export function usePresenceRole(role: ClientRole, unlocked = false) {
+export function usePresenceRole(role: ClientRole, unlocked = false, pinVersion: number | null = null) {
   const { transport, status } = useTransportContext();
   useEffect(() => {
-    if (status === 'connected') void transport.updatePresence({ role, unlocked });
-  }, [transport, status, role, unlocked]);
+    if (status === 'connected') void transport.updatePresence({ role, unlocked, pinVersion });
+  }, [transport, status, role, unlocked, pinVersion]);
 }
 
-/** Periodic round-trip ping in ms (null while unknown / disconnected). */
+/** Periodic round-trip ping in ms (null while unknown / disconnected / outside a tournament). */
 export function usePing(intervalMs = 5000): number | null {
-  const { transport, status } = useTransportContext();
+  const ctx = useOptionalTransportContext();
+  const transport = ctx?.transport;
+  const status = ctx?.status;
   const [ping, setPing] = useState<number | null>(null);
   useEffect(() => {
-    if (status !== 'connected') {
+    if (!transport || status !== 'connected') {
       setPing(null);
       return;
     }
@@ -53,4 +55,23 @@ export function useFullscreen() {
   }, []);
   const supported = typeof document !== 'undefined' && !!document.documentElement.requestFullscreen;
   return { isFullscreen, toggle, supported };
+}
+
+/** Run an async action with busy + error state (for buttons that call the server). */
+export function useAsyncAction() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const run = useCallback(async <T,>(fn: () => Promise<T>, describe: (err: unknown) => string = String): Promise<T | undefined> => {
+    setBusy(true);
+    setError(null);
+    try {
+      return await fn();
+    } catch (err) {
+      setError(describe(err));
+      return undefined;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+  return { busy, error, setError, run };
 }

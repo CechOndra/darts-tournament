@@ -60,6 +60,8 @@ export class LoopbackTransport<S, A> extends BaseTransport<S, A> {
         this.deliverLiveEvent(msg.event);
         break;
       case 'presence':
+        // Introduce ourselves to newcomers immediately instead of waiting for the next heartbeat.
+        if (!this.remotePeers.has(msg.meta.clientId)) this.post({ kind: 'presence', meta: this.presence });
         this.remotePeers.set(msg.meta.clientId, { meta: msg.meta, seenAt: Date.now() });
         this.refreshPeers();
         break;

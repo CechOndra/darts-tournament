@@ -24,6 +24,8 @@ export const SOCKET_EVENTS = {
   PRESENCE_SYNC: 'presence:sync',
   THROWS_APPEND: 'throws:append',
   PING: 'latency:ping',
+  CONTROL_RPC: 'control:rpc',
+  CONTROL_ACTIVE: 'control:active',
 } as const;
 
 export const channelName = (tournamentId: string) => `tournament:${tournamentId}`;

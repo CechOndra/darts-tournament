@@ -30,8 +30,15 @@ Without Supabase credentials the app falls back to a **loopback** transport (tab
 ## Supabase setup
 
 1. Create a project at supabase.com.
-2. SQL Editor -> paste and run [`supabase/schema.sql`](supabase/schema.sql) (safe to re-run).
-3. Project Settings -> API: copy the Project URL and the `anon` public key into `.env.local` and into the GitHub repo secrets `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.
+2. SQL Editor -> paste and run [`supabase/schema.sql`](supabase/schema.sql) (safe to re-run; upgrades older versions).
+3. Project Settings -> API Keys: copy the Project URL (without `/rest/v1/`) and the publishable / `anon` key into `.env.local` and into the GitHub repo secrets `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.
+4. `npm run verify:supabase` runs an end-to-end check of every RPC (uses a temporary host account and cleans up after itself while no host is claimed yet).
+
+## Accounts, tournaments & roles
+
+- **Host account** (one per app): claimed on the first visit to `/#/admin`, then username + password. Manages every tournament. "Lock Session" ends it.
+- **Tournaments**: create as many as you like (test runs, real events, unfinished ones). Mark one as **Live** — stage, scorer tablet and guest phones follow it automatically. Archive or delete old ones. `?t=<id>` on any display route pins a specific tournament.
+- **Scorer PIN**: 4 digits per tournament. "Rotate PIN & Kick All" instantly locks every scorer tablet.
 
 ## Deployment (GitHub Pages)
 

@@ -1,4 +1,5 @@
-import { createClient, type RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js';
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '../supabase/client.ts';
 import { BaseTransport, withTimeout, type PersistResult } from './BaseTransport.ts';
 import { createId } from './ids.ts';
 import { BROADCAST_EVENTS, channelName, shouldInlineState } from './protocol.ts';
@@ -53,10 +54,7 @@ export class SupabaseTransport<S, A> extends BaseTransport<S, A> {
 
   constructor(config: TransportConfig<S, A>, options: SupabaseTransportOptions) {
     super(config);
-    this.client = createClient(options.url, options.anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      realtime: { params: { eventsPerSecond: 30 } },
-    });
+    this.client = getSupabaseClient(options.url, options.anonKey);
   }
 
   // ---------------------------------------------------------------- connect
