@@ -184,7 +184,7 @@ export function Section({
   const desktop = useMediaQuery('(min-width: 1024px)');
   const expanded = desktop || open;
   return (
-    <section id={id} className={`surface scroll-mt-20 ${className}`}>
+    <section id={id} className={`surface min-w-0 scroll-mt-20 ${className}`}>
       <h2>
         <button
           type="button"

@@ -7,6 +7,8 @@ import type {
   PlayoffRound,
   RosterRow,
   ScorerDutyOverride,
+  StageOverlay,
+  StatCode,
   SpecialRules,
   StructureSettings,
   TableSettings,
@@ -39,6 +41,8 @@ export type EngineAction =
   | { type: 'ADD_BREAK'; id: string; afterMatchId: string; name: string; durationMinutes: number | null }
   | { type: 'REMOVE_BREAK'; breakId: string }
   | { type: 'SET_PIN_VERSION'; pinVersion: number }
+  | { type: 'SET_STAGE_OVERLAY'; overlay: StageOverlay | null }
+  | { type: 'SET_FUT_ATTRIBUTES'; attributes: [StatCode, StatCode, StatCode, StatCode, StatCode, StatCode] }
   | { type: 'REPLACE_STATE'; state: TournamentState } // Import Backup (.json)
   | { type: 'RESET_STATE' }
   | MatchAction

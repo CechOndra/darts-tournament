@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { Badge, Button, Field, Modal, Select, TextInput } from '../../../components/ui.tsx';
 import { describeSlot, matchLabel, matchNumber, queuedMatches } from '../../../engine/selectors.ts';
 import type { TournamentState } from '../../../engine/state.ts';
+import { formatClock } from '../../../engine/pace.ts';
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
+import { useProjection } from '../../../hooks/useStats.ts';
 import { createId } from '../../../services/transport/ids.ts';
 
 export function BreakEditor({ state, onDone }: { state: TournamentState; onDone?: () => void }) {
@@ -55,12 +57,21 @@ export function ScheduleSection({ state }: { state: TournamentState }) {
   const queue = queuedMatches(state);
   const breaksAfter = (matchId: string) => state.breaks.filter((b) => b.afterMatchId === matchId && !b.completed);
   const done = state.matches.length - queue.length;
+  const projection = useProjection(state);
+  const eta = (id: string) => projection?.etas.find((e) => e.matchId === id)?.start;
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-text-muted">
           {queue.length} upcoming · {done} completed
+          {projection?.finish && (
+            <>
+              {' '}
+              · finish ~<span className="font-semibold text-text-primary">{formatClock(projection.finish)}</span>
+              {!projection.pace.measured && ' (estimate until Round 1 is done)'}
+            </>
+          )}
         </p>
         <Button size="sm" icon={Coffee} onClick={() => setBreakOpen(true)} disabled={queue.length === 0}>
           Schedule Break
@@ -78,6 +89,7 @@ export function ScheduleSection({ state }: { state: TournamentState }) {
                 </p>
                 <p className="truncate text-xs text-text-muted">
                   {matchLabel(state, m)} · {m.format}
+                  {eta(m.id) && ` · ~${formatClock(eta(m.id)!)}`}
                 </p>
               </div>
               {i === 0 ? (

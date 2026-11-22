@@ -18,6 +18,12 @@ export function VisibilitySection({ state }: { state: TournamentState }) {
         onChange={(stageVisitHistory) => set({ stageVisitHistory })}
       />
       <Toggle
+        label="Crowd soundboard"
+        description="Guests can trigger 6 sounds on the stage speakers (locked while a player throws)."
+        checked={v.soundboardEnabled !== false}
+        onChange={(soundboardEnabled) => set({ soundboardEnabled })}
+      />
+      <Toggle
         label="Breaks on guest phones"
         description="Show scheduled breaks between matches in the guest schedule."
         checked={v.showBreaksToGuests}

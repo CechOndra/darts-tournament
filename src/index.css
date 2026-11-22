@@ -46,6 +46,22 @@
   --coin-face: #f59e0b;
   --coin-edge: #b45309;
 
+  /* FUT card frames (built-in templates; Canva PNGs in /public/custom-cards/ override them) */
+  --fut-bronze-1: #e2b07a;
+  --fut-bronze-2: #8a5a2b;
+  --fut-silver-1: #f1f5f9;
+  --fut-silver-2: #8a99ad;
+  --fut-gold-1: #fde68a;
+  --fut-gold-2: #b7791f;
+  --fut-icon-1: #1e293b;
+  --fut-icon-2: #0b0f17;
+  --fut-icon-accent: #f59e0b;
+
+  /* Printed deck */
+  --print-paper: #ffffff;
+  --print-ink: #111111;
+  --print-cut: #9ca3af;
+
   /* FUT frame typography */
   --fut-ink-dark: #3e3114;
   --fut-ink-light: #f8fafc;
@@ -66,6 +82,9 @@
 
 /* Expose tokens to Tailwind utilities: bg-bg-surface, text-text-muted, border-border-subtle, ... */
 @theme inline {
+  --color-print-paper: var(--print-paper);
+  --color-print-ink: var(--print-ink);
+  --color-print-cut: var(--print-cut);
   --color-bg-primary: var(--bg-primary);
   --color-bg-surface: var(--bg-surface);
   --color-bg-elevated: var(--bg-elevated);
@@ -211,5 +230,22 @@
     100% {
       transform: translateY(0) scale(1);
     }
+  }
+}
+
+/* Printable deck: exact A4 sheets, colors kept, one sheet per page. */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html,
+  body {
+    background: var(--print-paper) !important;
+  }
+  .print-sheet {
+    break-after: page;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

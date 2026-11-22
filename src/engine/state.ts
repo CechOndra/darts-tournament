@@ -9,6 +9,7 @@ import type {
   Player,
   ScheduledBreak,
   ScorerDutyOverride,
+  StageOverlay,
   Team,
   TournamentSettings,
 } from './types.ts';
@@ -39,6 +40,8 @@ export interface TournamentState {
   completedOrder: string[];
   /** Power Cards: physical pool, hands, plays and draws. */
   cards: CardsState;
+  /** Award / FUT card projected on the stage by the admin. */
+  stageOverlay?: StageOverlay | null;
 }
 
 export function createEmptyState(): TournamentState {

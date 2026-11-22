@@ -12,6 +12,7 @@ import { useAsyncAction, usePresenceRole } from '../../hooks/useTransport.ts';
 import { describeControlError } from '../../services/control/index.ts';
 import { countActiveScorers } from '../../services/presence.ts';
 import { LiveOpsSection, PinRotation } from './sections/LiveOpsSection.tsx';
+import { AwardsSection } from './sections/AwardsSection.tsx';
 import { CardsSection } from './sections/CardsSection.tsx';
 import { ResultsSection } from './sections/ResultsSection.tsx';
 import { RosterSection } from './sections/RosterSection.tsx';
@@ -21,13 +22,14 @@ import { VisibilitySection } from './sections/VisibilitySection.tsx';
 
 type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules' | 'table' | 'cards';
 type QuickSheet = 'pin' | 'break' | null;
-type TabId = 'live' | 'results' | 'teams' | 'cards' | 'settings';
+type TabId = 'live' | 'results' | 'teams' | 'cards' | 'awards' | 'settings';
 
 const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
   { id: 'live', label: 'Live', short: 'Live', icon: Radio },
   { id: 'results', label: 'Results & Standings', short: 'Results', icon: Trophy },
   { id: 'teams', label: 'Teams', short: 'Teams', icon: Users },
   { id: 'cards', label: 'Power Cards', short: 'Cards', icon: Layers },
+  { id: 'awards', label: 'Awards & FUT', short: 'Awards', icon: Trophy },
   { id: 'settings', label: 'Settings', short: 'Settings', icon: Settings2 },
 ];
 
@@ -132,7 +134,7 @@ export function AdminWorkspace({
         {!isLive && <Notice tone="info">Not live: stage, scorer and guest devices are showing {activeTournamentId ? 'another tournament' : 'nothing'}.</Notice>}
         {error && <Notice tone="danger">{error}</Notice>}
 
-        <nav aria-label="Admin sections" className="sticky top-0 z-30 -mx-4 grid grid-cols-5 gap-1 border-b border-border-subtle bg-bg-primary px-4 py-2 sm:flex">
+        <nav aria-label="Admin sections" className="sticky top-0 z-30 -mx-4 grid grid-cols-6 gap-1 border-b border-border-subtle bg-bg-primary px-4 py-2 sm:flex">
           {TABS.map(({ id, label, short, icon: Icon }) => (
             <button
               key={id}
@@ -172,6 +174,7 @@ export function AdminWorkspace({
         )}
 
         {tab === 'cards' && <CardsSection state={state} />}
+        {tab === 'awards' && <AwardsSection state={state} />}
 
         {tab === 'settings' && (
           <div className="grid gap-4 lg:grid-cols-2 lg:items-start">

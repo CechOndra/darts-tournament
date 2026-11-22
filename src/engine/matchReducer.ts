@@ -83,8 +83,11 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
           instances: cards.instances.map((i) => (i.status === 'IN_HAND' ? { ...i, status: 'IN_POOL', ownerTeamId: null } : i)),
         };
       }
+      // Breaks after already-finished matches are over once the next match starts.
+      const breaks = state.breaks.map((b) => (!b.completed && state.completedOrder.includes(b.afterMatchId) ? { ...b, completed: true } : b));
       return {
         ...state,
+        breaks,
         cards,
         live,
         matches: updateMatch(state, match.id, { status: 'IN_PROGRESS', legsWon: { home: 0, away: 0 }, winnerTeamId: null, rules: structuredClone(state.settings.rules) }),

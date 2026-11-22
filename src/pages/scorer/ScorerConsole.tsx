@@ -1,4 +1,4 @@
-import { ArrowLeft, Crosshair, Dumbbell, FastForward, Keyboard, Lock, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
+import { ArrowLeft, Crosshair, Dumbbell, FastForward, Keyboard, Lock, Megaphone, MegaphoneOff, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { ActiveEffects } from '../../components/cards/ActiveEffects.tsx';
 import { CardHands } from '../../components/cards/CardHands.tsx';
@@ -37,6 +37,8 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
   const keypad = useKeypadPrefs(tournamentDefault);
   const [practice, setPractice] = useState(false);
   const [keypadOpen, setKeypadOpen] = useState(false);
+  const dispatch = useDispatch();
+  const crowdOn = state.settings.visibility.soundboardEnabled !== false;
   // Practice is only offered while no darts are being scored for real.
   const practiceAllowed = phase === 'UP_NEXT' || phase === 'PRE_MATCH';
   const inPractice = practice && practiceAllowed;
@@ -62,6 +64,15 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
                 <span className="hidden lg:inline">Practice</span>
               </Button>
             )}
+            <Button
+              size="sm"
+              icon={crowdOn ? Megaphone : MegaphoneOff}
+              aria-label={crowdOn ? 'Mute crowd soundboard' : 'Unmute crowd soundboard'}
+              title="Crowd soundboard on the stage"
+              onClick={() => void dispatch({ type: 'UPDATE_VISIBILITY', patch: { soundboardEnabled: !crowdOn } }, { persist: 'immediate' })}
+            >
+              <span className="hidden lg:inline">{crowdOn ? 'Crowd on' : 'Crowd off'}</span>
+            </Button>
             <Button size="sm" icon={Keyboard} onClick={() => setKeypadOpen(true)} aria-label="Keypad layout">
               <span className="hidden lg:inline">Keypad</span>
             </Button>

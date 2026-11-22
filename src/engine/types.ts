@@ -180,7 +180,12 @@ export interface VisibilitySettings {
   stageVisitHistory: boolean;
   /** Guest phones: show scheduled breaks in the schedule. */
   showBreaksToGuests: boolean;
+  /** Crowd soundboard master switch (admin / scorer). Missing = on. */
+  soundboardEnabled?: boolean;
 }
+
+/** What the admin is projecting over the stage (awards ceremony). */
+export type StageOverlay = { kind: 'AWARD'; awardId: string } | { kind: 'FUT'; playerId: string };
 
 export interface StructureSettings {
   teamCount: number; // 4–16

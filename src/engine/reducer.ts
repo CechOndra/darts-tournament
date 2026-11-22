@@ -172,6 +172,13 @@ export function tournamentReducer(input: TournamentState, action: EngineAction):
     case 'REMOVE_BREAK':
       return { ...state, breaks: state.breaks.filter((b) => b.id !== action.breakId) };
 
+    case 'SET_STAGE_OVERLAY':
+      return { ...state, stageOverlay: action.overlay };
+
+    case 'SET_FUT_ATTRIBUTES':
+      if (action.attributes.length !== 6 || new Set(action.attributes).size !== 6) return state;
+      return { ...state, settings: { ...state.settings, futCardAttributes: action.attributes } };
+
     case 'SET_PIN_VERSION':
       return action.pinVersion > state.security.pinVersion ? { ...state, security: { pinVersion: action.pinVersion } } : state;
 

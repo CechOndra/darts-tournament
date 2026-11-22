@@ -75,7 +75,7 @@ export const CARD_TYPES: CardType[] = [
     pool: 'LOSER',
     timing: 'OWN_VISIT',
     short: 'Your 3 darts score double, their next dart 1 too',
-    rules: 'Play before your visit. Your darts score 2x (you cannot check out using the boost). The opponent\'s first dart of their next visit also scores 2x.',
+    rules: 'Play before your visit. Your darts score 2x, but a doubled dart that would finish the leg is a bust. The opponent\'s first dart of their next visit also scores 2x.',
   },
   {
     id: 'EXTRA_DART',

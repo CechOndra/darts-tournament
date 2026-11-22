@@ -22,6 +22,7 @@ import { useSoundState, useWinSong } from '../hooks/useSound.ts';
 import { setMuted, unlockAudio } from '../services/audio/sound.ts';
 import { MATCH_EVENTS } from '../services/matchOps.ts';
 import { CardEventsOverlay } from './stage/CardEventsOverlay.tsx';
+import { CrowdSoundPlayer, JoinQr, StageOverlayView } from './stage/StageExtras.tsx';
 
 function SoundButton() {
   const { muted, unlocked } = useSoundState();
@@ -128,6 +129,13 @@ function StageLive() {
         {phase === 'POST_MATCH' && view && <PostMatchStage state={state} view={view} />}
         <CoinTossOverlay state={state} view={view} />
         <CardEventsOverlay state={state} />
+        <StageOverlayView state={state} />
+        <CrowdSoundPlayer state={state} view={view} />
+        {phase === 'UP_NEXT' && !state.stageOverlay && (
+          <div className="absolute right-0 bottom-0 z-10">
+            <JoinQr size={150} />
+          </div>
+        )}
       </main>
       <span className={`absolute bottom-3 left-3 h-2.5 w-2.5 rounded-full ${status === 'connected' ? 'bg-accent-success' : 'bg-accent-warning'}`} title={status} />
     </div>

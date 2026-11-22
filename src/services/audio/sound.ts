@@ -115,3 +115,73 @@ export function playWinSong(): void {
 export function stopWinSong(): void {
   winSong?.pause();
 }
+
+// ------------------------------------------------------------------ crowd soundboard (generated)
+
+function noiseBurst(start: number, duration: number, filterFreq: number, gain = 0.25, q = 0.7): void {
+  const c = audio();
+  if (!c || c.state !== 'running' || isMuted()) return;
+  const len = Math.max(1, Math.floor(c.sampleRate * duration));
+  const buf = c.createBuffer(1, len, c.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const f = c.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.value = filterFreq;
+  f.Q.value = q;
+  const g = c.createGain();
+  g.gain.value = gain;
+  src.connect(f).connect(g).connect(c.destination);
+  src.start(c.currentTime + start);
+}
+
+function glide(from: number, to: number, start: number, duration: number, type: OscillatorType, gain: number): void {
+  const c = audio();
+  if (!c || c.state !== 'running' || isMuted()) return;
+  const t0 = c.currentTime + start;
+  const osc = c.createOscillator();
+  const g = c.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(from, t0);
+  osc.frequency.exponentialRampToValueAtTime(to, t0 + duration);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.08);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  osc.connect(g).connect(c.destination);
+  osc.start(t0);
+  osc.stop(t0 + duration + 0.05);
+}
+
+/** Crowd soundboard effects, synthesized so no audio files are needed. */
+export function playCrowdSound(id: 'AIRHORN' | 'APPLAUSE' | 'DRUMROLL' | 'OOOH' | 'BOO' | 'FANFARE'): void {
+  switch (id) {
+    case 'AIRHORN':
+      for (const [s, d] of [[0, 0.35], [0.45, 0.35], [0.9, 0.9]] as const) {
+        tone(466, s, d, 'sawtooth', 0.12);
+        tone(587, s, d, 'sawtooth', 0.1);
+        tone(698, s, d, 'sawtooth', 0.08);
+      }
+      break;
+    case 'APPLAUSE':
+      for (let i = 0; i < 40; i++) noiseBurst(Math.random() * 2.2, 0.06 + Math.random() * 0.05, 1500 + Math.random() * 2500, 0.35);
+      break;
+    case 'DRUMROLL':
+      for (let i = 0; i < 36; i++) noiseBurst(i * 0.055, 0.05, 220, 0.5 + i * 0.01, 1.5);
+      tone(110, 2.0, 0.5, 'triangle', 0.3);
+      noiseBurst(2.0, 0.6, 5000, 0.4, 0.4);
+      break;
+    case 'OOOH':
+      glide(330, 220, 0, 1.6, 'sine', 0.2);
+      glide(415, 277, 0, 1.6, 'sine', 0.12);
+      break;
+    case 'BOO':
+      glide(160, 110, 0, 1.8, 'sawtooth', 0.12);
+      glide(200, 130, 0.05, 1.8, 'sawtooth', 0.08);
+      break;
+    case 'FANFARE':
+      [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.14, i === 5 ? 0.8 : 0.18, 'square', 0.08));
+      break;
+  }
+}
