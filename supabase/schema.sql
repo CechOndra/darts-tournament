@@ -278,7 +278,7 @@ begin
   if (public._host_session(p_token)).token is null then
     raise exception 'unauthorized' using errcode = 'P0001';
   end if;
-  delete from public.app_host;
+  delete from public.app_host where id; -- WHERE required by Supabase safeupdate
   delete from public.tournament_sessions where role = 'admin';
   return true;
 end $$;
