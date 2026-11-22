@@ -78,7 +78,7 @@ export class LocalSocketTransport<S, A> extends BaseTransport<S, A> {
     this.socket = null;
   }
 
-  protected async publishState(envelope: StateEnvelope<S>): Promise<void> {
+  protected async publishState(envelope: StateEnvelope<S>, _delta: unknown): Promise<void> {
     if (!this.socket?.connected) return;
     const ack = (await this.socket
       .timeout(ACK_TIMEOUT_MS)

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BaseTransport, type PersistResult } from './BaseTransport.ts';
 import { resolveTransportEnv } from './config.ts';
 import { INLINE_STATE_MAX_BYTES, isNewer, shouldInlineState } from './protocol.ts';
-import type { LiveEvent, PresenceMeta, StateEnvelope, TransportConfig } from './types.ts';
+import type { LiveEvent, PresenceMeta, StateDelta, StateEnvelope, TransportConfig } from './types.ts';
 
 type S = { count: number };
 type A = { type: 'inc' };
@@ -21,8 +21,13 @@ class FakeTransport extends BaseTransport<S, A> {
     this.setStatus('connected');
   }
   protected async doDisconnect() {}
-  protected async publishState(e: StateEnvelope<S>) {
+  deltas: StateDelta<A>[] = [];
+  protected async publishState(e: StateEnvelope<S>, d: StateDelta<A> | null) {
     this.published.push(e);
+    if (d) this.deltas.push(d);
+  }
+  receiveDelta(d: StateDelta<A>) {
+    return this.applyRemoteDelta(d);
   }
   protected async publishLiveEvent(e: LiveEvent) {
     this.live.push(e);
@@ -132,6 +137,33 @@ describe('BaseTransport', () => {
     await t.emitLiveEvent('DART_THROWN', { segment: 20 });
     expect(types).toEqual(['DART_THROWN']);
     expect(t.live[0]?.originClientId).toBe('c1');
+  });
+});
+
+describe('delta sync', () => {
+  it('peers on the same base reach the identical snapshot from the action alone', async () => {
+    const a = new FakeTransport(config, 'a');
+    const b = new FakeTransport(config, 'b');
+    await a.dispatch({ type: 'inc' });
+    b.receive(a.getSnapshot()!);
+    await a.dispatch({ type: 'inc' });
+    await a.dispatch({ type: 'inc' });
+    expect(a.deltas).toHaveLength(2); // first dispatch has no base -> full snapshot only
+    expect(b.receiveDelta(a.deltas[0]!)).toBe(true);
+    expect(b.receiveDelta(a.deltas[0]!)).toBe(true); // duplicate is harmless
+    expect(b.receiveDelta(a.deltas[1]!)).toBe(true);
+    expect(b.getSnapshot()).toEqual(a.getSnapshot());
+  });
+
+  it('reports a gap so the caller can resync', async () => {
+    const a = new FakeTransport(config, 'a');
+    const b = new FakeTransport(config, 'b');
+    await a.dispatch({ type: 'inc' });
+    b.receive(a.getSnapshot()!);
+    await a.dispatch({ type: 'inc' });
+    await a.dispatch({ type: 'inc' });
+    expect(b.receiveDelta(a.deltas[1]!)).toBe(false); // missed deltas[0]
+    expect(b.getSnapshot()?.version).toBe(1);
   });
 });
 

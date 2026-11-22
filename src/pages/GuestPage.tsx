@@ -1,6 +1,13 @@
 import { CalendarClock, Layers, Radio, Trophy, Volume2, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import { CheckoutRoutes } from '../components/match/CheckoutRoutes.tsx';
+import { DutyBanner } from '../components/match/DutyBanner.tsx';
+import { MatchSummary } from '../components/match/MatchSummary.tsx';
+import { Scoreboard } from '../components/match/Scoreboard.tsx';
+import { qualifiersPerGroup, StandingsTable } from '../components/match/StandingsTable.tsx';
 import { Matchup } from '../components/Matchup.tsx';
+import { allGroupStandings } from '../engine/standings.ts';
+import { useDuty, useMatchView } from '../hooks/useMatch.ts';
 import { NoTournament } from '../components/NoTournament.tsx';
 import { Placeholder } from '../components/RouteHeader.tsx';
 import { ConnectionBadge } from '../components/StatusIndicators.tsx';
@@ -56,8 +63,12 @@ function GuestView() {
   const state = useTournamentState();
   const [tab, setTab] = useState<Tab>('live');
   const active = TABS.find((t) => t.id === tab) ?? TABS[0]!;
+  const view = useMatchView(state);
+  const { duty, next: dutyMatch } = useDuty(state);
   if (!state) return <NoTournament message="The live tournament could not be loaded." />;
   const next = upNextMatch(state);
+  const phase = state.live?.phase ?? 'UP_NEXT';
+  const tables = allGroupStandings(state);
 
   return (
     <div className="touch-route flex min-h-dvh flex-col bg-bg-primary">
@@ -72,12 +83,34 @@ function GuestView() {
       <main className="flex-1 space-y-4 p-4 pb-28">
         <h2 className="font-display text-sm tracking-widest text-text-muted uppercase">{active.label}</h2>
         {tab === 'live' && (
-          <div className="surface p-4">
-            {next ? <Matchup state={state} match={next} /> : <p className="text-center text-text-muted">All matches complete.</p>}
+          <div className="space-y-3">
+            <div className="surface space-y-3 p-3">
+              {phase === 'IN_PROGRESS' && view ? (
+                <>
+                  <Scoreboard state={state} view={view} />
+                  <CheckoutRoutes state={state} view={view} />
+                </>
+              ) : phase === 'POST_MATCH' && view ? (
+                <MatchSummary state={state} view={view} />
+              ) : view ? (
+                <Matchup state={state} match={view.match} />
+              ) : next ? (
+                <Matchup state={state} match={next} />
+              ) : (
+                <p className="text-center text-text-muted">All matches complete.</p>
+              )}
+            </div>
+            <DutyBanner state={state} duty={duty} match={dutyMatch} />
           </div>
         )}
         {tab === 'schedule' && <ScheduleList state={state} />}
-        {tab !== 'live' && tab !== 'schedule' && (
+        {tab === 'standings' &&
+          (tables.length ? (
+            tables.map((rows, g) => <StandingsTable key={g} state={state} rows={rows} groupIndex={g} qualify={qualifiersPerGroup(state)} />)
+          ) : (
+            <Placeholder milestone={5}>Playoff bracket view arrives in Milestone 5.</Placeholder>
+          ))}
+        {(tab === 'cards' || tab === 'sound') && (
           <Placeholder milestone={5}>The {active.label.toLowerCase()} view arrives in Milestone 5.</Placeholder>
         )}
       </main>

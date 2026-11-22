@@ -1,3 +1,4 @@
+import { resolveSlot } from './standings.ts';
 import type { TournamentState } from './state.ts';
 import type { Match, PlayoffRound, TeamSlot } from './types.ts';
 
@@ -26,6 +27,8 @@ export function teamName(state: TournamentState, teamId: string): string {
 
 /** Display text for a slot: the team name if known, otherwise where it comes from. */
 export function describeSlot(state: TournamentState, slot: TeamSlot): string {
+  const resolved = slot.kind === 'TEAM' ? null : resolveSlot(state, slot);
+  if (resolved) return teamName(state, resolved);
   switch (slot.kind) {
     case 'TEAM':
       return teamName(state, slot.teamId);
@@ -61,8 +64,13 @@ export function upNextMatch(state: TournamentState): Match | null {
 }
 
 export function playersOfSlot(state: TournamentState, slot: TeamSlot) {
-  if (slot.kind !== 'TEAM') return [];
-  const team = state.teams.find((t) => t.id === slot.teamId);
+  const teamId = resolveSlot(state, slot);
+  if (!teamId) return [];
+  return playersOfTeam(state, teamId);
+}
+
+export function playersOfTeam(state: TournamentState, teamId: string) {
+  const team = state.teams.find((t) => t.id === teamId);
   return team ? team.playerIds.flatMap((id) => (state.players[id] ? [state.players[id]] : [])) : [];
 }
 

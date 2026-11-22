@@ -2,8 +2,8 @@ import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../supabase/client.ts';
 import { BaseTransport, withTimeout, type PersistResult } from './BaseTransport.ts';
 import { createId } from './ids.ts';
-import { BROADCAST_EVENTS, channelName, shouldInlineState } from './protocol.ts';
-import type { LiveEvent, PresenceMeta, StateEnvelope, ThrowLogEntry, TransportConfig } from './types.ts';
+import { BROADCAST_EVENTS, channelName, INLINE_STATE_MAX_BYTES, payloadBytes, shouldInlineState } from './protocol.ts';
+import type { LiveEvent, PresenceMeta, StateDelta, StateEnvelope, ThrowLogEntry, TransportConfig } from './types.ts';
 
 interface TournamentRow {
   id: string;
@@ -51,6 +51,8 @@ export class SupabaseTransport<S, A> extends BaseTransport<S, A> {
   private readonly pendingPings = new Map<string, () => void>();
   private warnedNoToken = false;
   private manualDisconnect = false;
+  private lastResyncRequest = 0;
+  private resyncTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: TransportConfig<S, A>, options: SupabaseTransportOptions) {
     super(config);
@@ -71,6 +73,15 @@ export class SupabaseTransport<S, A> extends BaseTransport<S, A> {
       .on('broadcast', { event: BROADCAST_EVENTS.STATE_SYNC }, ({ payload }) => {
         const envelope = payload as StateEnvelope<S>;
         if (envelope.originClientId !== this.clientId) this.acceptRemoteEnvelope(envelope);
+      })
+      .on('broadcast', { event: BROADCAST_EVENTS.STATE_DELTA }, ({ payload }) => {
+        const delta = payload as StateDelta<A>;
+        if (delta.originClientId === this.clientId) return;
+        if (!this.applyRemoteDelta(delta)) this.requestResync();
+      })
+      .on('broadcast', { event: BROADCAST_EVENTS.STATE_REQUEST }, ({ payload }) => {
+        const req = payload as { clientId: string; haveVersion: number };
+        if (req.clientId !== this.clientId) void this.serveResync(req.haveVersion);
       })
       .on('broadcast', { event: BROADCAST_EVENTS.STATE_HINT }, ({ payload }) => {
         const hint = payload as StateHint;
@@ -166,8 +177,12 @@ export class SupabaseTransport<S, A> extends BaseTransport<S, A> {
     else this.acceptRemoteEnvelope(latest);
   }
 
-  protected async publishState(envelope: StateEnvelope<S>): Promise<void> {
+  protected async publishState(envelope: StateEnvelope<S>, delta: StateDelta<A> | null): Promise<void> {
     if (!this.channel) return;
+    if (delta && payloadBytes(delta) <= INLINE_STATE_MAX_BYTES) {
+      await this.channel.send({ type: 'broadcast', event: BROADCAST_EVENTS.STATE_DELTA, payload: delta });
+      return;
+    }
     if (shouldInlineState(envelope)) {
       await this.channel.send({ type: 'broadcast', event: BROADCAST_EVENTS.STATE_SYNC, payload: envelope });
       return;
@@ -175,6 +190,33 @@ export class SupabaseTransport<S, A> extends BaseTransport<S, A> {
     // Too large for a broadcast frame (e.g. many player photos): persist first, then hint peers to re-read.
     await this.flush();
     const hint: StateHint = { version: envelope.version, originClientId: this.clientId };
+    await this.channel.send({ type: 'broadcast', event: BROADCAST_EVENTS.STATE_HINT, payload: hint });
+  }
+
+  /** We missed a delta: ask the author for a full snapshot, and re-read Postgres as a fallback. */
+  private requestResync() {
+    const now = Date.now();
+    if (now - this.lastResyncRequest < 1500) return;
+    this.lastResyncRequest = now;
+    void this.channel?.send({
+      type: 'broadcast',
+      event: BROADCAST_EVENTS.STATE_REQUEST,
+      payload: { clientId: this.clientId, haveVersion: this.envelope?.version ?? 0 },
+    });
+    if (this.resyncTimer) clearTimeout(this.resyncTimer);
+    this.resyncTimer = setTimeout(() => void this.refreshFromDatabase(false).catch(() => undefined), 2500);
+  }
+
+  /** Only the author of our current snapshot answers, to avoid a stampede. */
+  private async serveResync(haveVersion: number) {
+    const env = this.envelope;
+    if (!this.channel || !env || env.version <= haveVersion || env.originClientId !== this.clientId) return;
+    if (shouldInlineState(env)) {
+      await this.channel.send({ type: 'broadcast', event: BROADCAST_EVENTS.STATE_SYNC, payload: env });
+      return;
+    }
+    await this.persistCurrentNow();
+    const hint: StateHint = { version: env.version, originClientId: this.clientId };
     await this.channel.send({ type: 'broadcast', event: BROADCAST_EVENTS.STATE_HINT, payload: hint });
   }
 

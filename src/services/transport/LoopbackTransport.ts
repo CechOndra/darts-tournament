@@ -91,7 +91,7 @@ export class LoopbackTransport<S, A> extends BaseTransport<S, A> {
     }
   }
 
-  protected async publishState(envelope: StateEnvelope<S>): Promise<void> {
+  protected async publishState(envelope: StateEnvelope<S>, _delta: unknown): Promise<void> {
     this.post({ kind: 'state', envelope });
   }
 

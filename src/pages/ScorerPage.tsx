@@ -1,18 +1,14 @@
-import { Crosshair, Delete, Lock, LockKeyhole, ShieldAlert } from 'lucide-react';
+import { Delete, LockKeyhole } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { Matchup } from '../components/Matchup.tsx';
 import { NoTournament } from '../components/NoTournament.tsx';
-import { Placeholder, RouteHeader } from '../components/RouteHeader.tsx';
-import { ConnectionBadge, FullscreenButton, PingIndicator } from '../components/StatusIndicators.tsx';
-import { Button, Notice } from '../components/ui.tsx';
-import { upNextMatch } from '../engine/selectors.ts';
+import { Notice } from '../components/ui.tsx';
 import { useControl, useLiveTournamentId } from '../hooks/ControlProvider.tsx';
 import { TournamentScope, useTournamentState, useTransportContext } from '../hooks/TransportProvider.tsx';
 import { usePresenceRole } from '../hooks/useTransport.ts';
 import { describeControlError } from '../services/control/index.ts';
 import { sessionStore, type ScorerSession } from '../services/control/sessionStore.ts';
-import { countActiveScorers } from '../services/presence.ts';
 import { isScorerKickedOut, LIVE_EVENTS } from '../services/tournamentOps.ts';
+import { ScorerConsole } from './scorer/ScorerConsole.tsx';
 
 export function ScorerPage() {
   const id = useLiveTournamentId();
@@ -179,54 +175,5 @@ function PadKey({ label, onPress, disabled }: { label: string; onPress: () => vo
     >
       {label}
     </button>
-  );
-}
-
-/** Unlocked: 16:9 zero-scroll split grid (scoreboard + cards left, keypad right). */
-function ScorerConsole({ onLock }: { onLock: () => void }) {
-  const { peers } = useTransportContext();
-  const state = useTournamentState()!;
-  const scorers = countActiveScorers(peers);
-  const next = upNextMatch(state);
-
-  return (
-    <div className="touch-route flex h-dvh flex-col overflow-hidden bg-bg-primary">
-      {scorers > 1 && (
-        <div role="alert" className="animate-pulse bg-accent-danger px-4 py-3 text-center font-display text-lg font-bold tracking-wide text-text-primary uppercase">
-          <ShieldAlert size={22} className="mr-2 inline align-[-4px]" aria-hidden />
-          Warning: multiple scorer devices connected — rotate PIN in admin
-        </div>
-      )}
-      <RouteHeader
-        icon={Crosshair}
-        title="Table Scorer"
-        subtitle={state.meta?.name}
-        actions={
-          <>
-            <PingIndicator />
-            <ConnectionBadge />
-            <FullscreenButton />
-            <Button size="sm" icon={Lock} onClick={onLock} aria-label="Lock scorer">
-              <span className="hidden xl:inline">Lock</span>
-            </Button>
-          </>
-        }
-      />
-      <main className="grid min-h-0 flex-1 grid-cols-2 gap-4 p-4">
-        <section className="surface flex min-h-0 flex-col gap-4 p-4">
-          <h2 className="font-display text-sm tracking-widest text-text-muted uppercase">Up Next</h2>
-          {next ? <Matchup state={state} match={next} /> : <p className="text-text-muted">All matches have been played.</p>}
-          <div className="mt-auto">
-            <Placeholder milestone={3}>Live scoreboard, checkout routes and owned Power Cards render here.</Placeholder>
-          </div>
-        </section>
-        <section className="surface flex min-h-0 flex-col p-4">
-          <h2 className="font-display text-sm tracking-widest text-text-muted uppercase">Dart Keypad</h2>
-          <div className="mt-3 flex-1">
-            <Placeholder milestone={3}>Start match, starting order and the 1-tap per-dart keypad (48 px+ targets) with Undo Last Dart.</Placeholder>
-          </div>
-        </section>
-      </main>
-    </div>
   );
 }

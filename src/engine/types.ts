@@ -195,3 +195,37 @@ export interface TournamentSetup {
   visibility?: Partial<VisibilitySettings>;
   roster: RosterRow[];
 }
+
+// ------------------------------------------------------------------ live match (Milestone 3)
+export type Side = 'home' | 'away';
+export const otherSide = (s: Side): Side => (s === 'home' ? 'away' : 'home');
+
+/** Who throws first in a leg (decided by rule, alternation, decider re-run or manual override). */
+export interface LegSetup {
+  /** null while a decision (coin toss / bull-up / shootout / manual) is pending. */
+  firstTeam: Side | null;
+  /** Index into each team's playerIds of the player who throws that team's first visit. */
+  firstPlayer: { home: number; away: number };
+  /** What the tournament rule / alternation decided (for the override warning). */
+  ruleFirstTeam: Side | null;
+  ruleFirstPlayer: { home: number; away: number };
+  method: 'RULE' | 'ALTERNATE' | 'DECIDER';
+  /** Decision the tablet must run while firstTeam is null (or that was run). */
+  decision: LegDecision | null;
+  /** How the starting team was determined (shown on stage). */
+  resolvedBy: 'AUTO' | 'COIN_TOSS' | 'BULL_UP' | 'SHOOTOUT' | 'MANUAL' | null;
+}
+
+export type LegDecision = 'VIRTUAL_COIN_TOSS' | 'CLOSEST_TO_BULL_1P' | 'CLOSEST_TO_BULL_2P' | 'HIGH_SCORE_2DART_SHOOTOUT' | 'MANUAL_CHOICE';
+
+export type LivePhase = 'PRE_MATCH' | 'IN_PROGRESS' | 'POST_MATCH';
+
+export interface LiveMatch {
+  matchId: string;
+  phase: LivePhase;
+  homeTeamId: string;
+  awayTeamId: string;
+  startedAt: number;
+  completedAt: number | null;
+  legSetups: LegSetup[];
+}

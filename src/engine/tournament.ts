@@ -120,6 +120,8 @@ export function restructureTournament(state: TournamentState, structure: Structu
     breaks: [],
     throws: [],
     scorerDutyOverride: null,
+    live: null,
+    completedOrder: [],
   };
 }
 

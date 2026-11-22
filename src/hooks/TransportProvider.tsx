@@ -1,7 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { EngineAction } from '../engine/actions.ts';
 import { tournamentReducer } from '../engine/reducer.ts';
-import { createEmptyState, type TournamentState } from '../engine/state.ts';
+import { createEmptyState, migrateState, type TournamentState } from '../engine/state.ts';
 import {
   createTransport,
   type ConnectionStatus,
@@ -141,7 +141,7 @@ export function useOptionalTransportContext(): TransportContextValue | null {
 
 export function useTournamentState(): TournamentState | null {
   const { envelope } = useTransportContext();
-  return envelope?.state.meta ? envelope.state : null;
+  return useMemo(() => (envelope?.state.meta ? migrateState(envelope.state) : null), [envelope]);
 }
 
 export function useDispatch() {

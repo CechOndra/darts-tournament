@@ -1,5 +1,5 @@
 import type { EngineAction } from '../engine/actions.ts';
-import { createEmptyState, STATE_SCHEMA_VERSION, type TournamentState } from '../engine/state.ts';
+import { createEmptyState, migrateState, STATE_SCHEMA_VERSION, type TournamentState } from '../engine/state.ts';
 import { buildTournament } from '../engine/tournament.ts';
 import type { TournamentSetup } from '../engine/types.ts';
 import type { ControlApi } from './control/types.ts';
@@ -85,10 +85,10 @@ export function parseBackup(text: string, targetTournamentId: string): Tournamen
   }
   const file = data as Partial<BackupFile>;
   if (file.format !== 'darts-tournament-backup' || !file.state) throw new Error('This is not a darts tournament backup file.');
-  const state = file.state;
-  if (state.schemaVersion !== STATE_SCHEMA_VERSION) {
-    throw new Error(`Backup uses data version ${state.schemaVersion}; this app expects ${STATE_SCHEMA_VERSION}.`);
+  if (typeof file.state.schemaVersion !== 'number' || file.state.schemaVersion < 2 || file.state.schemaVersion > STATE_SCHEMA_VERSION) {
+    throw new Error(`Backup uses data version ${file.state.schemaVersion}; this app supports 2 to ${STATE_SCHEMA_VERSION}.`);
   }
+  const state = migrateState(file.state);
   const keys = Object.keys(createEmptyState()) as (keyof TournamentState)[];
   const missing = keys.filter((k) => !(k in state));
   if (missing.length) throw new Error(`Backup is missing: ${missing.join(', ')}.`);

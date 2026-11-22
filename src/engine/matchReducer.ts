@@ -1,0 +1,216 @@
+import { computeMatchView, initialLegSetup, nextLegSetup } from './match.ts';
+import { checkoutTypeOf, dartPoints, evaluateDart, isValidDart, type Multiplier } from './scoring.ts';
+import { matchTeams } from './standings.ts';
+import type { TournamentState } from './state.ts';
+import type { DartThrow, LegSetup, LiveMatch, Match, Side } from './types.ts';
+
+export type MatchAction =
+  | { type: 'START_MATCH'; matchId: string; at: number }
+  | { type: 'ABORT_MATCH' }
+  | { type: 'DEFER_MATCH'; matchId: string }
+  | {
+      type: 'SET_LEG_START';
+      legIndex: number;
+      firstTeam?: Side;
+      firstPlayer?: Partial<Record<Side, number>>;
+      /** Set when resolving a pending decision (coin toss, bull-up, shootout, manual pick). */
+      resolvedBy?: 'COIN_TOSS' | 'BULL_UP' | 'SHOOTOUT' | 'MANUAL';
+    }
+  | { type: 'BEGIN_PLAY' }
+  | { type: 'THROW_DART'; id: string; segment: number; multiplier: Multiplier; at: number }
+  | { type: 'UNDO_DART' }
+  | { type: 'CONTINUE_TO_NEXT' };
+
+const MATCH_ACTIONS = new Set<string>([
+  'START_MATCH',
+  'ABORT_MATCH',
+  'DEFER_MATCH',
+  'SET_LEG_START',
+  'BEGIN_PLAY',
+  'THROW_DART',
+  'UNDO_DART',
+  'CONTINUE_TO_NEXT',
+]);
+
+export const isMatchAction = (a: { type: string }): a is MatchAction => MATCH_ACTIONS.has(a.type);
+
+const updateMatch = (state: TournamentState, id: string, patch: Partial<Match>): Match[] =>
+  state.matches.map((m) => (m.id === id ? { ...m, ...patch } : m));
+
+const withLive = (state: TournamentState, patch: Partial<LiveMatch>): TournamentState =>
+  state.live ? { ...state, live: { ...state.live, ...patch } } : state;
+
+function setLegSetup(live: LiveMatch, index: number, setup: LegSetup): LiveMatch {
+  const legSetups = [...live.legSetups];
+  legSetups[index] = setup;
+  return { ...live, legSetups };
+}
+
+/** Team ids of a startable match (both resolved and different), else null. */
+export function startableTeams(state: TournamentState, match: Match): { home: string; away: string } | null {
+  const { home, away } = matchTeams(state, match);
+  return home && away && home !== away ? { home, away } : null;
+}
+
+export function matchReducer(state: TournamentState, action: MatchAction): TournamentState {
+  switch (action.type) {
+    case 'START_MATCH': {
+      if (state.live) return state;
+      const match = state.matches.find((m) => m.id === action.matchId);
+      if (!match || match.status !== 'SCHEDULED' || !state.queue.includes(match.id)) return state;
+      const teams = startableTeams(state, match);
+      if (!teams) return state;
+      const live: LiveMatch = {
+        matchId: match.id,
+        phase: 'PRE_MATCH',
+        homeTeamId: teams.home,
+        awayTeamId: teams.away,
+        startedAt: action.at,
+        completedAt: null,
+        legSetups: [],
+      };
+      const withMatch = { ...state, live };
+      live.legSetups = [initialLegSetup(withMatch, match, live, 0, 'RULE')];
+      return {
+        ...state,
+        live,
+        matches: updateMatch(state, match.id, { status: 'IN_PROGRESS', legsWon: { home: 0, away: 0 }, winnerTeamId: null }),
+        queue: [match.id, ...state.queue.filter((id) => id !== match.id)],
+      };
+    }
+
+    case 'ABORT_MATCH': {
+      const live = state.live;
+      if (!live || live.phase === 'POST_MATCH') return state;
+      if (state.throws.some((t) => t.matchId === live.matchId)) return state;
+      return { ...state, live: null, matches: updateMatch(state, live.matchId, { status: 'SCHEDULED' }) };
+    }
+
+    case 'DEFER_MATCH': {
+      if (state.live) return state;
+      const i = state.queue.indexOf(action.matchId);
+      if (i === -1) return state;
+      const byId = new Map(state.matches.map((m) => [m.id, m]));
+      const j = state.queue.findIndex((id, k) => {
+        const m = byId.get(id);
+        return k > i && m?.status === 'SCHEDULED' && !!startableTeams(state, m);
+      });
+      if (j === -1) return state;
+      const queue = [...state.queue];
+      queue.splice(i, 1);
+      queue.splice(j, 0, action.matchId); // j shifted by the removal => lands right after the pulled match
+      return { ...state, queue };
+    }
+
+    case 'SET_LEG_START': {
+      const view = computeMatchView(state);
+      if (!view || view.live.phase === 'POST_MATCH') return state;
+      if (action.legIndex !== view.currentLegIndex || view.dartsThrownInLeg > 0) return state;
+      const setup = view.live.legSetups[action.legIndex];
+      if (!setup) return state;
+      const count = (side: Side) => Math.max(1, state.teams.find((t) => t.id === view.teamIds[side])?.playerIds.length ?? 1);
+      const fp = { ...setup.firstPlayer };
+      for (const side of ['home', 'away'] as Side[]) {
+        const v = action.firstPlayer?.[side];
+        if (v !== undefined && Number.isInteger(v) && v >= 0 && v < count(side)) fp[side] = v;
+      }
+      let next: LegSetup = { ...setup, firstPlayer: fp };
+      if (action.firstTeam) {
+        next = action.resolvedBy
+          ? { ...next, firstTeam: action.firstTeam, ruleFirstTeam: action.firstTeam, resolvedBy: action.resolvedBy }
+          : { ...next, firstTeam: action.firstTeam };
+      }
+      return { ...state, live: setLegSetup(view.live, action.legIndex, next) };
+    }
+
+    case 'BEGIN_PLAY': {
+      const live = state.live;
+      if (!live || live.phase !== 'PRE_MATCH' || !live.legSetups[0]?.firstTeam) return state;
+      return withLive(state, { phase: 'IN_PROGRESS' });
+    }
+
+    case 'THROW_DART': {
+      const dart = { segment: action.segment, multiplier: action.multiplier };
+      if (!isValidDart(dart)) return state;
+      const view = computeMatchView(state);
+      if (!view || view.live.phase !== 'IN_PROGRESS' || !view.turn) return state;
+      if (state.throws.some((t) => t.id === action.id)) return state;
+      const turn = view.turn;
+      const { outcome } = evaluateDart(dart, turn.remaining, state.settings.rules.checkoutMode);
+      const raw = dartPoints(dart);
+      const thrown: DartThrow = {
+        id: action.id,
+        matchId: view.match.id,
+        legIndex: turn.legIndex,
+        visitIndex: turn.visitIndex,
+        dartIndex: (turn.darts.length + 1) as DartThrow['dartIndex'],
+        teamId: turn.teamId,
+        playerId: turn.playerId,
+        segment: dart.segment,
+        multiplier: dart.multiplier,
+        rawPoints: raw,
+        effectivePoints: raw,
+        mulliganed: false,
+        isCheckoutDart: outcome === 'CHECKOUT',
+        checkoutType: outcome === 'CHECKOUT' ? checkoutTypeOf(dart) : 'NONE',
+        activeCardId: null,
+        timestamp: action.at,
+      };
+      let next: TournamentState = { ...state, throws: [...state.throws, thrown] };
+      const after = computeMatchView(next)!;
+      next = { ...next, matches: updateMatch(next, view.match.id, { legsWon: after.legsWon }) };
+
+      if (after.winner) {
+        const winnerTeamId = after.teamIds[after.winner];
+        return {
+          ...next,
+          live: { ...next.live!, phase: 'POST_MATCH', completedAt: action.at },
+          matches: updateMatch(next, view.match.id, { status: 'COMPLETED', winnerTeamId, legsWon: after.legsWon }),
+          queue: next.queue.filter((id) => id !== view.match.id),
+          completedOrder: [...next.completedOrder.filter((id) => id !== view.match.id), view.match.id],
+          scorerDutyOverride: null,
+        };
+      }
+      const wonLeg = after.legs[turn.legIndex]?.winner;
+      if (wonLeg && !next.live!.legSetups[turn.legIndex + 1]) {
+        const setup = nextLegSetup(next, view.match, next.live!, turn.legIndex + 1, after.legsWon);
+        next = { ...next, live: setLegSetup(next.live!, turn.legIndex + 1, setup) };
+      }
+      return next;
+    }
+
+    case 'UNDO_DART': {
+      const live = state.live;
+      if (!live) return state;
+      let idx = -1;
+      for (let i = state.throws.length - 1; i >= 0; i--) {
+        if (state.throws[i]!.matchId === live.matchId) {
+          idx = i;
+          break;
+        }
+      }
+      if (idx === -1) return state;
+      const throws = state.throws.filter((_, i) => i !== idx);
+      let next: TournamentState = { ...state, throws };
+      const after = computeMatchView(next)!;
+      if (live.phase === 'POST_MATCH') {
+        // Accidental finish: reopen the match.
+        next = {
+          ...next,
+          live: { ...live, phase: 'IN_PROGRESS', completedAt: null },
+          matches: updateMatch(next, live.matchId, { status: 'IN_PROGRESS', winnerTeamId: null, legsWon: after.legsWon }),
+          queue: [live.matchId, ...next.queue.filter((id) => id !== live.matchId)],
+          completedOrder: next.completedOrder.filter((id) => id !== live.matchId),
+        };
+      } else {
+        next = { ...next, matches: updateMatch(next, live.matchId, { legsWon: after.legsWon }) };
+      }
+      return next;
+    }
+
+    case 'CONTINUE_TO_NEXT': {
+      if (state.live?.phase !== 'POST_MATCH') return state;
+      return { ...state, live: null };
+    }
+  }
+}

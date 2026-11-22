@@ -1,5 +1,6 @@
 import type { EngineAction, RulesPatch } from './actions.ts';
-import { createEmptyState, STATE_SCHEMA_VERSION, type TournamentState } from './state.ts';
+import { isMatchAction, matchReducer } from './matchReducer.ts';
+import { createEmptyState, migrateState, type TournamentState } from './state.ts';
 import {
   buildTournament,
   playerPlaceholderName,
@@ -27,7 +28,9 @@ export function mergeRules(rules: GameRules, patch: RulesPatch): GameRules {
 const isMovable = (m: Match | undefined) => !!m && m.status === 'SCHEDULED';
 
 /** Pure reducer: (state, action) -> new state. Never mutates its inputs; invalid actions are no-ops. */
-export function tournamentReducer(state: TournamentState, action: EngineAction): TournamentState {
+export function tournamentReducer(input: TournamentState, action: EngineAction): TournamentState {
+  const state = migrateState(input);
+  if (isMatchAction(action)) return matchReducer(state, action);
   switch (action.type) {
     case 'INITIALIZE':
       return buildTournament(action.setup);
@@ -164,19 +167,15 @@ export function tournamentReducer(state: TournamentState, action: EngineAction):
       return action.pinVersion > state.security.pinVersion ? { ...state, security: { pinVersion: action.pinVersion } } : state;
 
     case 'REPLACE_STATE':
-      if (action.state.schemaVersion !== STATE_SCHEMA_VERSION) {
-        throw new Error(
-          `Unsupported backup schema version ${action.state.schemaVersion} (expected ${STATE_SCHEMA_VERSION})`,
-        );
+      if (!action.state || typeof action.state.schemaVersion !== 'number' || action.state.schemaVersion < 2) {
+        throw new Error(`Unsupported backup schema version ${action.state?.schemaVersion}`);
       }
-      return structuredClone(action.state);
+      return migrateState(structuredClone(action.state));
 
     case 'RESET_STATE':
       return createEmptyState();
 
-    default: {
-      const exhaustive: never = action;
-      return exhaustive;
-    }
+    default:
+      return state;
   }
 }

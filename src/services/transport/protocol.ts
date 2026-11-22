@@ -7,6 +7,10 @@ import type { StateEnvelope } from './types.ts';
 /** Supabase Realtime Broadcast event names (one channel per tournament). */
 export const BROADCAST_EVENTS = {
   STATE_SYNC: 'state_sync',
+  /** Action + base stamp; peers on that base apply it with the shared reducer. */
+  STATE_DELTA: 'state_delta',
+  /** "I missed a delta" — the author answers with a full snapshot or a hint. */
+  STATE_REQUEST: 'state_request',
   /** Sent instead of STATE_SYNC when the snapshot is too large to inline; receivers re-fetch from Postgres. */
   STATE_HINT: 'state_hint',
   LIVE_EVENT: 'live_event',

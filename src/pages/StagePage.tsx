@@ -1,18 +1,29 @@
-import { Target } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Coins, Target } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { CheckoutRoutes } from '../components/match/CheckoutRoutes.tsx';
+import { DutyBanner } from '../components/match/DutyBanner.tsx';
+import { MatchSummary } from '../components/match/MatchSummary.tsx';
+import { Scoreboard, VisitSlots } from '../components/match/Scoreboard.tsx';
+import { qualifiersPerGroup, StandingsTable } from '../components/match/StandingsTable.tsx';
 import { Matchup } from '../components/Matchup.tsx';
 import { NoTournament } from '../components/NoTournament.tsx';
 import { FullscreenButton } from '../components/StatusIndicators.tsx';
-import { upNextMatch } from '../engine/selectors.ts';
+import type { MatchView } from '../engine/match.ts';
+import { matchLabel, playersOfTeam, teamName, upNextMatch } from '../engine/selectors.ts';
+import { allGroupStandings } from '../engine/standings.ts';
+import type { TournamentState } from '../engine/state.ts';
+import type { Side } from '../engine/types.ts';
 import { useLiveTournamentId } from '../hooks/ControlProvider.tsx';
 import { TournamentScope, useTournamentState, useTransportContext } from '../hooks/TransportProvider.tsx';
+import { useDuty, useMatchView } from '../hooks/useMatch.ts';
 import { usePresenceRole } from '../hooks/useTransport.ts';
+import { MATCH_EVENTS } from '../services/matchOps.ts';
 
 export function StagePage() {
   const id = useLiveTournamentId();
   return (
     <div className="touch-route group relative h-dvh overflow-hidden bg-bg-primary [background:var(--surface-gradient)]">
-      <div className="absolute top-4 right-4 z-10 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="absolute top-4 right-4 z-30 opacity-0 transition-opacity group-hover:opacity-100">
         <FullscreenButton />
       </div>
       {id === undefined ? (
@@ -28,13 +39,13 @@ export function StagePage() {
   );
 }
 
-function Clock() {
+function Clock({ className = 'text-4xl' }: { className?: string }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  return <span className="font-mono text-4xl text-accent-gold">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>;
+  return <span className={`font-mono text-accent-gold ${className}`}>{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>;
 }
 
 function StageIdle() {
@@ -48,37 +59,178 @@ function StageIdle() {
   );
 }
 
-/** Projector kiosk: no admin or scoring controls. */
+/** Projector kiosk: mirrors the match state machine, zero interactive controls. */
 function StageLive() {
   usePresenceRole('stage');
   const { status } = useTransportContext();
   const state = useTournamentState();
+  const view = useMatchView(state);
   if (!state) return <StageIdle />;
-  const next = upNextMatch(state);
+  const phase = state.live?.phase ?? 'UP_NEXT';
 
   return (
-    <div className="flex h-full flex-col p-10">
+    <div className="flex h-full flex-col gap-6 p-8">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Target size={44} className="text-accent-primary" aria-hidden />
-          <h1 className="font-display text-4xl font-bold tracking-wider uppercase">{state.meta?.name}</h1>
+        <div className="flex min-w-0 items-center gap-4">
+          <Target size={40} className="shrink-0 text-accent-primary" aria-hidden />
+          <h1 className="truncate font-display text-3xl font-bold tracking-wider uppercase">{state.meta?.name}</h1>
+          {view && phase !== 'UP_NEXT' && (
+            <span className="font-display text-2xl tracking-widest text-text-muted uppercase">
+              · {matchLabel(state, view.match)} · {view.match.format}
+              {phase === 'IN_PROGRESS' && ` · Leg ${view.currentLegIndex + 1}`}
+            </span>
+          )}
         </div>
         <Clock />
       </header>
-      <main className="flex flex-1 items-center justify-center">
-        {next ? (
-          <div className="w-full max-w-6xl space-y-10">
-            <p className="text-center font-display text-3xl tracking-[0.4em] text-text-muted uppercase">Next Match</p>
-            <Matchup state={state} match={next} size="xl" />
-          </div>
-        ) : (
-          <p className="font-display text-5xl uppercase">All matches complete</p>
-        )}
+      <main className="relative flex min-h-0 flex-1 flex-col">
+        {phase === 'UP_NEXT' && <UpNextStage state={state} />}
+        {phase === 'PRE_MATCH' && view && <PreMatchStage state={state} view={view} />}
+        {phase === 'IN_PROGRESS' && view && <InProgressStage state={state} view={view} />}
+        {phase === 'POST_MATCH' && view && <PostMatchStage state={state} view={view} />}
+        <CoinTossOverlay state={state} view={view} />
       </main>
-      <span
-        className={`absolute bottom-4 left-4 h-2.5 w-2.5 rounded-full ${status === 'connected' ? 'bg-accent-success' : 'bg-accent-warning'}`}
-        title={status}
-      />
+      <span className={`absolute bottom-3 left-3 h-2.5 w-2.5 rounded-full ${status === 'connected' ? 'bg-accent-success' : 'bg-accent-warning'}`} title={status} />
+    </div>
+  );
+}
+
+function UpNextStage({ state }: { state: TournamentState }) {
+  const { duty, next } = useDuty(state);
+  const match = upNextMatch(state);
+  const tables = allGroupStandings(state);
+  const hasResults = state.completedOrder.length > 0 && tables.length > 0;
+  const [showTables, setShowTables] = useState(false);
+  useEffect(() => {
+    if (!hasResults) return setShowTables(false);
+    const t = setInterval(() => setShowTables((v) => !v), 12_000);
+    return () => clearInterval(t);
+  }, [hasResults]);
+
+  if (!match) return <p className="m-auto font-display text-6xl uppercase">All matches complete</p>;
+  if (showTables) {
+    return (
+      <div className="flex h-full flex-col gap-6">
+        <p className="text-center font-display text-3xl tracking-[0.4em] text-text-muted uppercase">Standings</p>
+        <div className={`grid flex-1 content-start gap-6 ${tables.length > 1 ? 'grid-cols-2' : 'mx-auto w-full max-w-4xl'}`}>
+          {tables.map((rows, g) => (
+            <StandingsTable key={g} state={state} rows={rows} groupIndex={g} qualify={qualifiersPerGroup(state)} size="xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="m-auto flex w-full max-w-6xl flex-col items-center gap-10">
+      <p className="font-display text-3xl tracking-[0.4em] text-text-muted uppercase">Next Match</p>
+      <Matchup state={state} match={match} size="xl" />
+      <DutyBanner state={state} duty={duty} match={next} size="xl" />
+    </div>
+  );
+}
+
+function PreMatchStage({ state, view }: { state: TournamentState; view: MatchView }) {
+  const { duty, next } = useDuty(state);
+  const setup = view.setup;
+  const decisionText: Record<string, string> = {
+    VIRTUAL_COIN_TOSS: 'Coin toss coming up',
+    CLOSEST_TO_BULL_1P: 'Bull-up to decide who throws first',
+    CLOSEST_TO_BULL_2P: 'Bull-up (2 players each) to decide who throws first',
+    HIGH_SCORE_2DART_SHOOTOUT: '2-dart shootout to decide who throws first',
+    MANUAL_CHOICE: 'Teams decide who throws first',
+  };
+  return (
+    <div className="m-auto flex w-full max-w-6xl flex-col items-center gap-10">
+      <Matchup state={state} match={view.match} size="xl" />
+      <p className="font-display text-4xl tracking-wide text-accent-gold uppercase">
+        {setup?.firstTeam ? `${teamName(state, view.teamIds[setup.firstTeam])} throws first` : setup?.decision ? decisionText[setup.decision] : ''}
+      </p>
+      <DutyBanner state={state} duty={duty} match={next} size="xl" />
+    </div>
+  );
+}
+
+function InProgressStage({ state, view }: { state: TournamentState; view: MatchView }) {
+  const turn = view.turn;
+  const thrower = turn ? playersOfTeam(state, turn.teamId).find((p) => p.id === turn.playerId) : null;
+  return (
+    <div className="flex h-full flex-col gap-6">
+      <Scoreboard state={state} view={view} size="xl" />
+      <div className="grid flex-1 grid-cols-[1fr_auto] items-center gap-8">
+        <div className="min-w-0">
+          {turn ? (
+            <>
+              <p className="mb-3 font-display text-3xl tracking-wide uppercase">
+                <span className="text-text-muted">Throwing:</span> {thrower?.name} <span className="text-text-muted">· needs</span> {turn.remaining}
+              </p>
+              <CheckoutRoutes state={state} view={view} size="xl" />
+            </>
+          ) : (
+            <p className="font-display text-4xl text-accent-gold uppercase">Next leg starting</p>
+          )}
+        </div>
+        <VisitSlots view={view} size="xl" />
+      </div>
+      <VisitFlash view={view} />
+    </div>
+  );
+}
+
+function PostMatchStage({ state, view }: { state: TournamentState; view: MatchView }) {
+  const { duty, next } = useDuty(state);
+  return (
+    <div className="m-auto flex w-full max-w-6xl flex-col items-center gap-10">
+      <MatchSummary state={state} view={view} size="xl" />
+      <DutyBanner state={state} duty={duty} match={next} size="xl" />
+    </div>
+  );
+}
+
+/** Big flash for the visit that just ended: BUST / 180 / GAME SHOT / score. */
+function VisitFlash({ view }: { view: MatchView }) {
+  const v = view.lastCompletedVisit;
+  const key = v ? `${v.legIndex}-${v.visitIndex}-${v.darts.length}` : '';
+  const prevKey = useRef<string | null>(null);
+  const [shown, setShown] = useState<{ text: string; tone: string } | null>(null);
+  useEffect(() => {
+    // Only flash on a *change* (not on first render / reconnect / StrictMode re-run).
+    const prev = prevKey.current;
+    prevKey.current = key;
+    if (prev === null || prev === key || !v) return;
+    const text = v.bust ? 'BUST' : v.checkout ? 'GAME SHOT' : v.scored === 180 ? 'ONE HUNDRED AND EIGHTY' : String(v.scored);
+    const tone = v.bust ? 'text-accent-danger' : v.checkout || v.scored >= 100 ? 'text-accent-gold' : 'text-text-primary';
+    setShown({ text, tone });
+    const t = setTimeout(() => setShown(null), 2200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  if (!shown) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+      <p className={`animate-pulse rounded-xl bg-bg-overlay px-16 py-8 text-center font-display text-9xl font-bold uppercase ${shown.tone}`}>{shown.text}</p>
+    </div>
+  );
+}
+
+function CoinTossOverlay({ state, view }: { state: TournamentState; view: MatchView | null }) {
+  const { transport } = useTransportContext();
+  const [toss, setToss] = useState<{ result: Side; revealed: boolean } | null>(null);
+  useEffect(
+    () =>
+      transport.onLiveEvent((e) => {
+        if (e.type !== MATCH_EVENTS.COIN_TOSS) return;
+        const { result } = e.payload as { result: Side };
+        setToss({ result, revealed: false });
+        setTimeout(() => setToss((t) => (t ? { ...t, revealed: true } : t)), 1800);
+        setTimeout(() => setToss(null), 5000);
+      }),
+    [transport],
+  );
+  if (!toss || !view) return null;
+  return (
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-8 bg-bg-overlay">
+      <Coins size={160} className={`text-accent-gold ${toss.revealed ? '' : 'animate-spin'}`} aria-hidden />
+      <p className="font-display text-6xl uppercase">{toss.revealed ? `${teamName(state, view.teamIds[toss.result])} throws first` : 'Coin toss...'}</p>
     </div>
   );
 }

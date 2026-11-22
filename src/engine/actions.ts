@@ -1,3 +1,4 @@
+import type { MatchAction } from './matchReducer.ts';
 import type { TournamentState } from './state.ts';
 import type {
   GameRules,
@@ -35,4 +36,5 @@ export type EngineAction =
   | { type: 'REMOVE_BREAK'; breakId: string }
   | { type: 'SET_PIN_VERSION'; pinVersion: number }
   | { type: 'REPLACE_STATE'; state: TournamentState } // Import Backup (.json)
-  | { type: 'RESET_STATE' };
+  | { type: 'RESET_STATE' }
+  | MatchAction;

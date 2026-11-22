@@ -23,6 +23,20 @@ export interface StateEnvelope<S> {
   state: S;
 }
 
+/**
+ * Compact state update: the action plus the exact snapshot it applies to. Peers on
+ * that base run the same pure reducer and reach the identical snapshot, so a dart
+ * costs a few hundred bytes on the wire instead of the whole tournament.
+ */
+export interface StateDelta<A> {
+  tournamentId: string;
+  base: { version: number; updatedAt: number; originClientId: string };
+  version: number;
+  updatedAt: number;
+  originClientId: string;
+  action: A;
+}
+
 /** Ephemeral, non-persisted broadcast (dart hits, card slams, wheel spins, soundboard...). */
 export interface LiveEvent<P = unknown> {
   id: string;

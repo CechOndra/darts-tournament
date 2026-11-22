@@ -7,6 +7,7 @@ import type {
   LiveEvent,
   PersistPolicy,
   PresenceMeta,
+  StateDelta,
   StateEnvelope,
   ThrowLogEntry,
   TournamentTransport,
@@ -58,8 +59,8 @@ export abstract class BaseTransport<S, A> implements TournamentTransport<S, A> {
   // ---------------------------------------------------------------- wire hooks
   protected abstract doConnect(): Promise<void>;
   protected abstract doDisconnect(): Promise<void>;
-  /** Deliver a freshly dispatched snapshot to peers. */
-  protected abstract publishState(envelope: StateEnvelope<S>): Promise<void>;
+  /** Deliver a freshly dispatched snapshot to peers (delta = the action that produced it). */
+  protected abstract publishState(envelope: StateEnvelope<S>, delta: StateDelta<A> | null): Promise<void>;
   protected abstract publishLiveEvent(event: LiveEvent): Promise<void>;
   protected abstract publishPresence(meta: PresenceMeta): Promise<void>;
   protected abstract doMeasureLatency(): Promise<number>;
@@ -87,7 +88,8 @@ export abstract class BaseTransport<S, A> implements TournamentTransport<S, A> {
 
   // ---------------------------------------------------------------- state
   async dispatch(action: A, options?: DispatchOptions): Promise<StateEnvelope<S>> {
-    const base = this.envelope?.state ?? this.config.createInitialState();
+    const prev = this.envelope;
+    const base = prev?.state ?? this.config.createInitialState();
     const nextState = this.config.reducer(base, action);
     const envelope: StateEnvelope<S> = {
       tournamentId: this.tournamentId,
@@ -98,8 +100,57 @@ export abstract class BaseTransport<S, A> implements TournamentTransport<S, A> {
     };
     this.adoptEnvelope(envelope);
     this.queuePersist(envelope, options?.persist ?? 'debounced');
-    await this.publishState(envelope);
+    const delta: StateDelta<A> | null = prev
+      ? {
+          tournamentId: this.tournamentId,
+          base: { version: prev.version, updatedAt: prev.updatedAt, originClientId: prev.originClientId },
+          version: envelope.version,
+          updatedAt: envelope.updatedAt,
+          originClientId: envelope.originClientId,
+          action,
+        }
+      : null;
+    await this.publishState(envelope, delta);
     return envelope;
+  }
+
+  /**
+   * Apply a peer's delta if we hold exactly its base snapshot. Returns false when
+   * we are out of step (caller then resyncs from a full snapshot).
+   */
+  protected applyRemoteDelta(delta: StateDelta<A>): boolean {
+    const cur = this.envelope;
+    if (delta.tournamentId !== this.tournamentId) return true; // not ours: ignore
+    if (cur && !isNewer(delta, cur)) return true; // already have it (or newer)
+    if (
+      !cur ||
+      cur.version !== delta.base.version ||
+      cur.updatedAt !== delta.base.updatedAt ||
+      cur.originClientId !== delta.base.originClientId
+    ) {
+      return false;
+    }
+    let state: S;
+    try {
+      state = this.config.reducer(cur.state, delta.action);
+    } catch (err) {
+      console.warn('[transport] delta failed to apply', err);
+      return false;
+    }
+    this.adoptEnvelope({
+      tournamentId: this.tournamentId,
+      version: delta.version,
+      updatedAt: delta.updatedAt,
+      originClientId: delta.originClientId,
+      state,
+    });
+    return true;
+  }
+
+  /** Persist the current snapshot now (used to serve peers that fell out of step). */
+  protected persistCurrentNow(): Promise<void> {
+    if (this.envelope && !this.pendingPersist) this.pendingPersist = this.envelope;
+    return this.flush();
   }
 
   /** Accept a snapshot from the network / storage if it is newer. Returns true if adopted. */
