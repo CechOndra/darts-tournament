@@ -249,8 +249,39 @@ function LegResult({ state, view }: { state: TournamentState; view: MatchView })
   );
 }
 
+/** How long the stage keeps the final leg up after the match-winning dart, before the summary. */
+const FINAL_LEG_HOLD_MS = 12_000;
+
 function PostMatchStage({ state, view }: { state: TournamentState; view: MatchView }) {
   const { duty, next } = useDuty(state);
+  const doneAt = view.live.completedAt ?? 0;
+  const [summary, setSummary] = useState(() => Date.now() - doneAt >= FINAL_LEG_HOLD_MS);
+  useEffect(() => {
+    const left = FINAL_LEG_HOLD_MS - (Date.now() - doneAt);
+    if (left <= 0) return setSummary(true);
+    setSummary(false);
+    const t = setTimeout(() => setSummary(true), left);
+    return () => clearTimeout(t);
+  }, [doneAt]);
+  if (!summary) {
+    const winner = view.winner ? teamName(state, view.teamIds[view.winner]) : '';
+    const finishing = view.currentLeg.visits.find((v) => v.checkout);
+    return (
+      <div className="flex h-full min-h-0 flex-col gap-6">
+        <Scoreboard state={state} view={view} size="xl" history={state.settings.visibility.stageVisitHistory} className="min-h-0 flex-1" />
+        <div className="shrink-0 space-y-2">
+          <p className="font-display text-5xl text-accent-gold uppercase">
+            Game shot · {winner} wins the match {view.legsWon.home} - {view.legsWon.away}
+          </p>
+          {finishing && view.currentLeg.checkoutDart && (
+            <p className="font-display text-3xl text-text-muted uppercase">
+              {finishing.scoreBefore} checkout on {dartLabel(view.currentLeg.checkoutDart)}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="m-auto flex w-full max-w-6xl flex-col items-center gap-10">
       <MatchSummary state={state} view={view} size="xl" />

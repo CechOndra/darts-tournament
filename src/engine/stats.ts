@@ -209,6 +209,19 @@ export const STAT_LABEL: Record<StatCode, { short: string; name: string }> = {
 };
 export const STAT_CODES: StatCode[] = ['AVG', 'PWR', 'STR', 'ACC', 'CON', 'FIN', 'DBL', 'OPN', 'CLU'];
 
+/** Plain-language explanation of each FUT stat (guest phones, admin, card detail). */
+export const STAT_HELP: Record<StatCode, string> = {
+  AVG: 'Points scored per 3 darts across all counted visits. The classic darts average.',
+  PWR: 'Big scoring: visits of 60+ count 1, visits of 80+ count 2 more, and every treble counts 3, divided by the number of visits.',
+  STR: 'Longest run of quality darts in a row (any 20, any double or treble, 25 or bull), plus a little extra for back-to-back 40+ visits.',
+  ACC: 'Share of darts aimed while still setting up (more than 60 left) that landed in the 20 (single, double or treble 20).',
+  CON: 'Share of visits that scored 20 or more without busting.',
+  FIN: 'Checkout success with 60 or less left, plus a bonus for the highest checkout and for finishing on doubles or trebles.',
+  DBL: 'Doubles and bulls hit per leg played.',
+  OPN: 'Average points of the first dart of each visit.',
+  CLU: '3-dart average on visits that start at 120 or less (the finishing zone).',
+};
+
 const PLAYSTYLE: Record<StatCode, string> = {
   AVG: 'Scoring Machine',
   PWR: 'Power Hitter',

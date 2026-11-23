@@ -27,7 +27,7 @@ import { useDuty, useMatchView } from '../hooks/useMatch.ts';
 import { useProjection, useTournamentStats } from '../hooks/useStats.ts';
 import { usePresenceRole } from '../hooks/useTransport.ts';
 import { CROWD_EVENT, sendCrowdSound } from '../services/soundboardOps.ts';
-import { FutGallery, UltimateTeamView, FutDetail } from '../components/fut/FutViews.tsx';
+import { FutGallery, StatsGuide, UltimateTeamView, FutDetail } from '../components/fut/FutViews.tsx';
 import { ultimateTeam } from '../engine/stats.ts';
 
 type Tab = 'live' | 'schedule' | 'standings' | 'cards' | 'sound';
@@ -274,6 +274,7 @@ function GuestStats({ state, follow }: { state: TournamentState; follow: string 
       {v.showPlayerFutCards && stats.cards.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-display text-sm tracking-widest text-text-muted uppercase">Player cards (tap for the radar chart)</h3>
+          <StatsGuide state={state} />
           <FutGallery
             state={state}
             columns="grid-cols-2"

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { NoTournament } from './components/NoTournament.tsx';
+import { UpdateBanner } from './components/UpdateBanner.tsx';
 import { ControlProvider } from './hooks/ControlProvider.tsx';
 
 // Each route is its own chunk: guests on phones only download the guest page.
@@ -15,6 +16,7 @@ export function App() {
   return (
     <HashRouter>
       <ControlProvider>
+        <UpdateBanner />
         <Suspense fallback={<NoTournament loading />}>
           <Routes>
             <Route path="/" element={<GuestPage />} />

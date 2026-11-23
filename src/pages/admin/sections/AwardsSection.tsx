@@ -2,7 +2,7 @@ import { Award as AwardIcon, Crown, IdCard, MonitorUp, MonitorX, Trophy } from '
 import { useState } from 'react';
 import { SettingsDraft } from '../../../components/admin/SettingsDraft.tsx';
 import { AwardCard, awardWinnerName } from '../../../components/fut/AwardCard.tsx';
-import { FutDetail, FutGallery, UltimateTeamView } from '../../../components/fut/FutViews.tsx';
+import { FutDetail, FutGallery, StatsGuide, UltimateTeamView } from '../../../components/fut/FutViews.tsx';
 import { Badge, Button, Notice, Section, Select } from '../../../components/ui.tsx';
 import { STATS_SCOPE_LABEL } from '../../../components/admin/labels.ts';
 import { STAT_CODES, STAT_LABEL, ultimateTeam } from '../../../engine/stats.ts';
@@ -111,7 +111,10 @@ export function AwardsSection({ state }: { state: TournamentState }) {
           {stats.cards.length === 0 ? (
             <p className="text-sm text-text-muted">No player has thrown yet.</p>
           ) : (
-            <FutGallery state={state} cards={[...stats.cards].sort((a, b) => b.ovr - a.ovr)} admin />
+            <>
+              <StatsGuide state={state} />
+              <FutGallery state={state} cards={[...stats.cards].sort((a, b) => b.ovr - a.ovr)} admin />
+            </>
           )}
         </div>
       </Section>

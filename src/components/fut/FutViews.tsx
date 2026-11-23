@@ -1,6 +1,6 @@
 import { Download, MonitorUp } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { STAT_LABEL, type FutCard as FutCardData, type UltimateSlot } from '../../engine/stats.ts';
+import { STAT_CODES, STAT_HELP, STAT_LABEL, type FutCard as FutCardData, type UltimateSlot } from '../../engine/stats.ts';
 import type { TournamentState } from '../../engine/state.ts';
 import { useDispatch } from '../../hooks/TransportProvider.tsx';
 import { playerRole } from '../../hooks/useStats.ts';
@@ -8,6 +8,39 @@ import { downloadSvgAsPng } from '../../services/media/customAssets.ts';
 import { Button, Field, Modal, Select } from '../ui.tsx';
 import { FutCard } from './FutCard.tsx';
 import { RadarChart } from './RadarChart.tsx';
+
+/** Expandable "What the stats mean" (same pattern as the Power Card rules). */
+export function StatsGuide({ state }: { state: TournamentState }) {
+  const shown = new Set(state.settings.futCardAttributes);
+  return (
+    <details className="surface p-3">
+      <summary className="cursor-pointer text-sm font-medium">What the card stats mean</summary>
+      <div className="mt-3 space-y-3 text-sm">
+        <ul className="space-y-2">
+          {STAT_CODES.filter((c) => shown.has(c)).map((c) => (
+            <li key={c}>
+              <span className="font-mono font-bold text-accent-gold">{c}</span> <span className="font-semibold">{STAT_LABEL[c].name}</span>
+              <span className="block text-xs text-text-muted">{STAT_HELP[c]}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="space-y-1 border-t border-border-subtle pt-3 text-xs text-text-muted">
+          <p>
+            <span className="font-semibold text-text-primary">Ratings 55-99:</span> each stat is ranked against everyone else in the tournament. The best player gets 99,
+            the lowest 55, the middle about 77.
+          </p>
+          <p>
+            <span className="font-semibold text-text-primary">OVR:</span> the average of the 6 ratings. Frames: Bronze below 66, Silver 66+, Gold 77+, Icon 87+.
+          </p>
+          <p>
+            <span className="font-semibold text-text-primary">Playstyle+:</span> named after the player's best stat.
+          </p>
+          <p>Visits changed by a Power Card are left out unless the host includes them. Cards update after every visit.</p>
+        </div>
+      </div>
+    </details>
+  );
+}
 
 /** FUT card for a player id (name, team, role, photo, logo looked up from state). */
 export function FutCardFor({ state, card, className }: { state: TournamentState; card: FutCardData; className?: string }) {
@@ -54,6 +87,7 @@ export function FutDetail({ state, card, cards, onClose, admin = false }: { stat
             )}
           </Field>
           <RadarChart card={card} compare={compare} label={name} compareLabel={compare ? state.players[compare.playerId]?.name : undefined} />
+          <StatsGuide state={state} />
           <div className="flex flex-wrap gap-2">
             <Button icon={Download} onClick={() => svgRef.current && void downloadSvgAsPng(svgRef.current, `${name.replace(/\W+/g, '_') || 'player'}_fut.png`)}>
               Download Card as PNG
