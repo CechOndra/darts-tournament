@@ -44,6 +44,7 @@ export type EngineAction =
   | { type: 'SET_PIN_VERSION'; pinVersion: number }
   | { type: 'SET_STAGE_OVERLAY'; overlay: StageOverlay | null }
   | { type: 'SET_HELP_REQUEST'; request: HelpRequest | null }
+  | { type: 'UPDATE_MEME_SETTINGS'; patch: Partial<import('./memes.ts').MemeSettings> }
   | { type: 'SET_FUT_ATTRIBUTES'; attributes: [StatCode, StatCode, StatCode, StatCode, StatCode, StatCode] }
   | { type: 'REPLACE_STATE'; state: TournamentState } // Import Backup (.json)
   | { type: 'RESET_STATE' }

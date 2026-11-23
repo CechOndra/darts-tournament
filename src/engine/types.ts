@@ -200,6 +200,8 @@ export interface VisibilitySettings {
   showBreaksToGuests: boolean;
   /** Guest phones: reveal the Ultimate Team (team of the tournament). Missing = off. */
   showUltimateTeam?: boolean;
+  /** Stage: small join QR code between matches. Missing = on. */
+  showJoinQr?: boolean;
   /** Crowd soundboard master switch (admin / scorer). Missing = on. */
   soundboardEnabled?: boolean;
 }
@@ -292,6 +294,8 @@ export interface TableSettings {
 }
 
 export interface TournamentSettings {
+  /** Stage meme overlays (missing = defaults). */
+  memes?: Partial<import('./memes.ts').MemeSettings>;
   visibility: VisibilitySettings;
   table: TableSettings;
   structure: StructureSettings;

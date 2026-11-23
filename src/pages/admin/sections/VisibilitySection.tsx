@@ -18,6 +18,12 @@ export function VisibilitySection({ state }: { state: TournamentState }) {
         onChange={(stageVisitHistory) => set({ stageVisitHistory })}
       />
       <Toggle
+        label="Join QR code on the stage"
+        description="Small QR in the corner between matches. Off: only the big QR you project yourself."
+        checked={v.showJoinQr !== false}
+        onChange={(showJoinQr) => set({ showJoinQr })}
+      />
+      <Toggle
         label="Crowd soundboard"
         description="Guests can trigger 6 sounds on the stage speakers (locked while a player throws)."
         checked={v.soundboardEnabled !== false}

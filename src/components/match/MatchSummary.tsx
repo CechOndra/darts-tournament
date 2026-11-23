@@ -10,9 +10,9 @@ export function MatchSummary({ state, view, size = 'md' }: { state: TournamentSt
   const winner = view.winner;
   const row = (label: string, f: (s: Side) => string) => (
     <tr className="border-t border-border-subtle">
-      <td className="py-1.5 text-right font-mono">{f('home')}</td>
+      <td className="py-1.5 text-center font-mono tabular-nums">{f('home')}</td>
       <td className="px-4 py-1.5 text-center text-text-muted">{label}</td>
-      <td className="py-1.5 font-mono">{f('away')}</td>
+      <td className="py-1.5 text-center font-mono tabular-nums">{f('away')}</td>
     </tr>
   );
   return (
@@ -27,12 +27,12 @@ export function MatchSummary({ state, view, size = 'md' }: { state: TournamentSt
       <p className={`font-display font-bold tabular-nums ${xl ? 'text-8xl' : 'text-5xl'}`}>
         {view.legsWon.home} – {view.legsWon.away}
       </p>
-      <table className={xl ? 'text-3xl' : 'text-sm'}>
+      <table className={`w-full table-fixed ${xl ? 'max-w-5xl text-3xl' : 'max-w-md text-sm'}`}>
         <thead>
           <tr>
-            <th className="pb-2 text-right font-display uppercase">{teamName(state, view.teamIds.home)}</th>
-            <th />
-            <th className="pb-2 text-left font-display uppercase">{teamName(state, view.teamIds.away)}</th>
+            <th className="w-[38%] truncate pb-2 text-center font-display uppercase">{teamName(state, view.teamIds.home)}</th>
+            <th className="w-[24%]" />
+            <th className="w-[38%] truncate pb-2 text-center font-display uppercase">{teamName(state, view.teamIds.away)}</th>
           </tr>
         </thead>
         <tbody>

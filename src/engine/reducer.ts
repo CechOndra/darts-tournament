@@ -172,6 +172,9 @@ export function tournamentReducer(input: TournamentState, action: EngineAction):
     case 'REMOVE_BREAK':
       return { ...state, breaks: state.breaks.filter((b) => b.id !== action.breakId) };
 
+    case 'UPDATE_MEME_SETTINGS':
+      return { ...state, settings: { ...state.settings, memes: { ...state.settings.memes, ...action.patch } } };
+
     case 'SET_HELP_REQUEST':
       return { ...state, helpRequest: action.request };
 

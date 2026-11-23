@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <rect width="800" height="600" rx="24" fill="#121826"/>
+  <rect x="16" y="16" width="768" height="568" rx="18" fill="none" stroke="#f59e0b" stroke-width="4" stroke-dasharray="18 12"/>
+  <text x="400" y="190" text-anchor="middle" fill="#f59e0b" font-family="Oswald, Arial Narrow, sans-serif" font-size="56" font-weight="700">BUST</text>
+  <text x="400" y="270" text-anchor="middle" fill="#f8fafc" font-family="Arial, sans-serif" font-size="30">Meme: This is fine (dog in fire)</text>
+  <text x="400" y="330" text-anchor="middle" fill="#94a3b8" font-family="Arial, sans-serif" font-size="24">When: A bust</text>
+  <text x="400" y="460" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="22">Replace: public/memes/bust.png</text>
+  <text x="400" y="500" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="18">(.jpg .gif .webp also work; optional sound: bust.mp3)</text>
+</svg>

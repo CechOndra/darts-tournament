@@ -1,7 +1,7 @@
 import { Copy, ExternalLink, Hash, Monitor, MonitorUp, MonitorX, Printer, Smartphone, Tablet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { QrCode } from '../../../components/JoinQr.tsx';
-import { Button, Field, Notice, TextInput } from '../../../components/ui.tsx';
+import { Button, Field, Notice, TextInput, Toggle } from '../../../components/ui.tsx';
 import type { TournamentState } from '../../../engine/state.ts';
 import { useControl } from '../../../hooks/ControlProvider.tsx';
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
@@ -33,6 +33,11 @@ export function ScreensSection({ state, isLive }: { state: TournamentState; isLi
           </Button>
         ))}
       </div>
+      <Toggle
+        label="Small QR code on the stage between matches"
+        checked={state.settings.visibility.showJoinQr !== false}
+        onChange={(showJoinQr) => void dispatch({ type: 'UPDATE_VISIBILITY', patch: { showJoinQr } }, { persist: 'immediate' })}
+      />
       {!isLive && <Notice tone="info">This tournament is not live: the links open it directly (with ?t=) instead of the live one.</Notice>}
       <div className="flex flex-wrap items-center gap-4">
         <QrCode url={guest} size={132} label="QR code of the guest link" />
@@ -94,7 +99,7 @@ export function AdminPinCard() {
   return (
     <div className="space-y-2">
       <p className="text-sm text-text-muted">
-        On the scorer tablet: Tools, then Admin, then type this PIN for full admin (4 hours, until Lock Session). {enabled ? 'Currently ON.' : 'Currently OFF.'}
+        The scorer tablet asks for this PIN for admin-only actions (pause, restart, start over). Each use approves one action only. It also works instead of the password on the admin login. {enabled ? 'Currently ON.' : 'Currently OFF.'}
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <Field label={enabled ? 'New Admin PIN' : 'Admin PIN'}>

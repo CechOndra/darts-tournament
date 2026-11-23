@@ -8,6 +8,7 @@ import { tournamentReducer } from './reducer.ts';
 import type { Multiplier } from './scoring.ts';
 import { upNextMatch } from './selectors.ts';
 import { soundboardLock } from './soundboard.ts';
+import { detectMeme } from './memes.ts';
 import { collectStats, frameFor, futCards, midRankPercentile, playerMetrics, toRating, ultimateTeam } from './stats.ts';
 import type { TournamentState } from './state.ts';
 import { buildTournament } from './tournament.ts';
@@ -196,5 +197,22 @@ describe('ultimate team', () => {
     const ids = team.map((t) => t.card?.playerId).filter(Boolean);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.length).toBe(Math.min(6, cards.length));
+  });
+});
+
+describe('memes', () => {
+  it('detects same score, 26, bust and big checkout', () => {
+    let s = make();
+    const m = upNextMatch(s)!;
+    s = run(s, { type: 'START_MATCH', matchId: m.id, at: 1 }, { type: 'SET_LEG_START', legIndex: 0, firstTeam: 'home', resolvedBy: 'MANUAL' }, { type: 'BEGIN_PLAY' });
+    s = run(s, D(20), D(5), D(1)); // 26
+    let v = computeMatchView(s)!;
+    expect(detectMeme(v.currentLeg, v.lastCompletedVisit!)).toBe('BED_AND_BREAKFAST');
+    s = run(s, D(20), D(5), D(1)); // opponent copies 26
+    v = computeMatchView(s)!;
+    expect(detectMeme(v.currentLeg, v.lastCompletedVisit!)).toBe('SAME_SCORE');
+    s = run(s, MISS(), MISS(), MISS());
+    v = computeMatchView(s)!;
+    expect(detectMeme(v.currentLeg, v.lastCompletedVisit!)).toBe('ALL_MISS');
   });
 });
