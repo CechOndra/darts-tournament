@@ -29,7 +29,11 @@ export interface CreateTournamentInput {
 export interface ControlApi {
   readonly mode: TransportMode;
 
-  hostStatus(): Promise<{ claimed: boolean }>;
+  hostStatus(): Promise<{ claimed: boolean; adminPinEnabled?: boolean }>;
+  /** Host only: set a 6-digit Admin PIN, or null to turn it off. */
+  setAdminPin(token: string, pin: string | null): Promise<void>;
+  /** Quick host login on a shared device (scorer tablet). 5 wrong tries lock it for 10 minutes. */
+  hostPinLogin(pin: string): Promise<string>;
   claimHost(username: string, password: string): Promise<string>;
   hostLogin(username: string, password: string): Promise<string>;
   updateHostCredentials(token: string, username: string, password: string): Promise<void>;
@@ -61,6 +65,9 @@ export type ControlErrorCode =
   | 'tournament_exists'
   | 'invalid_pin'
   | 'not_found'
+  | 'invalid_admin_pin'
+  | 'pin_locked'
+  | 'invalid_pin_format'
   | 'network';
 
 export class ControlError extends Error {
@@ -74,6 +81,9 @@ export class ControlError extends Error {
 }
 
 const KNOWN: ControlErrorCode[] = [
+  'invalid_admin_pin',
+  'pin_locked',
+  'invalid_pin_format',
   'host_already_claimed',
   'invalid_username',
   'weak_password',
@@ -103,6 +113,9 @@ const FRIENDLY: Record<string, string> = {
   tournament_exists: 'A tournament with this id already exists.',
   invalid_pin: 'Wrong PIN.',
   not_found: 'Tournament not found.',
+  invalid_admin_pin: 'Wrong Admin PIN.',
+  pin_locked: 'Too many wrong Admin PINs. Locked for 10 minutes (or log in with the password).',
+  invalid_pin_format: 'The Admin PIN must be exactly 6 digits.',
   network: 'Network problem — check your connection and try again.',
 };
 

@@ -388,8 +388,9 @@ export function computeMatchView(state: TournamentState): MatchView | null {
       const n = Math.max(1, team?.playerIds.length ?? 1);
       visitMods = modsFor(mods, currentLegIndex, visitIndex);
       // TEAMMATE_SWAP: the next player in order throws this one visit instead.
-      const rot = setup.firstPlayer[side] + k + (visitMods.swapThrower ? 1 : 0);
-      playerId = team?.playerIds[rot % n] ?? '';
+      const swap = visitMods.swapThrower ? 1 : 0;
+      const order = setup.order?.[side];
+      playerId = order?.length ? order[(k + swap) % order.length]! : (team?.playerIds[(setup.firstPlayer[side] + k + swap) % n] ?? '');
     }
     const scoreBefore = last && !last.complete ? last.scoreBefore : currentLeg.remaining[side];
     turn = {

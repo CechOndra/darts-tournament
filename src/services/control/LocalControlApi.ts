@@ -33,7 +33,13 @@ export class LocalControlApi implements ControlApi {
   }
 
   hostStatus() {
-    return this.rpc<{ claimed: boolean }>('hostStatus');
+    return this.rpc<{ claimed: boolean; adminPinEnabled?: boolean }>('hostStatus');
+  }
+  async setAdminPin(token: string, pin: string | null) {
+    await this.rpc('setAdminPin', { token, pin });
+  }
+  hostPinLogin(pin: string) {
+    return this.rpc<string>('hostPinLogin', { pin });
   }
   claimHost(username: string, password: string) {
     return this.rpc<string>('claimHost', { username, password });

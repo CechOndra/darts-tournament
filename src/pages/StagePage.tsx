@@ -131,7 +131,7 @@ function StageLive() {
         <CardEventsOverlay state={state} />
         <StageOverlayView state={state} />
         <CrowdSoundPlayer state={state} view={view} />
-        {phase === 'UP_NEXT' && !state.stageOverlay && (
+        {phase !== 'IN_PROGRESS' && !state.stageOverlay && (
           <div className="absolute right-0 bottom-0 z-10">
             <JoinQr size={150} />
           </div>

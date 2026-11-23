@@ -164,7 +164,30 @@ function setActive(id) {
 }
 
 const rpc = {
-  hostStatus: () => ({ claimed: !!control.host }),
+  hostStatus: () => ({ claimed: !!control.host, adminPinEnabled: !!control.host?.pin }),
+  setAdminPin: ({ token, pin }) => {
+    requireHost(token);
+    if (pin && !/^[0-9]{6}$/.test(String(pin))) fail('invalid_pin_format');
+    control.host = { ...control.host, pin: pin ? hashSecret(String(pin)) : null, pinFailures: 0, pinLockedUntil: 0 };
+    for (const [tok, s] of Object.entries(control.sessions)) if (s.viaPin) delete control.sessions[tok];
+    return true;
+  },
+  hostPinLogin: async ({ pin }) => {
+    const h = control.host;
+    if (!h?.pin) fail('invalid_admin_pin');
+    if ((h.pinLockedUntil ?? 0) > Date.now()) fail('pin_locked');
+    if (!verifySecret(String(pin ?? ''), h.pin)) {
+      const failures = ((h.pinLockedUntil ?? 0) > 0 ? 0 : (h.pinFailures ?? 0)) + 1;
+      control.host = { ...h, pinFailures: failures, pinLockedUntil: failures >= 5 ? Date.now() + 10 * 60_000 : 0 };
+      await sleep(600);
+      fail(failures >= 5 ? 'pin_locked' : 'invalid_admin_pin');
+    }
+    control.host = { ...h, pinFailures: 0, pinLockedUntil: 0 };
+    const token = newSession('admin');
+    control.sessions[token].viaPin = true;
+    control.sessions[token].expiresAt = Date.now() + 4 * 60 * 60 * 1000;
+    return token;
+  },
   claimHost: ({ username, password }) => {
     if (control.host) fail('host_already_claimed');
     if (String(username ?? '').trim().length < 3) fail('invalid_username');

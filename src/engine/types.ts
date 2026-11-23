@@ -185,7 +185,7 @@ export interface VisibilitySettings {
 }
 
 /** What the admin is projecting over the stage (awards ceremony). */
-export type StageOverlay = { kind: 'AWARD'; awardId: string } | { kind: 'FUT'; playerId: string };
+export type StageOverlay = { kind: 'AWARD'; awardId: string } | { kind: 'FUT'; playerId: string } | { kind: 'QR' };
 
 export interface StructureSettings {
   teamCount: number; // 4–16
@@ -317,6 +317,8 @@ export interface LegSetup {
   method: 'RULE' | 'ALTERNATE' | 'DECIDER';
   /** Decision the tablet must run while firstTeam is null (or that was run). */
   decision: LegDecision | null;
+  /** Explicit throwing order per side (player ids, first thrower first), set by an order fix. */
+  order?: Partial<Record<Side, string[]>>;
   /** How the starting team was determined (shown on stage). */
   resolvedBy: 'AUTO' | 'COIN_TOSS' | 'BULL_UP' | 'SHOOTOUT' | 'MANUAL' | 'CARD' | null;
 }

@@ -113,6 +113,30 @@ describe('pace & ETAs', () => {
   });
 });
 
+describe('player order fix', () => {
+  it('swaps past darts and the rest of the leg', () => {
+    let s = buildTournament({
+      id: 'ord',
+      name: 'Order',
+      createdAt: 1,
+      structure: { ...structuredClone(DEFAULT_STRUCTURE), teamCount: 4, groupCount: 1, mode: 'GROUPS_ONLY', groupFormat: 'BO1', playersPerTeam: 2 },
+      rules: { ...structuredClone(DEFAULT_RULES), startingScore: 301 },
+      cards: { mode: 'OFF' },
+      roster: [],
+    });
+    const m = upNextMatch(s)!;
+    s = run(s, { type: 'START_MATCH', matchId: m.id, at: 1 }, { type: 'SET_LEG_START', legIndex: 0, firstTeam: 'home', resolvedBy: 'MANUAL' }, { type: 'BEGIN_PLAY' });
+    const home = s.teams.find((t) => t.id === s.live!.homeTeamId)!;
+    const [p1, p2] = home.playerIds as [string, string];
+    s = run(s, D(20), D(20), D(20), MISS(), MISS(), MISS()); // p1 threw, now p2 is due
+    expect(computeMatchView(s)!.turn).toBeTruthy();
+    s = run(s, { type: 'SWAP_PLAYERS_IN_LEG', matchId: m.id, legIndex: 0, teamId: home.id, a: p1, b: p2 });
+    expect(s.throws.filter((t) => t.teamId === home.id).every((t) => t.playerId === p2)).toBe(true);
+    s = run(s, D(1));
+    expect(s.throws[s.throws.length - 1]!.playerId).toBe(p1); // p1 now throws the second visit
+  });
+});
+
 describe('soundboard lock', () => {
   it('locks while a player is throwing and when muted', () => {
     let s = make();

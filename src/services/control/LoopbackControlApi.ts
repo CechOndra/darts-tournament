@@ -9,8 +9,8 @@ import { ControlError, type ControlApi, type CreateTournamentInput, type Session
  */
 
 interface Registry {
-  host: { username: string; hash: string } | null;
-  sessions: Record<string, { role: 'admin' | 'scorer'; tournamentId: string | null; pinVersion: number | null; expiresAt: number }>;
+  host: { username: string; hash: string; pinHash?: string | null; pinFailures?: number; pinLockedUntil?: number } | null;
+  sessions: Record<string, { role: 'admin' | 'scorer'; tournamentId: string | null; pinVersion: number | null; expiresAt: number; viaPin?: boolean }>;
   tournaments: Record<string, { name: string; archived: boolean; createdAt: number; updatedAt: number; pinHash: string; pinVersion: number }>;
   activeId: string | null;
 }
@@ -76,7 +76,36 @@ export class LoopbackControlApi implements ControlApi {
   }
 
   async hostStatus() {
-    return { claimed: !!read().host };
+    const h = read().host;
+    return { claimed: !!h, adminPinEnabled: !!h?.pinHash };
+  }
+
+  async setAdminPin(token: string, pin: string | null) {
+    const reg = read();
+    this.requireHost(reg, token);
+    if (!reg.host) throw new ControlError('unauthorized');
+    if (pin && !/^[0-9]{6}$/.test(pin)) throw new ControlError('invalid_pin_format');
+    reg.host = { ...reg.host, pinHash: pin ? await hash(`pin:${pin}`) : null, pinFailures: 0, pinLockedUntil: 0 };
+    for (const [tok, s] of Object.entries(reg.sessions)) if (s.viaPin) delete reg.sessions[tok];
+    write(reg);
+  }
+
+  async hostPinLogin(pin: string) {
+    const reg = read();
+    const h = reg.host;
+    if (!h?.pinHash) throw new ControlError('invalid_admin_pin');
+    if ((h.pinLockedUntil ?? 0) > Date.now()) throw new ControlError('pin_locked');
+    if (h.pinHash !== (await hash(`pin:${pin}`))) {
+      const failures = ((h.pinLockedUntil ?? 0) > 0 ? 0 : (h.pinFailures ?? 0)) + 1;
+      reg.host = { ...h, pinFailures: failures, pinLockedUntil: failures >= 5 ? Date.now() + 10 * 60_000 : 0 };
+      write(reg);
+      throw new ControlError(failures >= 5 ? 'pin_locked' : 'invalid_admin_pin');
+    }
+    reg.host = { ...h, pinFailures: 0, pinLockedUntil: 0 };
+    const token = this.newSession(reg, 'admin', null, null);
+    reg.sessions[token] = { ...reg.sessions[token]!, viaPin: true, expiresAt: Date.now() + 4 * 60 * 60 * 1000 };
+    write(reg);
+    return token;
   }
 
   async claimHost(username: string, password: string) {

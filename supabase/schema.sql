@@ -56,6 +56,11 @@ create table if not exists public.app_host (
   created_at    timestamptz not null default now()
 );
 
+-- v3: optional 6-digit Admin PIN (quick host login on the scorer tablet) with lockout.
+alter table public.app_host add column if not exists admin_pin_hash   text;
+alter table public.app_host add column if not exists pin_failures     integer not null default 0;
+alter table public.app_host add column if not exists pin_locked_until timestamptz;
+
 create table if not exists public.tournament_secrets (
   tournament_id   text primary key references public.tournaments(id) on delete cascade,
   scorer_pin_hash text not null,
@@ -74,6 +79,8 @@ create table if not exists public.tournament_sessions (
   expires_at    timestamptz not null default now() + interval '24 hours'
 );
 alter table public.tournament_sessions alter column tournament_id drop not null;
+-- Host sessions opened with the Admin PIN (revoked when the PIN changes).
+alter table public.tournament_sessions add column if not exists via_pin boolean not null default false;
 create index if not exists tournament_sessions_tournament_idx on public.tournament_sessions (tournament_id);
 
 create table if not exists public.dart_throws (
@@ -199,7 +206,10 @@ language sql
 security definer
 set search_path = public, extensions
 as $$
-  select jsonb_build_object('claimed', exists (select 1 from public.app_host));
+  select jsonb_build_object(
+    'claimed', exists (select 1 from public.app_host),
+    'adminPinEnabled', exists (select 1 from public.app_host where admin_pin_hash is not null)
+  );
 $$;
 
 -- First visitor of /#/admin claims the host account. Returns a host session token.
@@ -293,6 +303,66 @@ as $$
 begin
   delete from public.tournament_sessions where token::text = p_token;
   return true;
+end $$;
+
+-- Host only: set (6 digits) or clear (null / '') the Admin PIN. Revokes PIN-opened sessions.
+create or replace function public.set_admin_pin(p_token text, p_pin text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  if (public._host_session(p_token)).token is null then
+    raise exception 'unauthorized' using errcode = 'P0001';
+  end if;
+  if coalesce(p_pin, '') = '' then
+    update public.app_host set admin_pin_hash = null, pin_failures = 0, pin_locked_until = null where id;
+  elsif p_pin !~ '^[0-9]{6}$' then
+    raise exception 'invalid_pin_format' using errcode = 'P0001';
+  else
+    update public.app_host set admin_pin_hash = crypt(p_pin, gen_salt('bf', 10)), pin_failures = 0, pin_locked_until = null where id;
+  end if;
+  delete from public.tournament_sessions where via_pin;
+  return true;
+end $$;
+
+-- Quick host login with the Admin PIN. Returns {token} or {error} instead of raising, so the
+-- failure counter survives: 5 wrong PINs lock the PIN for 10 minutes. Sessions last 4 hours.
+create or replace function public.host_pin_login(p_pin text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  h public.app_host;
+  tok uuid;
+begin
+  select * into h from public.app_host where id;
+  if h.admin_pin_hash is null then
+    return jsonb_build_object('error', 'invalid_admin_pin');
+  end if;
+  if h.pin_locked_until is not null and h.pin_locked_until > now() then
+    return jsonb_build_object('error', 'pin_locked');
+  end if;
+  if h.pin_locked_until is not null then
+    -- lock expired: start counting again
+    update public.app_host set pin_failures = 0, pin_locked_until = null where id;
+    h.pin_failures := 0;
+  end if;
+  if h.admin_pin_hash <> crypt(coalesce(p_pin, ''), h.admin_pin_hash) then
+    update public.app_host
+       set pin_failures = pin_failures + 1,
+           pin_locked_until = case when pin_failures + 1 >= 5 then now() + interval '10 minutes' else null end
+     where id;
+    perform pg_sleep(0.6);
+    return jsonb_build_object('error', case when h.pin_failures + 1 >= 5 then 'pin_locked' else 'invalid_admin_pin' end);
+  end if;
+  update public.app_host set pin_failures = 0, pin_locked_until = null where id;
+  delete from public.tournament_sessions where expires_at <= now();
+  insert into public.tournament_sessions (role, via_pin, expires_at) values ('admin', true, now() + interval '4 hours') returning token into tok;
+  return jsonb_build_object('token', tok::text);
 end $$;
 
 -- ---------------------------------------------------------------- tournament RPCs
@@ -519,6 +589,8 @@ grant execute on function public.host_login(text, text)                         
 grant execute on function public.update_host_credentials(text, text, text)             to anon, authenticated;
 grant execute on function public.release_host(text)                                    to anon, authenticated;
 grant execute on function public.logout(text)                                          to anon, authenticated;
+grant execute on function public.set_admin_pin(text, text)                             to anon, authenticated;
+grant execute on function public.host_pin_login(text)                                  to anon, authenticated;
 grant execute on function public.create_tournament(text, text, text, text, jsonb, text) to anon, authenticated;
 grant execute on function public.update_tournament_meta(text, text, text, boolean)     to anon, authenticated;
 grant execute on function public.set_active_tournament(text, text)                     to anon, authenticated;

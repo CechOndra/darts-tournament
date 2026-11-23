@@ -106,6 +106,7 @@ export function AwardsSection({ state }: { state: TournamentState }) {
     const a = stats.awards.find((x) => x.id === overlay.awardId);
     overlayText = a ? `${a.title}: ${a.winners.map((w) => awardWinnerName(state, a, w.id)).join(', ')}` : 'Award';
   } else if (overlay?.kind === 'FUT') overlayText = `FUT card: ${state.players[overlay.playerId]?.name ?? ''}`;
+  else if (overlay?.kind === 'QR') overlayText = 'Join QR code';
 
   return (
     <div className="space-y-4">

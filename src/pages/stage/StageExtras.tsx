@@ -1,6 +1,6 @@
 import { Megaphone, QrCode } from 'lucide-react';
-import qrcode from 'qrcode-generator';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { QrCode as QrImage } from '../../components/JoinQr.tsx';
 import { AwardCard } from '../../components/fut/AwardCard.tsx';
 import { RadarChart } from '../../components/fut/RadarChart.tsx';
 import type { MatchView } from '../../engine/match.ts';
@@ -9,27 +9,15 @@ import type { TournamentState } from '../../engine/state.ts';
 import { useTransportContext } from '../../hooks/TransportProvider.tsx';
 import { useTournamentStats } from '../../hooks/useStats.ts';
 import { playCrowdSound } from '../../services/audio/sound.ts';
+import { appUrl } from '../../services/links.ts';
 import { CROWD_EVENT, type CrowdSoundEvent } from '../../services/soundboardOps.ts';
 import { FutCardFor } from '../admin/sections/AwardsSection.tsx';
 
-/** Guest link (site root of this deployment). */
-export function guestUrl(): string {
-  if (typeof window === 'undefined') return '';
-  return `${window.location.origin}${window.location.pathname}#/`;
-}
-
 /** Join QR code: guests scan it to open the companion on their phone. */
 export function JoinQr({ size = 200 }: { size?: number }) {
-  const url = guestUrl();
-  const svg = useMemo(() => {
-    const qr = qrcode(0, 'M');
-    qr.addData(url);
-    qr.make();
-    return qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
-  }, [url]);
   return (
     <div className="flex items-center gap-4 rounded-xl border border-border-subtle bg-bg-surface p-4">
-      <div className="shrink-0 rounded-md bg-text-primary p-1" style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: svg }} aria-label="QR code to join on your phone" role="img" />
+      <QrImage url={appUrl('')} size={size} label="QR code to join on your phone" />
       <div className="max-w-56 space-y-1">
         <p className="flex items-center gap-2 font-display text-2xl tracking-wide uppercase">
           <QrCode size={24} aria-hidden /> Join on your phone
@@ -45,6 +33,15 @@ export function StageOverlayView({ state }: { state: TournamentState }) {
   const stats = useTournamentStats(state);
   const overlay = state.stageOverlay ?? null;
   if (!overlay || !stats) return null;
+  if (overlay.kind === 'QR') {
+    return (
+      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10 rounded-lg bg-bg-primary/95">
+        <p className="font-display text-7xl tracking-wide uppercase">Join on your phone</p>
+        <QrImage url={appUrl('')} size={560} label="QR code to join on your phone" />
+        <p className="text-3xl text-text-muted">Open your camera and point it at the code</p>
+      </div>
+    );
+  }
   if (overlay.kind === 'AWARD') {
     const award = stats.awards.find((a) => a.id === overlay.awardId);
     if (!award) return null;

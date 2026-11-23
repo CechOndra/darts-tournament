@@ -154,8 +154,33 @@ function glide(from: number, to: number, start: number, duration: number, type: 
   osc.stop(t0 + duration + 0.05);
 }
 
-/** Crowd soundboard effects, synthesized so no audio files are needed. */
-export function playCrowdSound(id: 'AIRHORN' | 'APPLAUSE' | 'DRUMROLL' | 'OOOH' | 'BOO' | 'FANFARE'): void {
+type CrowdId = 'AIRHORN' | 'APPLAUSE' | 'DRUMROLL' | 'OOOH' | 'BOO' | 'FANFARE';
+
+/** Optional real recordings: public/sounds/airhorn.mp3, applause.mp3, ... replace the synthesized versions. */
+const crowdFiles = new Map<CrowdId, Promise<HTMLAudioElement | null>>();
+function crowdFile(id: CrowdId): Promise<HTMLAudioElement | null> {
+  let p = crowdFiles.get(id);
+  if (!p) {
+    const url = `${import.meta.env.BASE_URL}sounds/${id.toLowerCase()}.mp3`;
+    p = fetch(url, { method: 'HEAD' })
+      .then((r) => (r.ok && (r.headers.get('content-type') ?? '').startsWith('audio') ? new Audio(url) : null))
+      .catch(() => null);
+    crowdFiles.set(id, p);
+  }
+  return p;
+}
+
+/** Crowd soundboard: a dropped-in mp3 if present, otherwise a synthesized effect. */
+export function playCrowdSound(id: CrowdId): void {
+  if (isMuted() || !isAudioUnlocked()) return;
+  void crowdFile(id).then((file) => {
+    if (!file) return synthCrowd(id);
+    file.currentTime = 0;
+    void file.play().catch(() => synthCrowd(id));
+  });
+}
+
+function synthCrowd(id: CrowdId): void {
   switch (id) {
     case 'AIRHORN':
       for (const [s, d] of [[0, 0.35], [0.45, 0.35], [0.9, 0.9]] as const) {

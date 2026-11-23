@@ -1,9 +1,10 @@
-import { ArrowLeft, Crosshair, Dumbbell, FastForward, Keyboard, Lock, Megaphone, MegaphoneOff, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Crosshair, Dumbbell, ShieldCheck, Wrench, FastForward, Keyboard, Lock, Megaphone, MegaphoneOff, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { ActiveEffects } from '../../components/cards/ActiveEffects.tsx';
 import { CardHands } from '../../components/cards/CardHands.tsx';
 import { CheckoutRoutes } from '../../components/match/CheckoutRoutes.tsx';
 import { DartKeypad } from '../../components/match/DartKeypad.tsx';
+import { PlayerOrderTool } from '../../components/match/PlayerOrderTool.tsx';
 import { DutyBanner } from '../../components/match/DutyBanner.tsx';
 import { MatchSummary } from '../../components/match/MatchSummary.tsx';
 import { Scoreboard, VisitSlots } from '../../components/match/Scoreboard.tsx';
@@ -37,6 +38,7 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
   const keypad = useKeypadPrefs(tournamentDefault);
   const [practice, setPractice] = useState(false);
   const [keypadOpen, setKeypadOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const dispatch = useDispatch();
   const crowdOn = state.settings.visibility.soundboardEnabled !== false;
   // Practice is only offered while no darts are being scored for real.
@@ -73,6 +75,9 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
             >
               <span className="hidden lg:inline">{crowdOn ? 'Crowd on' : 'Crowd off'}</span>
             </Button>
+            <Button size="sm" icon={Wrench} onClick={() => setToolsOpen(true)} aria-label="Table tools">
+              <span className="hidden lg:inline">Tools</span>
+            </Button>
             <Button size="sm" icon={Keyboard} onClick={() => setKeypadOpen(true)} aria-label="Keypad layout">
               <span className="hidden lg:inline">Keypad</span>
             </Button>
@@ -95,6 +100,25 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
           </>
         )}
       </main>
+      {toolsOpen && (
+        <Modal title="Table tools" wide onClose={() => setToolsOpen(false)}>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-text-muted uppercase">
+                <ArrowLeftRight size={14} aria-hidden /> Players threw in the wrong order?
+              </p>
+              {state.live ? <PlayerOrderTool state={state} matchId={state.live.matchId} /> : <p className="text-sm text-text-muted">Available while a match is on the oche.</p>}
+            </div>
+            <div className="space-y-2 border-t border-border-subtle pt-4">
+              <p className="text-xs font-medium tracking-wide text-text-muted uppercase">Bigger fixes</p>
+              <p className="text-sm text-text-muted">The host can unlock full admin on this tablet with the Admin PIN (or the password). The scorer stays unlocked.</p>
+              <Button icon={ShieldCheck} onClick={() => (window.location.hash = '#/admin')}>
+                Admin (PIN)
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {keypadOpen && (
         <Modal title="Keypad layout" wide onClose={() => setKeypadOpen(false)}>
           <KeypadSettings

@@ -21,6 +21,8 @@ export type MatchAction =
   | { type: 'BEGIN_PLAY' }
   | { type: 'THROW_DART'; id: string; segment: number; multiplier: Multiplier; at: number }
   | { type: 'UNDO_DART' }
+  /** Fix a wrong throwing order: swap two players of a team for a whole leg (past darts are re-credited). */
+  | { type: 'SWAP_PLAYERS_IN_LEG'; matchId: string; legIndex: number; teamId: string; a: string; b: string }
   | { type: 'CONTINUE_TO_NEXT' };
 
 const MATCH_ACTIONS = new Set<string>([
@@ -31,6 +33,7 @@ const MATCH_ACTIONS = new Set<string>([
   'BEGIN_PLAY',
   'THROW_DART',
   'UNDO_DART',
+  'SWAP_PLAYERS_IN_LEG',
   'CONTINUE_TO_NEXT',
 ]);
 
@@ -134,7 +137,10 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
         const v = action.firstPlayer?.[side];
         if (v !== undefined && Number.isInteger(v) && v >= 0 && v < count(side)) fp[side] = v;
       }
-      let next: LegSetup = { ...setup, firstPlayer: fp };
+      // A new first-player choice replaces any explicit order fix for that side.
+      const order = { ...setup.order };
+      for (const side of ['home', 'away'] as Side[]) if (action.firstPlayer?.[side] !== undefined) delete order[side];
+      let next: LegSetup = { ...setup, firstPlayer: fp, order };
       if (action.firstTeam) {
         next = action.resolvedBy
           ? { ...next, firstTeam: action.firstTeam, ruleFirstTeam: action.firstTeam, resolvedBy: action.resolvedBy }
@@ -240,6 +246,27 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
         };
       } else {
         next = { ...next, matches: updateMatch(next, live.matchId, { legsWon: after.legsWon }) };
+      }
+      return next;
+    }
+
+    case 'SWAP_PLAYERS_IN_LEG': {
+      const team = state.teams.find((t) => t.id === action.teamId);
+      if (!team || action.a === action.b || !team.playerIds.includes(action.a) || !team.playerIds.includes(action.b)) return state;
+      const swap = (id: string) => (id === action.a ? action.b : id === action.b ? action.a : id);
+      const throws = state.throws.map((t) =>
+        t.matchId === action.matchId && t.legIndex === action.legIndex && t.teamId === action.teamId ? { ...t, playerId: swap(t.playerId) } : t,
+      );
+      let next: TournamentState = { ...state, throws };
+      const live = state.live;
+      const setup = live?.matchId === action.matchId ? live.legSetups[action.legIndex] : undefined;
+      if (live && setup && (live.homeTeamId === action.teamId || live.awayTeamId === action.teamId)) {
+        const side: Side = live.homeTeamId === action.teamId ? 'home' : 'away';
+        const n = team.playerIds.length;
+        const current = setup.order?.[side] ?? Array.from({ length: n }, (_, i) => team.playerIds[(setup.firstPlayer[side] + i) % n]!);
+        const order = current.map(swap);
+        const firstPlayer = { ...setup.firstPlayer, [side]: Math.max(0, team.playerIds.indexOf(order[0]!)) };
+        next = { ...next, live: setLegSetup(live, action.legIndex, { ...setup, firstPlayer, order: { ...setup.order, [side]: order } }) };
       }
       return next;
     }

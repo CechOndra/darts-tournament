@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../supabase/client.ts';
 import type { Unsubscribe } from '../transport/types.ts';
-import { toControlError, type ControlApi, type CreateTournamentInput, type SessionInfo, type TournamentSummary } from './types.ts';
+import { ControlError, toControlError, type ControlApi, type CreateTournamentInput, type SessionInfo, type TournamentSummary } from './types.ts';
 
 interface TournamentListRow {
   id: string;
@@ -26,7 +26,15 @@ export class SupabaseControlApi implements ControlApi {
   }
 
   hostStatus() {
-    return this.rpc<{ claimed: boolean }>('host_status');
+    return this.rpc<{ claimed: boolean; adminPinEnabled?: boolean }>('host_status');
+  }
+  async setAdminPin(token: string, pin: string | null) {
+    await this.rpc('set_admin_pin', { p_token: token, p_pin: pin ?? '' });
+  }
+  async hostPinLogin(pin: string) {
+    const r = await this.rpc<{ token?: string; error?: string }>('host_pin_login', { p_pin: pin });
+    if (!r?.token) throw new ControlError(r?.error ?? 'invalid_admin_pin');
+    return r.token;
   }
   claimHost(username: string, password: string) {
     return this.rpc<string>('claim_host', { p_username: username, p_password: password });

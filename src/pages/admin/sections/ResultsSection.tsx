@@ -1,4 +1,7 @@
-import { Trophy } from 'lucide-react';
+import { ArrowLeftRight, Trophy } from 'lucide-react';
+import { useState } from 'react';
+import { PlayerOrderTool } from '../../../components/match/PlayerOrderTool.tsx';
+import { Button, Modal } from '../../../components/ui.tsx';
 import { qualifiersPerGroup, StandingsTable } from '../../../components/match/StandingsTable.tsx';
 import { replayStoredMatch } from '../../../engine/match.ts';
 import { matchLabel, matchNumber, teamName } from '../../../engine/selectors.ts';
@@ -7,6 +10,7 @@ import type { TournamentState } from '../../../engine/state.ts';
 import type { Match, Side } from '../../../engine/types.ts';
 
 function ResultRow({ state, match }: { state: TournamentState; match: Match }) {
+  const [fixing, setFixing] = useState(false);
   const ids = matchTeams(state, match);
   if (!ids.home || !ids.away) return null;
   const teamIds = { home: ids.home, away: ids.away };
@@ -30,9 +34,19 @@ function ResultRow({ state, match }: { state: TournamentState; match: Match }) {
   };
   return (
     <li className="surface-elevated p-3">
-      <p className="mb-1 text-xs text-text-muted">
-        M{matchNumber(state, match.id)} · {matchLabel(state, match)} · {match.format}
-      </p>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <p className="text-xs text-text-muted">
+          M{matchNumber(state, match.id)} · {matchLabel(state, match)} · {match.format}
+        </p>
+        <Button size="sm" variant="ghost" icon={ArrowLeftRight} onClick={() => setFixing(true)} title="Players threw in the wrong order?">
+          Fix order
+        </Button>
+      </div>
+      {fixing && (
+        <Modal title={`Fix player order · M${matchNumber(state, match.id)}`} onClose={() => setFixing(false)}>
+          <PlayerOrderTool state={state} matchId={match.id} />
+        </Modal>
+      )}
       <div className="flex items-center gap-3">
         {side('home')}
         <span className="shrink-0 rounded bg-bg-primary px-3 py-1 font-display text-xl font-bold tabular-nums">
