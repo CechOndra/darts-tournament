@@ -60,7 +60,7 @@ export function AdminWorkspace({
   const desktop = useMediaQuery('(min-width: 1024px)');
   const dispatch = useDispatch();
   const [tab, setTab] = useState<TabId>('live');
-  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true, cards: true, screens: true, adminpin: false, order: true, memes: false, switches: true, theme: true });
+  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true, cards: true, screens: true, adminpin: false, order: true, memes: false, switches: true, theme: false });
   const [sheet, setSheet] = useState<QuickSheet>(null);
   const { busy, error, run } = useAsyncAction();
 
@@ -204,9 +204,6 @@ export function AdminWorkspace({
         {tab === 'settings' && (
           <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <div className="space-y-4">
-              <Section id="section-theme" title="Theme" icon={Palette} open={open.theme} onToggle={() => toggle('theme')}>
-                <ThemeSection state={state} />
-              </Section>
               <Section id="section-table" title="Scorer Tablet" icon={Crosshair} open={open.table} onToggle={() => toggle('table')}>
                 <SettingsDraft
                   value={state.settings.table}
@@ -225,6 +222,9 @@ export function AdminWorkspace({
             </div>
             <Section id="section-rules" title="Format & Rules" icon={ScrollText} open={open.rules} onToggle={() => toggle('rules')}>
               <RulesSection state={state} />
+            </Section>
+            <Section id="section-theme" title="Theme" icon={Palette} open={open.theme} onToggle={() => toggle('theme')} className="lg:col-span-2">
+              <ThemeSection state={state} />
             </Section>
           </div>
         )}
