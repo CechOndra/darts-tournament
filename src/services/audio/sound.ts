@@ -210,3 +210,11 @@ function synthCrowd(id: CrowdId): void {
       break;
   }
 }
+
+/** "Admin needed" alert: three rising two-tone beeps. */
+export function playAlert(): void {
+  for (let i = 0; i < 3; i++) {
+    tone(880, i * 0.45, 0.18, 'square', 0.12);
+    tone(1175, i * 0.45 + 0.2, 0.2, 'square', 0.12);
+  }
+}

@@ -1,10 +1,12 @@
-import { ArrowLeft, ArrowLeftRight, Crosshair, Dumbbell, ShieldCheck, Wrench, FastForward, Keyboard, Lock, Megaphone, MegaphoneOff, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Crosshair, Dumbbell, PauseCircle, Wrench, FastForward, Keyboard, Lock, Megaphone, MegaphoneOff, Play, RotateCcw, ShieldAlert, SkipForward } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { ActiveEffects } from '../../components/cards/ActiveEffects.tsx';
 import { CardHands } from '../../components/cards/CardHands.tsx';
 import { CheckoutRoutes } from '../../components/match/CheckoutRoutes.tsx';
 import { DartKeypad } from '../../components/match/DartKeypad.tsx';
-import { PlayerOrderTool } from '../../components/match/PlayerOrderTool.tsx';
+import { AdminPinGate } from '../../components/AdminPinGate.tsx';
+import { formatClock } from '../../engine/pace.ts';
+import { TableTools } from './TableTools.tsx';
 import { DutyBanner } from '../../components/match/DutyBanner.tsx';
 import { MatchSummary } from '../../components/match/MatchSummary.tsx';
 import { Scoreboard, VisitSlots } from '../../components/match/Scoreboard.tsx';
@@ -75,8 +77,8 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
             >
               <span className="hidden lg:inline">{crowdOn ? 'Crowd on' : 'Crowd off'}</span>
             </Button>
-            <Button size="sm" icon={Wrench} onClick={() => setToolsOpen(true)} aria-label="Table tools">
-              <span className="hidden lg:inline">Tools</span>
+            <Button size="sm" icon={state.helpRequest ? AlertTriangle : Wrench} onClick={() => setToolsOpen(true)} aria-label="Table tools" className={state.helpRequest ? 'animate-pulse border-accent-warning text-accent-warning' : ''}>
+              <span className="hidden lg:inline">{state.helpRequest ? 'Admin called' : 'Tools'}</span>
             </Button>
             <Button size="sm" icon={Keyboard} onClick={() => setKeypadOpen(true)} aria-label="Keypad layout">
               <span className="hidden lg:inline">Keypad</span>
@@ -100,25 +102,7 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
           </>
         )}
       </main>
-      {toolsOpen && (
-        <Modal title="Table tools" wide onClose={() => setToolsOpen(false)}>
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-text-muted uppercase">
-                <ArrowLeftRight size={14} aria-hidden /> Players threw in the wrong order?
-              </p>
-              {state.live ? <PlayerOrderTool state={state} matchId={state.live.matchId} /> : <p className="text-sm text-text-muted">Available while a match is on the oche.</p>}
-            </div>
-            <div className="space-y-2 border-t border-border-subtle pt-4">
-              <p className="text-xs font-medium tracking-wide text-text-muted uppercase">Bigger fixes</p>
-              <p className="text-sm text-text-muted">The host can unlock full admin on this tablet with the Admin PIN (or the password). The scorer stays unlocked.</p>
-              <Button icon={ShieldCheck} onClick={() => (window.location.hash = '#/admin')}>
-                Admin (PIN)
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {toolsOpen && <TableTools state={state} onClose={() => setToolsOpen(false)} />}
       {keypadOpen && (
         <Modal title="Keypad layout" wide onClose={() => setKeypadOpen(false)}>
           <KeypadSettings
@@ -146,6 +130,7 @@ const Panel = ({ children, className = '' }: { children: ReactNode; className?: 
 function UpNextPhase({ onPractice }: { onPractice: () => void }) {
   const state = useTournamentState()!;
   const dispatch = useDispatch();
+  const [restartGate, setRestartGate] = useState(false);
   const { next, duty } = useDuty(state);
   const match = upNextMatch(state);
   const teams = match ? startableTeams(state, match) : null;
@@ -168,16 +153,48 @@ function UpNextPhase({ onPractice }: { onPractice: () => void }) {
       </Panel>
       <Panel className="justify-center">
         {!teams && <Notice tone="info">Waiting for earlier results before this match can start.</Notice>}
-        <Button
-          size="lg"
-          variant="primary"
-          icon={Play}
-          className="min-h-28 text-2xl"
-          disabled={!teams}
-          onClick={() => void dispatch({ type: 'START_MATCH', matchId: match.id, at: Date.now() }, { persist: 'immediate' })}
-        >
-          Everyone Ready — Start Match
-        </Button>
+        {match.suspended ? (
+          <>
+            <Notice tone="warning">
+              <span className="flex items-center gap-2">
+                <PauseCircle size={16} aria-hidden /> This match was paused at {formatClock(match.suspended.at)}.
+              </span>
+            </Notice>
+            <Button
+              size="lg"
+              variant="primary"
+              icon={Play}
+              className="min-h-24 text-2xl"
+              onClick={() => void dispatch({ type: 'START_MATCH', matchId: match.id, at: Date.now() }, { persist: 'immediate' })}
+            >
+              Resume where you left off
+            </Button>
+            <Button size="lg" icon={ArrowLeft} onClick={() => setRestartGate(true)}>
+              Start over from zero (admin)
+            </Button>
+          </>
+        ) : (
+          <Button
+            size="lg"
+            variant="primary"
+            icon={Play}
+            className="min-h-28 text-2xl"
+            disabled={!teams}
+            onClick={() => void dispatch({ type: 'START_MATCH', matchId: match.id, at: Date.now() }, { persist: 'immediate' })}
+          >
+            Everyone Ready — Start Match
+          </Button>
+        )}
+        {restartGate && (
+          <AdminPinGate
+            title="Start the paused match over"
+            confirmLabel="Start over"
+            onClose={() => setRestartGate(false)}
+            onConfirm={() => dispatch({ type: 'START_MATCH', matchId: match.id, at: Date.now(), restart: true }, { persist: 'immediate' })}
+          >
+            The darts of the paused attempt are deleted and every Power Card played in it goes back to its team's hand.
+          </AdminPinGate>
+        )}
         <Button
           size="lg"
           icon={SkipForward}

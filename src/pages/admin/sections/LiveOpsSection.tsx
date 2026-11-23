@@ -1,4 +1,4 @@
-import { Download, KeyRound, ShieldAlert, Smartphone, Upload } from 'lucide-react';
+import { Download, KeyRound, PauseCircle, RotateCcw, ShieldAlert, Smartphone, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Badge, Button, Field, Modal, Notice, Select, TextInput } from '../../../components/ui.tsx';
 import { DUTY_RULE_LABEL } from '../../../components/admin/labels.ts';
@@ -64,6 +64,51 @@ export function PinRotation({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** Admin: pause (finish later) or restart the match on the oche. */
+function LiveMatchControls() {
+  const dispatch = useDispatch();
+  const [confirm, setConfirm] = useState<'pause' | 'restart' | null>(null);
+  return (
+    <div>
+      <p className="mb-2 text-xs font-medium tracking-wide text-text-muted uppercase">Match on the oche</p>
+      <div className="flex flex-wrap gap-2">
+        <Button icon={PauseCircle} onClick={() => setConfirm('pause')}>
+          Pause match
+        </Button>
+        <Button icon={RotateCcw} onClick={() => setConfirm('restart')}>
+          Restart from zero
+        </Button>
+      </div>
+      {confirm && (
+        <Modal
+          title={confirm === 'pause' ? 'Pause match?' : 'Restart match from zero?'}
+          onClose={() => setConfirm(null)}
+          footer={
+            <>
+              <Button onClick={() => setConfirm(null)}>Cancel</Button>
+              <Button
+                variant="danger"
+                onClick={async () => {
+                  await dispatch(confirm === 'pause' ? { type: 'SUSPEND_MATCH', at: Date.now() } : { type: 'RESTART_MATCH', at: Date.now() }, { persist: 'immediate' });
+                  setConfirm(null);
+                }}
+              >
+                {confirm === 'pause' ? 'Pause match' : 'Restart match'}
+              </Button>
+            </>
+          }
+        >
+          <p>
+            {confirm === 'pause'
+              ? 'The match leaves the oche with every dart and card kept. When it is started again the tablet offers: resume where it was left, or start over.'
+              : 'All darts of this match are deleted and every Power Card played in it goes back to its team. The match starts again.'}
+          </p>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 export function LiveOpsSection({ state }: { state: TournamentState }) {
   const { peers, envelope } = useTransportContext();
   const dispatch = useDispatch();
@@ -110,6 +155,8 @@ export function LiveOpsSection({ state }: { state: TournamentState }) {
           {peers.length === 0 && <span className="text-sm text-text-muted">No devices connected.</span>}
         </div>
       </div>
+
+      {state.live && state.live.phase !== 'POST_MATCH' && <LiveMatchControls />}
 
       <PinRotation />
 

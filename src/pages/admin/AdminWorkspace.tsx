@@ -17,6 +17,8 @@ import { CardsSection } from './sections/CardsSection.tsx';
 import { ResultsSection } from './sections/ResultsSection.tsx';
 import { AdminPinCard, ScreensSection } from './sections/ScreensSection.tsx';
 import { PlayerOrderTool } from '../../components/match/PlayerOrderTool.tsx';
+import { HelpBanner, useHelpAlert } from '../../components/HelpBanner.tsx';
+import { unlockAudio } from '../../services/audio/sound.ts';
 import { RosterSection } from './sections/RosterSection.tsx';
 import { RulesSection } from './sections/RulesSection.tsx';
 import { BreakEditor, ScheduleSection } from './sections/ScheduleSection.tsx';
@@ -65,6 +67,7 @@ export function AdminWorkspace({
   }, [transport, hostToken]);
 
   const isLive = activeTournamentId === tournamentId;
+  useHelpAlert(state);
   const scorers = countActiveScorers(peers);
 
   const toggle = (id: SectionId) => setOpen((o) => ({ ...o, [id]: !o[id] }));
@@ -92,7 +95,7 @@ export function AdminWorkspace({
   const next = upNextMatch(state);
 
   return (
-    <div className="min-h-dvh bg-bg-primary pb-24 lg:pb-8">
+    <div className="min-h-dvh bg-bg-primary pb-24 lg:pb-8" onPointerDown={() => void unlockAudio()}>
       <RouteHeader
         icon={ShieldCheck}
         title={state.meta?.name ?? 'Tournament'}
@@ -133,6 +136,7 @@ export function AdminWorkspace({
       />
 
       <main className="mx-auto max-w-7xl space-y-4 p-4">
+        <HelpBanner state={state} />
         {!isLive && <Notice tone="info">Not live: stage, scorer and guest devices are showing {activeTournamentId ? 'another tournament' : 'nothing'}.</Notice>}
         {error && <Notice tone="danger">{error}</Notice>}
 

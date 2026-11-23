@@ -155,8 +155,26 @@ export interface Match {
   status: MatchStatus;
   /** Rules frozen when the match started (later rule edits never rewrite played matches). */
   rules?: GameRules;
+  /** Paused mid-match: everything needed to resume where it was left. */
+  suspended?: SuspendedMatch | null;
   winnerTeamId: string | null;
   legsWon: { home: number; away: number };
+}
+
+export interface SuspendedMatch {
+  at: number;
+  startedAt: number;
+  homeTeamId: string;
+  awayTeamId: string;
+  phase: 'PRE_MATCH' | 'IN_PROGRESS';
+  legSetups: LegSetup[];
+  firstThrowCard: Side | null;
+}
+
+/** The table asked for the host (shown on stage and in admin until resolved). */
+export interface HelpRequest {
+  at: number;
+  matchId: string | null;
 }
 
 export interface ScheduledBreak {

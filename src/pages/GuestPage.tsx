@@ -127,6 +127,8 @@ function ScheduleList({ state, follow, etas, showEtas }: { state: TournamentStat
               </div>
               {m.status === 'IN_PROGRESS' ? (
                 <span className="shrink-0 text-xs font-semibold text-accent-success">LIVE</span>
+              ) : m.suspended ? (
+                <span className="shrink-0 text-xs font-semibold text-accent-warning">PAUSED</span>
               ) : (
                 eta && <span className="shrink-0 font-mono text-xs text-accent-gold">{eta}</span>
               )}

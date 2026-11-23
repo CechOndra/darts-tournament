@@ -7,7 +7,12 @@ import type { TournamentState } from './state.ts';
 import type { DartThrow, LegSetup, LiveMatch, Match, Side } from './types.ts';
 
 export type MatchAction =
-  | { type: 'START_MATCH'; matchId: string; at: number }
+  /** For a paused match: resume (default) or restart from zero (darts removed, played cards back to hands). */
+  | { type: 'START_MATCH'; matchId: string; at: number; restart?: boolean }
+  /** Pause the live match and leave it (resume or restart later). */
+  | { type: 'SUSPEND_MATCH'; at: number }
+  /** Start the live match over from zero. */
+  | { type: 'RESTART_MATCH'; at: number }
   | { type: 'ABORT_MATCH' }
   | { type: 'DEFER_MATCH'; matchId: string }
   | {
@@ -27,6 +32,8 @@ export type MatchAction =
 
 const MATCH_ACTIONS = new Set<string>([
   'START_MATCH',
+  'SUSPEND_MATCH',
+  'RESTART_MATCH',
   'ABORT_MATCH',
   'DEFER_MATCH',
   'SET_LEG_START',
@@ -57,12 +64,72 @@ export function startableTeams(state: TournamentState, match: Match): { home: st
   return home && away && home !== away ? { home, away } : null;
 }
 
+/** Remove a match's darts and card plays; played cards go back to their teams' hands. */
+function wipeMatch(state: TournamentState, matchId: string): TournamentState {
+  let cards = state.cards;
+  for (const p of cards.plays.filter((x) => x.matchId === matchId)) {
+    const inst = cards.instances.find((i) => i.instanceId === p.instanceId);
+    if (inst?.status === 'IN_POOL') cards = giveTo(cards, p.instanceId, p.teamId);
+  }
+  cards = { ...cards, plays: cards.plays.filter((p) => p.matchId !== matchId) };
+  return { ...state, cards, throws: state.throws.filter((t) => t.matchId !== matchId) };
+}
+
 export function matchReducer(state: TournamentState, action: MatchAction): TournamentState {
   switch (action.type) {
+    case 'SUSPEND_MATCH': {
+      const live = state.live;
+      if (!live || live.phase === 'POST_MATCH') return state;
+      const suspended = {
+        at: action.at,
+        startedAt: live.startedAt,
+        homeTeamId: live.homeTeamId,
+        awayTeamId: live.awayTeamId,
+        phase: live.phase,
+        legSetups: live.legSetups,
+        firstThrowCard: live.firstThrowCard ?? null,
+      };
+      return { ...state, live: null, matches: updateMatch(state, live.matchId, { status: 'SCHEDULED', suspended }) };
+    }
+
+    case 'RESTART_MATCH': {
+      const live = state.live;
+      if (!live || live.phase === 'POST_MATCH') return state;
+      const wiped = wipeMatch(state, live.matchId);
+      const cleared: TournamentState = { ...wiped, live: null, matches: updateMatch(wiped, live.matchId, { status: 'SCHEDULED', suspended: null, rules: undefined }) };
+      return matchReducer(cleared, { type: 'START_MATCH', matchId: live.matchId, at: action.at });
+    }
+
     case 'START_MATCH': {
       if (state.live) return state;
-      const match = state.matches.find((m) => m.id === action.matchId);
-      if (!match || match.status !== 'SCHEDULED' || !state.queue.includes(match.id)) return state;
+      const match0 = state.matches.find((m) => m.id === action.matchId);
+      if (!match0 || match0.status !== 'SCHEDULED' || !state.queue.includes(match0.id)) return state;
+      if (match0.suspended && !action.restart) {
+        // Resume exactly where it was left.
+        const sus = match0.suspended;
+        const live: LiveMatch = {
+          matchId: match0.id,
+          phase: sus.phase,
+          homeTeamId: sus.homeTeamId,
+          awayTeamId: sus.awayTeamId,
+          startedAt: sus.startedAt,
+          completedAt: null,
+          legSetups: sus.legSetups,
+          firstThrowCard: sus.firstThrowCard,
+        };
+        return {
+          ...state,
+          live,
+          matches: updateMatch(state, match0.id, { status: 'IN_PROGRESS', suspended: null }),
+          queue: [match0.id, ...state.queue.filter((id) => id !== match0.id)],
+        };
+      }
+      if (match0.suspended) {
+        // Restart: forget the paused attempt entirely.
+        const wiped = wipeMatch(state, match0.id);
+        return matchReducer({ ...wiped, matches: updateMatch(wiped, match0.id, { suspended: null, rules: undefined, legsWon: { home: 0, away: 0 } }) }, { ...action, restart: false });
+      }
+      const match = match0;
       const teams = startableTeams(state, match);
       if (!teams) return state;
       const live: LiveMatch = {

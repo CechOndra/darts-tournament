@@ -88,12 +88,13 @@ export function ScheduleSection({ state }: { state: TournamentState }) {
                   {describeSlot(state, m.home)} <span className="text-text-muted">vs</span> {describeSlot(state, m.away)}
                 </p>
                 <p className="truncate text-xs text-text-muted">
+                  {m.suspended && i > 0 && <span className="mr-1 font-semibold text-accent-warning">PAUSED ·</span>}
                   {matchLabel(state, m)} · {m.format}
                   {eta(m.id) && ` · ~${formatClock(eta(m.id)!)}`}
                 </p>
               </div>
               {i === 0 ? (
-                <Badge tone="gold">{m.status === 'IN_PROGRESS' ? 'LIVE' : 'UP NEXT'}</Badge>
+                <Badge tone="gold">{m.status === 'IN_PROGRESS' ? 'LIVE' : m.suspended ? 'PAUSED' : 'UP NEXT'}</Badge>
               ) : (
                 <Button
                   size="sm"

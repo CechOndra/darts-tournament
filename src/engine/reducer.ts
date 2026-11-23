@@ -172,6 +172,9 @@ export function tournamentReducer(input: TournamentState, action: EngineAction):
     case 'REMOVE_BREAK':
       return { ...state, breaks: state.breaks.filter((b) => b.id !== action.breakId) };
 
+    case 'SET_HELP_REQUEST':
+      return { ...state, helpRequest: action.request };
+
     case 'SET_STAGE_OVERLAY':
       return { ...state, stageOverlay: action.overlay };
 

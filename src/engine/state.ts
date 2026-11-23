@@ -8,6 +8,7 @@ import type {
   Match,
   Player,
   ScheduledBreak,
+  HelpRequest,
   ScorerDutyOverride,
   StageOverlay,
   Team,
@@ -42,6 +43,8 @@ export interface TournamentState {
   cards: CardsState;
   /** Award / FUT card projected on the stage by the admin. */
   stageOverlay?: StageOverlay | null;
+  /** "Call admin" from the scorer tablet. */
+  helpRequest?: HelpRequest | null;
 }
 
 export function createEmptyState(): TournamentState {

@@ -137,6 +137,40 @@ describe('player order fix', () => {
   });
 });
 
+describe('pause / resume / restart', () => {
+  it('pauses a match, resumes it as left, or restarts with cards back in hand', () => {
+    let s = buildTournament({
+      id: 'pause',
+      name: 'Pause',
+      createdAt: 1,
+      structure: { ...structuredClone(DEFAULT_STRUCTURE), teamCount: 4, groupCount: 1, mode: 'GROUPS_ONLY', groupFormat: 'BO3', playersPerTeam: 1 },
+      rules: { ...structuredClone(DEFAULT_RULES), startingScore: 301 },
+      cards: { startingHandSize: 0 },
+      roster: [],
+    });
+    const m = upNextMatch(s)!;
+    s = run(s, { type: 'START_MATCH', matchId: m.id, at: 1 }, { type: 'SET_LEG_START', legIndex: 0, firstTeam: 'home', resolvedBy: 'MANUAL' }, { type: 'BEGIN_PLAY' });
+    const home = s.live!.homeTeamId;
+    s = run(s, { type: 'GRANT_CARD', id: 'g1', teamId: home, cardTypeId: 'EXTRA_DART', at: 1 });
+    const inst = s.cards.instances.find((i) => i.ownerTeamId === home)!.instanceId;
+    s = run(s, { type: 'PLAY_CARD', id: 'p1', instanceId: inst, at: 2 }, D(20, 3), D(20, 3));
+    s = run(s, { type: 'SUSPEND_MATCH', at: 3 });
+    expect(s.live).toBeNull();
+    expect(s.matches.find((x) => x.id === m.id)!.suspended).toBeTruthy();
+
+    const resumed = run(s, { type: 'START_MATCH', matchId: m.id, at: 4 });
+    expect(resumed.live!.phase).toBe('IN_PROGRESS');
+    expect(computeMatchView(resumed)!.currentLeg.remaining.home).toBe(181);
+    expect(computeMatchView(resumed)!.turn!.maxDarts).toBe(4);
+
+    const restarted = run(s, { type: 'START_MATCH', matchId: m.id, at: 4, restart: true });
+    expect(restarted.live!.phase).toBe('PRE_MATCH');
+    expect(restarted.throws.some((t) => t.matchId === m.id)).toBe(false);
+    expect(restarted.cards.plays).toHaveLength(0);
+    expect(restarted.cards.instances.find((i) => i.instanceId === inst)!.ownerTeamId).toBe(home);
+  });
+});
+
 describe('soundboard lock', () => {
   it('locks while a player is throwing and when muted', () => {
     let s = make();

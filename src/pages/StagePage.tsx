@@ -21,6 +21,7 @@ import { usePresenceRole } from '../hooks/useTransport.ts';
 import { useSoundState, useWinSong } from '../hooks/useSound.ts';
 import { setMuted, unlockAudio } from '../services/audio/sound.ts';
 import { MATCH_EVENTS } from '../services/matchOps.ts';
+import { HelpBanner, useHelpAlert } from '../components/HelpBanner.tsx';
 import { CardEventsOverlay } from './stage/CardEventsOverlay.tsx';
 import { CrowdSoundPlayer, JoinQr, StageOverlayView } from './stage/StageExtras.tsx';
 
@@ -104,6 +105,7 @@ function StageLive() {
   const state = useTournamentState();
   const view = useMatchView(state);
   useWinSong(state);
+  useHelpAlert(state);
   if (!state) return <StageIdle />;
   const phase = state.live?.phase ?? 'UP_NEXT';
 
@@ -122,6 +124,7 @@ function StageLive() {
         </div>
         <Clock />
       </header>
+      <HelpBanner state={state} size="xl" />
       <main className="relative flex min-h-0 flex-1 flex-col">
         {phase === 'UP_NEXT' && <UpNextStage state={state} />}
         {phase === 'PRE_MATCH' && view && <PreMatchStage state={state} view={view} />}
@@ -131,6 +134,7 @@ function StageLive() {
         <CardEventsOverlay state={state} />
         <StageOverlayView state={state} />
         <CrowdSoundPlayer state={state} view={view} />
+
         {phase !== 'IN_PROGRESS' && !state.stageOverlay && (
           <div className="absolute right-0 bottom-0 z-10">
             <JoinQr size={150} />
