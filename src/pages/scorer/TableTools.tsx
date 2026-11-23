@@ -65,9 +65,6 @@ export function TableTools({ state, onClose }: { state: TournamentState; onClose
                 Restart match from zero
               </Button>
             </div>
-            <button type="button" className="text-xs text-text-muted underline" onClick={() => (window.location.hash = '#/admin')}>
-              Open the full admin on this tablet (password or Admin PIN, stays unlocked until Lock Session)
-            </button>
           </section>
         </div>
       </Modal>

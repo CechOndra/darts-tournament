@@ -250,7 +250,7 @@ describe('draws', () => {
   const homeLeg = () => [D(20, 3), D(20, 3), D(20, 3), MISS(), MISS(), MISS(), D(20, 3), D(20, 3), D(20, 3), MISS(), MISS(), MISS(), D(20, 3), D(19, 3), D(12, 2)];
   function finishMatch(s: TournamentState): TournamentState {
     s = start(s);
-    s = run(s, ...homeLeg());
+    s = run(s, ...homeLeg(), { type: 'NEXT_LEG' });
     // leg 2: away starts; home wins again
     return run(s, MISS(), MISS(), MISS(), ...homeLeg());
   }

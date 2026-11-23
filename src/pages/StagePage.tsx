@@ -10,6 +10,7 @@ import { Matchup } from '../components/Matchup.tsx';
 import { NoTournament } from '../components/NoTournament.tsx';
 import { FullscreenButton } from '../components/StatusIndicators.tsx';
 import type { MatchView } from '../engine/match.ts';
+import { dartLabel } from '../engine/scoring.ts';
 import { matchLabel, playersOfTeam, teamName, upNextMatch } from '../engine/selectors.ts';
 import { allGroupStandings } from '../engine/standings.ts';
 import type { TournamentState } from '../engine/state.ts';
@@ -220,12 +221,30 @@ function InProgressStage({ state, view }: { state: TournamentState; view: MatchV
               <CheckoutRoutes state={state} view={view} size="xl" />
             </>
           ) : (
-            <p className="font-display text-4xl text-accent-gold uppercase">Next leg starting</p>
+            <LegResult state={state} view={view} />
           )}
         </div>
         <VisitSlots view={view} size="xl" />
       </div>
       <VisitFlash view={view} />
+    </div>
+  );
+}
+
+function LegResult({ state, view }: { state: TournamentState; view: MatchView }) {
+  const leg = view.currentLeg;
+  if (!leg.winner) return <p className="font-display text-4xl text-accent-gold uppercase">Next leg starting</p>;
+  const finishing = leg.visits.find((v) => v.checkout);
+  return (
+    <div className="space-y-2">
+      <p className="font-display text-5xl text-accent-gold uppercase">
+        Leg {view.currentLegIndex + 1} to {teamName(state, view.teamIds[leg.winner])}
+      </p>
+      {finishing && leg.checkoutDart && (
+        <p className="font-display text-3xl text-text-muted uppercase">
+          {finishing.scoreBefore} checkout on {dartLabel(leg.checkoutDart)} · legs {view.legsWon.home} - {view.legsWon.away}
+        </p>
+      )}
     </div>
   );
 }

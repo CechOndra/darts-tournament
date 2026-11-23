@@ -17,7 +17,9 @@ import { Button, Modal, Notice } from '../../components/ui.tsx';
 import { restrictedPoints } from '../../engine/cardEffects.ts';
 import { CARD_BY_ID } from '../../engine/cardCatalog.ts';
 import { startableTeams } from '../../engine/matchReducer.ts';
-import { dartPoints } from '../../engine/scoring.ts';
+import { dartLabel, dartPoints } from '../../engine/scoring.ts';
+import type { MatchView } from '../../engine/match.ts';
+import type { TournamentState } from '../../engine/state.ts';
 import { playersOfTeam, teamName, upNextMatch } from '../../engine/selectors.ts';
 import type { Multiplier } from '../../engine/scoring.ts';
 import { useDispatch, useTournamentState, useTransportContext } from '../../hooks/TransportProvider.tsx';
@@ -81,7 +83,7 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
               <span className="hidden lg:inline">{state.helpRequest ? 'Admin called' : 'Tools'}</span>
             </Button>
             <Button size="sm" icon={Keyboard} onClick={() => setKeypadOpen(true)} aria-label="Keypad layout">
-              <span className="hidden lg:inline">Keypad</span>
+              <span className="hidden lg:inline">Keypad layout</span>
             </Button>
             <FullscreenButton />
             <Button size="sm" icon={Lock} onClick={onLock} aria-label="Lock scorer">
@@ -294,6 +296,9 @@ function InProgressPhase({ keypad }: { keypad: KeypadControl }) {
         )}
       </Panel>
       <Panel className="p-3">
+        {view.live.awaitingNextLeg != null && !view.winner ? (
+          <LegDone state={state} view={view} onUndo={() => void undoDart(transport)} />
+        ) : (
         <DartKeypad
           layout={keypad.layout}
           stickyModifier={keypad.prefs.stickyModifier}
@@ -304,8 +309,35 @@ function InProgressPhase({ keypad }: { keypad: KeypadControl }) {
           isDimmed={isDimmed}
           undoLabel={undoLabel}
         />
+        )}
       </Panel>
     </>
+  );
+}
+
+/** BO3+: a leg just ended. The stage keeps showing it until the scorer starts the next leg. */
+function LegDone({ state, view, onUndo }: { state: TournamentState; view: MatchView; onUndo: () => void }) {
+  const dispatch = useDispatch();
+  const leg = view.currentLeg;
+  const winner = leg.winner ? teamName(state, view.teamIds[leg.winner]) : '';
+  const out = leg.checkoutDart;
+  const finishing = leg.visits.find((v) => v.checkout);
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-6 text-center">
+      <p className="font-display text-sm tracking-[0.3em] text-text-muted uppercase">Leg {view.currentLegIndex + 1} complete</p>
+      <p className="font-display text-4xl font-bold uppercase">{winner} wins the leg</p>
+      {out && finishing && (
+        <p className="text-lg text-text-muted">
+          Checkout {finishing.scoreBefore} on <span className="font-mono font-bold text-accent-gold">{dartLabel(out)}</span> · legs {view.legsWon.home} - {view.legsWon.away}
+        </p>
+      )}
+      <Button size="lg" variant="primary" icon={Play} className="min-h-28 w-full max-w-md text-2xl" onClick={() => void dispatch({ type: 'NEXT_LEG' }, { persist: 'immediate' })}>
+        Start Leg {view.currentLegIndex + 2}
+      </Button>
+      <Button icon={RotateCcw} className="border-accent-warning/60 text-accent-warning" onClick={onUndo}>
+        Undo Last Dart (reopen leg)
+      </Button>
+    </div>
   );
 }
 

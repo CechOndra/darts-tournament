@@ -34,6 +34,12 @@ export function VisibilitySection({ state }: { state: TournamentState }) {
       <Toggle label="Awards preview" description="Keep OFF so winners stay secret until the ceremony." checked={v.showAwardsPreview} onChange={(showAwardsPreview) => set({ showAwardsPreview })} />
       <Toggle label="FUT player cards" description="Flip ON for the big reveal." checked={v.showPlayerFutCards} onChange={(showPlayerFutCards) => set({ showPlayerFutCards })} />
       <Toggle
+        label="Ultimate Team"
+        description="Reveal the team of the tournament on guest phones (best player per card stat)."
+        checked={v.showUltimateTeam === true}
+        onChange={(showUltimateTeam) => set({ showUltimateTeam })}
+      />
+      <Toggle
         label="Include card-affected throws"
         description="OFF: awards and FUT stats ignore visits changed by Power Cards."
         checked={v.includeCardAffectedThrows}

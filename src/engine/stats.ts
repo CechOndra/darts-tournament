@@ -270,3 +270,28 @@ export function futCards(state: TournamentState, metrics: PlayerMetrics[] = play
     return { playerId: m.playerId, teamId: m.teamId, ratings, ovr, frame: frameFor(ovr), playstyle: `${PLAYSTYLE[top.code]}+`, metrics: m };
   });
 }
+
+// ------------------------------------------------------------------ Ultimate Team
+
+export interface UltimateSlot {
+  code: StatCode;
+  card: FutCard | null;
+}
+
+/**
+ * Team of the tournament: one spot per card stat, filled in the stats' priority order
+ * (the order the admin sets for the 6 card stats). Each spot goes to the best remaining
+ * player in that stat, so nobody appears twice. Players need 9+ counted darts when possible.
+ */
+export function ultimateTeam(state: TournamentState, cards: FutCard[]): UltimateSlot[] {
+  const eligible = cards.filter((c) => c.metrics.darts >= 9);
+  const pool = eligible.length >= state.settings.futCardAttributes.length ? eligible : cards;
+  const used = new Set<string>();
+  return state.settings.futCardAttributes.map((code) => {
+    const best = pool
+      .filter((c) => !used.has(c.playerId))
+      .sort((a, b) => b.metrics.raw[code] - a.metrics.raw[code] || b.ovr - a.ovr)[0];
+    if (best) used.add(best.playerId);
+    return { code, card: best ?? null };
+  });
+}

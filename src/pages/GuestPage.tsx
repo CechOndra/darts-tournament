@@ -27,7 +27,8 @@ import { useDuty, useMatchView } from '../hooks/useMatch.ts';
 import { useProjection, useTournamentStats } from '../hooks/useStats.ts';
 import { usePresenceRole } from '../hooks/useTransport.ts';
 import { CROWD_EVENT, sendCrowdSound } from '../services/soundboardOps.ts';
-import { FutCardFor } from './admin/sections/AwardsSection.tsx';
+import { FutGallery, UltimateTeamView, FutDetail } from '../components/fut/FutViews.tsx';
+import { ultimateTeam } from '../engine/stats.ts';
 
 type Tab = 'live' | 'schedule' | 'standings' | 'cards' | 'sound';
 
@@ -219,6 +220,7 @@ function GuestCards({ state, follow }: { state: TournamentState; follow: string 
 
 function GuestStats({ state, follow }: { state: TournamentState; follow: string | null }) {
   const stats = useTournamentStats(state);
+  const [open, setOpen] = useState<string | null>(null);
   const v = state.settings.visibility;
   if (!stats) return null;
   const rows = [...stats.metrics].filter((m) => m.visits > 0).sort((a, b) => b.average - a.average);
@@ -263,17 +265,25 @@ function GuestStats({ state, follow }: { state: TournamentState; follow: string 
           ))}
         </div>
       )}
+      {v.showUltimateTeam && stats.cards.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="font-display text-sm tracking-widest text-accent-gold uppercase">Ultimate Team</h3>
+          <UltimateTeamView state={state} team={ultimateTeam(state, stats.cards)} onOpen={setOpen} />
+        </div>
+      )}
       {v.showPlayerFutCards && stats.cards.length > 0 && (
         <div className="space-y-2">
-          <h3 className="font-display text-sm tracking-widest text-text-muted uppercase">Player cards</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[...stats.cards]
-              .sort((a, b) => (a.teamId === follow ? -1 : 0) - (b.teamId === follow ? -1 : 0) || b.ovr - a.ovr)
-              .map((c) => (
-                <FutCardFor key={c.playerId} state={state} card={c} className="w-full" />
-              ))}
-          </div>
+          <h3 className="font-display text-sm tracking-widest text-text-muted uppercase">Player cards (tap for the radar chart)</h3>
+          <FutGallery
+            state={state}
+            columns="grid-cols-2"
+            highlightTeam={follow}
+            cards={[...stats.cards].sort((a, b) => (a.teamId === follow ? -1 : 0) - (b.teamId === follow ? -1 : 0) || b.ovr - a.ovr)}
+          />
         </div>
+      )}
+      {open && stats.cards.some((c) => c.playerId === open) && (
+        <FutDetail state={state} card={stats.cards.find((c) => c.playerId === open)!} cards={stats.cards} onClose={() => setOpen(null)} />
       )}
     </div>
   );

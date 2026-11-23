@@ -150,10 +150,14 @@ describe('match lifecycle', () => {
     s = run(s, { type: 'SET_LEG_START', legIndex: 0, firstTeam: 'home', resolvedBy: 'COIN_TOSS' }, { type: 'BEGIN_PLAY' });
     const winLeg = (st: TournamentState) => run(st, T(20, 3), T(20, 3), T(20, 3), T(0, 0), T(0, 0), T(0, 0), T(20, 3), T(20, 3), T(1, 1));
     s = winLeg(s); // home wins leg 1 (301 straight out: 180 + 121? -> 180, then 60+60+1=121)
+    expect(s.live!.awaitingNextLeg).toBe(0);
+    expect(computeMatchView(s)!.turn).toBeNull(); // holding the finished leg
+    expect(computeMatchView(s)!.currentLegIndex).toBe(0);
+    s = run(s, { type: 'NEXT_LEG' });
     let v = computeMatchView(s)!;
     expect(v.legsWon).toEqual({ home: 1, away: 0 });
     expect(v.setup?.firstTeam).toBe('away'); // alternated
-    s = winLeg(s); // away starts and wins leg 2
+    s = run(winLeg(s), { type: 'NEXT_LEG' }); // away starts and wins leg 2
     v = computeMatchView(s)!;
     expect(v.legsWon).toEqual({ home: 1, away: 1 });
     expect(v.setup?.method).toBe('DECIDER');

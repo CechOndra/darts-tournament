@@ -198,12 +198,14 @@ export interface VisibilitySettings {
   stageVisitHistory: boolean;
   /** Guest phones: show scheduled breaks in the schedule. */
   showBreaksToGuests: boolean;
+  /** Guest phones: reveal the Ultimate Team (team of the tournament). Missing = off. */
+  showUltimateTeam?: boolean;
   /** Crowd soundboard master switch (admin / scorer). Missing = on. */
   soundboardEnabled?: boolean;
 }
 
 /** What the admin is projecting over the stage (awards ceremony). */
-export type StageOverlay = { kind: 'AWARD'; awardId: string } | { kind: 'FUT'; playerId: string } | { kind: 'QR' };
+export type StageOverlay = { kind: 'AWARD'; awardId: string } | { kind: 'FUT'; playerId: string } | { kind: 'QR' } | { kind: 'ULTIMATE' };
 
 export interface StructureSettings {
   teamCount: number; // 4–16
@@ -355,4 +357,6 @@ export interface LiveMatch {
   legSetups: LegSetup[];
   /** Side that played FIRST_THROW (throws first in every odd leg). */
   firstThrowCard?: Side | null;
+  /** A leg just finished (BO3+): the tablet must press "Start next leg"; the stage holds the result. */
+  awaitingNextLeg?: number | null;
 }

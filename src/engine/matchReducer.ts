@@ -13,6 +13,8 @@ export type MatchAction =
   | { type: 'SUSPEND_MATCH'; at: number }
   /** Start the live match over from zero. */
   | { type: 'RESTART_MATCH'; at: number }
+  /** BO3+: leave the finished-leg screen and start the next leg. */
+  | { type: 'NEXT_LEG' }
   | { type: 'ABORT_MATCH' }
   | { type: 'DEFER_MATCH'; matchId: string }
   | {
@@ -34,6 +36,7 @@ const MATCH_ACTIONS = new Set<string>([
   'START_MATCH',
   'SUSPEND_MATCH',
   'RESTART_MATCH',
+  'NEXT_LEG',
   'ABORT_MATCH',
   'DEFER_MATCH',
   'SET_LEG_START',
@@ -89,7 +92,14 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
         legSetups: live.legSetups,
         firstThrowCard: live.firstThrowCard ?? null,
       };
-      return { ...state, live: null, matches: updateMatch(state, live.matchId, { status: 'SCHEDULED', suspended }) };
+      const paused: TournamentState = { ...state, live: null, matches: updateMatch(state, live.matchId, { status: 'SCHEDULED', suspended }) };
+      // Let a different match be played first: the paused one comes back right after it.
+      return matchReducer(paused, { type: 'DEFER_MATCH', matchId: live.matchId });
+    }
+
+    case 'NEXT_LEG': {
+      if (!state.live || state.live.awaitingNextLeg == null) return state;
+      return withLive(state, { awaitingNextLeg: null });
     }
 
     case 'RESTART_MATCH': {
@@ -280,6 +290,7 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
         const setup = nextLegSetup(next, view.match, next.live!, turn.legIndex + 1, after.legsWon);
         next = { ...next, live: setLegSetup(next.live!, turn.legIndex + 1, setup) };
       }
+      if (wonLeg) next = { ...next, live: { ...next.live!, awaitingNextLeg: turn.legIndex } };
       return next;
     }
 
@@ -312,7 +323,7 @@ export function matchReducer(state: TournamentState, action: MatchAction): Tourn
           completedOrder: next.completedOrder.filter((id) => id !== live.matchId),
         };
       } else {
-        next = { ...next, matches: updateMatch(next, live.matchId, { legsWon: after.legsWon }) };
+        next = { ...next, matches: updateMatch(next, live.matchId, { legsWon: after.legsWon }), live: { ...next.live!, awaitingNextLeg: null } };
       }
       return next;
     }

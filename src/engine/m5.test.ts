@@ -8,7 +8,7 @@ import { tournamentReducer } from './reducer.ts';
 import type { Multiplier } from './scoring.ts';
 import { upNextMatch } from './selectors.ts';
 import { soundboardLock } from './soundboard.ts';
-import { collectStats, frameFor, futCards, midRankPercentile, playerMetrics, toRating } from './stats.ts';
+import { collectStats, frameFor, futCards, midRankPercentile, playerMetrics, toRating, ultimateTeam } from './stats.ts';
 import type { TournamentState } from './state.ts';
 import { buildTournament } from './tournament.ts';
 
@@ -183,5 +183,18 @@ describe('soundboard lock', () => {
     expect(soundboardLock(s, computeMatchView(s))).toBeNull();
     s = run(s, { type: 'UPDATE_VISIBILITY', patch: { soundboardEnabled: false } });
     expect(soundboardLock(s, computeMatchView(s))).toMatch(/muted/);
+  });
+});
+
+describe('ultimate team', () => {
+  it('fills spots in stat order with distinct players', () => {
+    let s = playHomeWin(make());
+    s = playHomeWin(s);
+    const cards = futCards(s);
+    const team = ultimateTeam(s, cards);
+    expect(team.map((t) => t.code)).toEqual(s.settings.futCardAttributes);
+    const ids = team.map((t) => t.card?.playerId).filter(Boolean);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.length).toBe(Math.min(6, cards.length));
   });
 });

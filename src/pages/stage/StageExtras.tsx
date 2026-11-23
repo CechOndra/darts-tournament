@@ -11,7 +11,8 @@ import { useTournamentStats } from '../../hooks/useStats.ts';
 import { playCrowdSound } from '../../services/audio/sound.ts';
 import { appUrl } from '../../services/links.ts';
 import { CROWD_EVENT, type CrowdSoundEvent } from '../../services/soundboardOps.ts';
-import { FutCardFor } from '../admin/sections/AwardsSection.tsx';
+import { FutCardFor, UltimateTeamView } from '../../components/fut/FutViews.tsx';
+import { ultimateTeam } from '../../engine/stats.ts';
 
 /** Join QR code: guests scan it to open the companion on their phone. */
 export function JoinQr({ size = 200 }: { size?: number }) {
@@ -53,6 +54,7 @@ export function StageOverlayView({ state }: { state: TournamentState }) {
       </div>
     );
   }
+  if (overlay.kind === 'ULTIMATE') return <UltimateTeamStage state={state} />;
   const card = stats.cards.find((c) => c.playerId === overlay.playerId);
   if (!card) return null;
   const mate = stats.cards.find((c) => c.teamId === card.teamId && c.playerId !== card.playerId) ?? null;
@@ -105,6 +107,19 @@ export function CrowdSoundPlayer({ state, view }: { state: TournamentState; view
     <div className="pointer-events-none absolute top-24 right-8 z-40 flex items-center gap-3 rounded-lg border border-accent-gold/60 bg-bg-elevated px-5 py-3 font-display text-2xl tracking-wide uppercase">
       <Megaphone size={28} className="text-accent-gold" aria-hidden />
       {CROWD_SOUNDS.find((s) => s.id === toast)?.label}
+    </div>
+  );
+}
+
+function UltimateTeamStage({ state }: { state: TournamentState }) {
+  const stats = useTournamentStats(state);
+  if (!stats) return null;
+  return (
+    <div className="absolute inset-0 z-30 flex flex-col gap-8 rounded-lg bg-bg-primary/95 p-10">
+      <p className="text-center font-display text-7xl tracking-wide text-accent-gold uppercase">Ultimate Team</p>
+      <div className="min-h-0 flex-1">
+        <UltimateTeamView state={state} team={ultimateTeam(state, stats.cards)} size="xl" />
+      </div>
     </div>
   );
 }

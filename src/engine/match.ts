@@ -361,7 +361,9 @@ export function computeMatchView(state: TournamentState): MatchView | null {
   const { legs, legsWon, winner, stats } = replayMatch(state.throws, match, teamIds, rules, mods, state.settings.cards.params.allowCheckoutOnBoostedDart);
 
   const lastLeg = legs[legs.length - 1];
-  const currentLegIndex = winner ? legs.length - 1 : lastLeg?.winner ? legs.length : Math.max(0, legs.length - 1);
+  // While a finished leg waits for "Start next leg", keep showing that leg's final position.
+  const holding = live.awaitingNextLeg != null && !!lastLeg?.winner;
+  const currentLegIndex = winner || holding ? legs.length - 1 : lastLeg?.winner ? legs.length : Math.max(0, legs.length - 1);
   const currentLeg = legs[currentLegIndex] ?? emptyLeg(currentLegIndex, rules.startingScore);
   const setup = live.legSetups[currentLegIndex] ?? null;
   const dartsThrownInLeg = currentLeg.dartsBySide.home + currentLeg.dartsBySide.away;
