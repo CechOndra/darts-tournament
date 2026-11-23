@@ -9,6 +9,7 @@ import type { Multiplier } from './scoring.ts';
 import { upNextMatch } from './selectors.ts';
 import { soundboardLock } from './soundboard.ts';
 import { detectMeme } from './memes.ts';
+import { callerLines } from './caller.ts';
 import { collectStats, frameFor, futCards, midRankPercentile, playerMetrics, toRating, ultimateTeam } from './stats.ts';
 import type { TournamentState } from './state.ts';
 import { buildTournament } from './tournament.ts';
@@ -214,5 +215,20 @@ describe('memes', () => {
     s = run(s, MISS(), MISS(), MISS());
     v = computeMatchView(s)!;
     expect(detectMeme(v.currentLeg, v.lastCompletedVisit!)).toBe('ALL_MISS');
+  });
+});
+
+describe('score caller', () => {
+  it('calls scores, no score, and the finish', () => {
+    let s = make();
+    const m = upNextMatch(s)!;
+    s = run(s, { type: 'START_MATCH', matchId: m.id, at: 1 }, { type: 'SET_LEG_START', legIndex: 0, firstTeam: 'home', resolvedBy: 'MANUAL' }, { type: 'BEGIN_PLAY' });
+    s = run(s, D(20, 3), D(20, 3), D(20, 3));
+    let v = computeMatchView(s)!;
+    expect(callerLines(s, v, v.lastCompletedVisit!)).toEqual(['One hundred and eighty!']);
+    s = run(s, MISS(), MISS(), MISS());
+    v = computeMatchView(s)!;
+    expect(callerLines(s, v, v.lastCompletedVisit!)[0]).toBe('No score');
+    expect(callerLines(s, v, v.lastCompletedVisit!)[1]).toMatch(/you require 121$/);
   });
 });

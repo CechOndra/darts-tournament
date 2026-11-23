@@ -379,8 +379,11 @@ function MyTeamCard({ state, follow, etas, showEtas }: { state: TournamentState;
 function GuestView() {
   usePresenceRole('guest');
   const state = useTournamentState();
-  const [tab, setTab] = useState<Tab>('live');
-  const active = TABS.find((t) => t.id === tab) ?? TABS[0]!;
+  const [tabSel, setTab] = useState<Tab>('live');
+  const soundboardOn = state?.settings.visibility.soundboardFeature !== false;
+  const tabs = soundboardOn ? TABS : TABS.filter((t) => t.id !== 'sound');
+  const tab: Tab = !soundboardOn && tabSel === 'sound' ? 'live' : tabSel;
+  const active = tabs.find((t) => t.id === tab) ?? tabs[0]!;
   const view = useMatchView(state);
   const { duty, next: dutyMatch } = useDuty(state);
   const projection = useProjection(state);
@@ -459,8 +462,12 @@ function GuestView() {
         {tab === 'sound' && <Soundboard state={state} />}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-border-subtle bg-bg-surface" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} aria-label="Guest sections">
-        {TABS.map(({ id, label, icon: Icon }) => (
+      <nav
+        className={`fixed inset-x-0 bottom-0 z-10 grid border-t border-border-subtle bg-bg-surface ${tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        aria-label="Guest sections"
+      >
+        {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"

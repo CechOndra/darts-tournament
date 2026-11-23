@@ -1,4 +1,4 @@
-import { Copy, ExternalLink, Hash, Monitor, MonitorUp, MonitorX, Printer, Smartphone, Tablet } from 'lucide-react';
+import { Copy, ExternalLink, Hash, Monitor, MonitorUp, MonitorX, Smartphone, Tablet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { QrCode } from '../../../components/JoinQr.tsx';
 import { Button, Field, Notice, TextInput, Toggle } from '../../../components/ui.tsx';
@@ -21,11 +21,10 @@ export function ScreensSection({ state, isLive }: { state: TournamentState; isLi
     { route: 'stage', label: 'Stage (projector)', icon: Monitor },
     { route: 'scorer', label: 'Scorer (tablet)', icon: Tablet },
     { route: '', label: 'Guest (phone)', icon: Smartphone },
-    { route: 'print-cards', label: 'Print card deck', icon: Printer },
   ];
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {screens.map(({ route, label, icon }) => (
           <Button key={route || 'guest'} icon={icon} onClick={() => openAppWindow(route, pin)} className="justify-start">
             <span className="truncate">{label}</span>

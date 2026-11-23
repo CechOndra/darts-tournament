@@ -48,7 +48,7 @@ export async function playMemeAudio(file: string, caption: string, speech: boole
     return;
   }
   if (speech && typeof speechSynthesis !== 'undefined') {
-    speechSynthesis.cancel();
+    // Queue after the score caller instead of cutting it off.
     speechSynthesis.speak(new SpeechSynthesisUtterance(caption));
   }
 }

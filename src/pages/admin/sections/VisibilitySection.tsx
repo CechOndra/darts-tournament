@@ -24,10 +24,10 @@ export function VisibilitySection({ state }: { state: TournamentState }) {
         onChange={(showJoinQr) => set({ showJoinQr })}
       />
       <Toggle
-        label="Crowd soundboard"
-        description="Guests can trigger 6 sounds on the stage speakers (locked while a player throws)."
-        checked={v.soundboardEnabled !== false}
-        onChange={(soundboardEnabled) => set({ soundboardEnabled })}
+        label="Crowd soundboard feature"
+        description="Off: no Soundboard tab on guest phones and no crowd button on the tablet. To mute it for a moment use Live Switches instead."
+        checked={v.soundboardFeature !== false}
+        onChange={(soundboardFeature) => set({ soundboardFeature })}
       />
       <Toggle
         label="Breaks on guest phones"

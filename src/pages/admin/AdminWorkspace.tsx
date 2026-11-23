@@ -1,4 +1,4 @@
-import { ArrowLeftRight, CalendarClock, Laugh, Coffee, Crosshair, Eye, Hash, KeyRound, MonitorSmartphone, LayoutGrid, Layers, ListOrdered, Radio, ScrollText, Settings2, ShieldAlert, ShieldCheck, Trophy, Users, type LucideIcon } from 'lucide-react';
+import { ArrowLeftRight, CalendarClock, Laugh, ToggleRight, Coffee, Crosshair, Eye, Hash, KeyRound, MonitorSmartphone, LayoutGrid, Layers, ListOrdered, Radio, ScrollText, Settings2, ShieldAlert, ShieldCheck, Trophy, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { RouteHeader } from '../../components/RouteHeader.tsx';
 import { ConnectionBadge, PingIndicator } from '../../components/StatusIndicators.tsx';
@@ -15,6 +15,7 @@ import { LiveOpsSection, PinRotation } from './sections/LiveOpsSection.tsx';
 import { AwardsSection } from './sections/AwardsSection.tsx';
 import { CardsSection } from './sections/CardsSection.tsx';
 import { MemesSection } from './sections/MemesSection.tsx';
+import { LiveSwitches } from './sections/LiveSwitches.tsx';
 import { ResultsSection } from './sections/ResultsSection.tsx';
 import { AdminPinCard, ScreensSection } from './sections/ScreensSection.tsx';
 import { PlayerOrderTool } from '../../components/match/PlayerOrderTool.tsx';
@@ -25,7 +26,7 @@ import { RulesSection } from './sections/RulesSection.tsx';
 import { BreakEditor, ScheduleSection } from './sections/ScheduleSection.tsx';
 import { VisibilitySection } from './sections/VisibilitySection.tsx';
 
-type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules' | 'table' | 'cards' | 'screens' | 'adminpin' | 'order' | 'memes';
+type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules' | 'table' | 'cards' | 'screens' | 'adminpin' | 'order' | 'memes' | 'switches';
 type QuickSheet = 'pin' | 'break' | null;
 type TabId = 'live' | 'results' | 'teams' | 'cards' | 'awards' | 'settings';
 
@@ -38,7 +39,7 @@ const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
   { id: 'settings', label: 'Settings', short: 'Settings', icon: Settings2 },
 ];
 
-const TAB_OF: Record<SectionId, TabId> = { live: 'live', schedule: 'live', roster: 'teams', visibility: 'settings', rules: 'settings', table: 'settings', cards: 'cards', screens: 'live', adminpin: 'live', order: 'live', memes: 'settings' };
+const TAB_OF: Record<SectionId, TabId> = { live: 'live', schedule: 'live', roster: 'teams', visibility: 'settings', rules: 'settings', table: 'settings', cards: 'cards', screens: 'live', adminpin: 'live', order: 'live', memes: 'settings', switches: 'live' };
 
 export function AdminWorkspace({
   tournamentId,
@@ -58,7 +59,7 @@ export function AdminWorkspace({
   const desktop = useMediaQuery('(min-width: 1024px)');
   const dispatch = useDispatch();
   const [tab, setTab] = useState<TabId>('live');
-  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true, cards: true, screens: true, adminpin: false, order: true, memes: false });
+  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true, cards: true, screens: true, adminpin: false, order: true, memes: false, switches: true });
   const [sheet, setSheet] = useState<QuickSheet>(null);
   const { busy, error, run } = useAsyncAction();
 
@@ -163,6 +164,9 @@ export function AdminWorkspace({
         {tab === 'live' && (
           <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <div className="min-w-0 space-y-4">
+              <Section id="section-switches" title="Live Switches" icon={ToggleRight} open={open.switches} onToggle={() => toggle('switches')}>
+                <LiveSwitches state={state} />
+              </Section>
               <Section id="section-screens" title="Screens & Guest Link" icon={MonitorSmartphone} open={open.screens} onToggle={() => toggle('screens')}>
                 <ScreensSection state={state} isLive={isLive} />
               </Section>

@@ -18,6 +18,7 @@ export const GLOBAL_COOLDOWN_MS = 4_000;
 
 /** Why the soundboard is locked right now (null = open). */
 export function soundboardLock(state: TournamentState, view: MatchView | null): string | null {
+  if (state.settings.visibility.soundboardFeature === false) return 'The soundboard is switched off';
   if (state.settings.visibility.soundboardEnabled === false) return 'Soundboard muted by the host';
   const turn = view?.turn;
   if (state.live?.phase === 'IN_PROGRESS' && turn) {

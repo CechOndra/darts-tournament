@@ -1,4 +1,5 @@
-import { ArrowRightLeft, Gift, Layers, Plus, Settings2, Undo2, Users } from 'lucide-react';
+import { ArrowRightLeft, Gift, Layers, Plus, Printer, Settings2, Undo2, Users } from 'lucide-react';
+import { openAppWindow } from '../../../services/links.ts';
 import { useState } from 'react';
 import { CardSettingsForm } from '../../../components/admin/CardSettingsForm.tsx';
 import { SettingsDraft } from '../../../components/admin/SettingsDraft.tsx';
@@ -154,7 +155,12 @@ export function CardsSection({ state }: { state: TournamentState }) {
   return (
     <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
       <div className="space-y-4 lg:col-span-2">
-        {s.mode === 'OFF' && <Notice tone="info">Power Cards are off for this tournament. Turn them on in the settings below.</Notice>}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {s.mode === 'OFF' ? <Notice tone="info">Power Cards are off for this tournament. Turn them on in the settings below.</Notice> : <span />}
+          <Button icon={Printer} onClick={() => openAppWindow('print-cards', state.meta?.id ?? null)}>
+            Print card deck
+          </Button>
+        </div>
         <Section
           id="section-cards-inv"
           title="Team Hands"

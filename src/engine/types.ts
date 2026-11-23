@@ -202,8 +202,14 @@ export interface VisibilitySettings {
   showUltimateTeam?: boolean;
   /** Stage: small join QR code between matches. Missing = on. */
   showJoinQr?: boolean;
-  /** Crowd soundboard master switch (admin / scorer). Missing = on. */
+  /** Crowd soundboard temporary mute (admin / scorer). Missing = on. */
   soundboardEnabled?: boolean;
+  /** Crowd soundboard feature at all (off = no Soundboard tab on phones). Missing = on. */
+  soundboardFeature?: boolean;
+  /** Stage announces each visit ("One hundred and eighty!"). Missing = off. */
+  scoreCaller?: boolean;
+  /** Caller also says "Anna, you require 40" on a finish. Missing = on. */
+  callRequire?: boolean;
 }
 
 /** What the admin is projecting over the stage (awards ceremony). */

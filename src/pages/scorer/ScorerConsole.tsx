@@ -70,6 +70,7 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
                 <span className="hidden lg:inline">Practice</span>
               </Button>
             )}
+            {state.settings.visibility.soundboardFeature !== false && (
             <Button
               size="sm"
               icon={crowdOn ? Megaphone : MegaphoneOff}
@@ -79,6 +80,7 @@ export function ScorerConsole({ onLock }: { onLock: () => void }) {
             >
               <span className="hidden lg:inline">{crowdOn ? 'Crowd on' : 'Crowd off'}</span>
             </Button>
+            )}
             <Button size="sm" icon={state.helpRequest ? AlertTriangle : Wrench} onClick={() => setToolsOpen(true)} aria-label="Table tools" className={state.helpRequest ? 'animate-pulse border-accent-warning text-accent-warning' : ''}>
               <span className="hidden lg:inline">{state.helpRequest ? 'Admin called' : 'Tools'}</span>
             </Button>
