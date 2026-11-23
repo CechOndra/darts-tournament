@@ -8,6 +8,7 @@ import {
   restructureTournament,
   teamPlaceholderName,
 } from './tournament.ts';
+import { isHexColor, THEME_BY_ID } from './themes.ts';
 import type { GameRules, Match } from './types.ts';
 
 const MAX_NAME = 40;
@@ -171,6 +172,12 @@ export function tournamentReducer(input: TournamentState, action: EngineAction):
 
     case 'REMOVE_BREAK':
       return { ...state, breaks: state.breaks.filter((b) => b.id !== action.breakId) };
+
+    case 'SET_THEME': {
+      if (!THEME_BY_ID[action.theme.preset]) return state;
+      const accent = isHexColor(action.theme.accent) ? action.theme.accent : null;
+      return { ...state, settings: { ...state.settings, theme: { preset: action.theme.preset, accent } } };
+    }
 
     case 'UPDATE_MEME_SETTINGS':
       return { ...state, settings: { ...state.settings, memes: { ...state.settings.memes, ...action.patch } } };

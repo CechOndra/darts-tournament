@@ -19,7 +19,8 @@
   /* Text */
   --text-primary: #f8fafc;
   --text-muted: #94a3b8;
-  --text-inverse: #0b0f17;
+  --text-inverse: #0b0f17; /* text on gold / warning / green accents */
+  --on-primary: #f8fafc; /* text on primary (red) buttons */
 
   /* Accents & status */
   --accent-primary: #e11d48;
@@ -30,10 +31,16 @@
   --accent-danger: #dc2626;
   --accent-success: #22c55e;
   --accent-info: #3b82f6;
+  /* Gold used as TEXT (light themes need a darker shade than gold backgrounds) */
+  --accent-gold-text: var(--accent-gold);
 
   /* Lines */
   --border-subtle: #243047;
   --border-strong: #3a4a68;
+  /* Panels / buttons outline + shadow (the Pop theme makes these bold) */
+  --surface-border: var(--border-subtle);
+  --line-width: 1px;
+  --surface-shadow: none;
 
   /* Power Card rarity (CS2-style rarity bars) */
   --rarity-common: #9ca3af;
@@ -92,6 +99,7 @@
   --color-text-primary: var(--text-primary);
   --color-text-muted: var(--text-muted);
   --color-text-inverse: var(--text-inverse);
+  --color-on-primary: var(--on-primary);
   --color-accent-primary: var(--accent-primary);
   --color-accent-primary-hover: var(--accent-primary-hover);
   --color-accent-secondary: var(--accent-secondary);
@@ -154,13 +162,14 @@
 
   .surface {
     background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
+    border: var(--line-width) solid var(--surface-border);
     border-radius: var(--radius-lg);
+    box-shadow: var(--surface-shadow);
   }
 
   .surface-elevated {
     background: var(--bg-elevated);
-    border: 1px solid var(--border-subtle);
+    border: var(--line-width) solid var(--surface-border);
     border-radius: var(--radius-lg);
   }
 
@@ -248,4 +257,176 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/*
+ * =====================================================================
+ *  THEME PRESETS  (html[data-theme='...'], chosen per tournament in admin)
+ *  Classic = the :root values above (no attribute). Each preset only
+ *  overrides tokens; layouts and logic never change.
+ * =====================================================================
+ */
+:root .text-accent-gold {
+  color: var(--accent-gold-text);
+}
+
+/* Pub: dark green felt, chalk text, dartboard red and green */
+:root[data-theme='pub'] {
+  --bg-primary: #0d1c14;
+  --bg-surface: #13281d;
+  --bg-elevated: #1b3628;
+  --bg-overlay: rgb(7 16 11 / 0.86);
+  --text-primary: #f3efe2;
+  --text-muted: #a9b9a6;
+  --text-inverse: #10180f;
+  --on-primary: #fff8ec;
+  --accent-primary: #c8312b;
+  --accent-primary-hover: #dc463f;
+  --accent-secondary: #2f9e5b;
+  --accent-gold: #e3bf62;
+  --accent-warning: #e0a43a;
+  --accent-danger: #d23b33;
+  --accent-success: #45b36f;
+  --accent-info: #6aa6d6;
+  --border-subtle: #2a4636;
+  --border-strong: #3f6350;
+  --surface-gradient: radial-gradient(ellipse at 50% 0%, #1b3a29 0%, #0d1c14 70%);
+  --coin-face: #e3bf62;
+  --fut-icon-accent: #e3bf62;
+}
+
+/* TV Broadcast: deep black, neon pink and cyan */
+:root[data-theme='broadcast'] {
+  --bg-primary: #050507;
+  --bg-surface: #0d0d15;
+  --bg-elevated: #171726;
+  --bg-overlay: rgb(3 3 6 / 0.88);
+  --text-primary: #ffffff;
+  --text-muted: #a5a5c8;
+  --text-inverse: #050507;
+  --on-primary: #ffffff;
+  --accent-primary: #ff2d95;
+  --accent-primary-hover: #ff5cae;
+  --accent-secondary: #2ee6a6;
+  --accent-gold: #22e4ff;
+  --accent-warning: #ffd23f;
+  --accent-danger: #ff3355;
+  --accent-success: #3dff8f;
+  --accent-info: #8b6dff;
+  --border-subtle: #25253d;
+  --border-strong: #3c3c63;
+  --surface-gradient: radial-gradient(ellipse at 50% -10%, #2a0f3a 0%, #050507 60%);
+  --rarity-legendary: #ffb627;
+  --coin-face: #22e4ff;
+  --coin-shine: #b8f6ff;
+  --coin-edge: #0a8ea3;
+  --fut-icon-accent: #22e4ff;
+}
+
+/* Daylight: light surfaces for bright rooms and weak projectors */
+:root[data-theme='daylight'] {
+  --bg-primary: #f3f5f9;
+  --bg-surface: #ffffff;
+  --bg-elevated: #eaeef4;
+  --bg-overlay: rgb(243 245 249 / 0.93);
+  --text-primary: #0f172a;
+  --text-muted: #4b5568;
+  --text-inverse: #0f172a;
+  --on-primary: #ffffff;
+  --accent-primary: #d6243f;
+  --accent-primary-hover: #e23d57;
+  --accent-secondary: #059669;
+  --accent-gold: #f59e0b;
+  --accent-gold-text: #b45309;
+  --accent-warning: #d97706;
+  --accent-danger: #dc2626;
+  --accent-success: #16a34a;
+  --accent-info: #2563eb;
+  --border-subtle: #d7dde7;
+  --border-strong: #aeb9ca;
+  --surface-gradient: linear-gradient(160deg, #ffffff 0%, #eef1f6 100%);
+  --rarity-common: #6b7280;
+  --rarity-silver: #8a99ad;
+  --fut-icon-1: #1e293b;
+  color-scheme: light;
+}
+
+/* High contrast: black and white with yellow, readable from the back of the room */
+:root[data-theme='contrast'] {
+  --bg-primary: #000000;
+  --bg-surface: #000000;
+  --bg-elevated: #141414;
+  --bg-overlay: rgb(0 0 0 / 0.94);
+  --text-primary: #ffffff;
+  --text-muted: #e6e6e6;
+  --text-inverse: #000000;
+  --on-primary: #000000;
+  --accent-primary: #ffe600;
+  --accent-primary-hover: #fff35c;
+  --accent-secondary: #00f0ff;
+  --accent-gold: #ffe600;
+  --accent-warning: #ffb800;
+  --accent-danger: #ff4d4d;
+  --accent-success: #33ff77;
+  --accent-info: #6ab8ff;
+  --border-subtle: #8a8a8a;
+  --border-strong: #ffffff;
+  --surface-border: #ffffff;
+  --line-width: 2px;
+  --surface-gradient: none;
+}
+
+/* Pop: cream paper, thick black outlines with hard shadows, pill buttons, bold rounded type */
+:root[data-theme='pop'] {
+  --bg-primary: #fffbef;
+  --bg-surface: #ffffff;
+  --bg-elevated: #fff6d6;
+  --bg-overlay: rgb(255 251 239 / 0.94);
+  --text-primary: #141414;
+  --text-muted: #4a4a4a;
+  --text-inverse: #141414;
+  --on-primary: #141414;
+  --accent-primary: #ffd60a;
+  --accent-primary-hover: #ffe14d;
+  --accent-secondary: #1f9d55;
+  --accent-gold: #ffd60a;
+  --accent-gold-text: #8a6a00;
+  --accent-warning: #f59e0b;
+  --accent-danger: #e5383b;
+  --accent-success: #1f9d55;
+  --accent-info: #2563eb;
+  --border-subtle: #e9dfbf;
+  --border-strong: #141414;
+  --surface-border: #141414;
+  --line-width: 2.5px;
+  --surface-shadow: 5px 5px 0 #141414;
+  --surface-gradient: none;
+  --radius-md: 0.9rem;
+  --radius-lg: 1.25rem;
+  --rarity-common: #6b7280;
+  --rarity-silver: #8a99ad;
+  --font-sans: 'Nunito', ui-rounded, 'Arial Rounded MT Bold', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Nunito', ui-rounded, 'Arial Rounded MT Bold', ui-sans-serif, system-ui, sans-serif;
+  color-scheme: light;
+}
+:root[data-theme='pop'] .btn {
+  border-radius: 9999px;
+  border-width: 2.5px;
+  border-color: #141414;
+  font-weight: 800;
+  box-shadow: 3px 3px 0 #141414;
+}
+:root[data-theme='pop'] .btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #141414;
+}
+:root[data-theme='pop'] .btn-ghost {
+  border-color: transparent;
+  box-shadow: none;
+}
+:root[data-theme='pop'] .btn-secondary {
+  background: #ffffff;
+}
+:root[data-theme='pop'] .font-display {
+  font-weight: 900;
 }

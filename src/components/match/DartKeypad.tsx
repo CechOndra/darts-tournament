@@ -100,7 +100,7 @@ function ModifierPad(props: KeypadProps) {
       aria-pressed={mod === m}
       onClick={() => toggle(m)}
       className={`${KEY} col-span-1 font-display text-xl tracking-widest uppercase ${
-        mod === m ? (m === 2 ? 'border-accent-secondary bg-accent-secondary text-text-inverse' : 'border-accent-primary bg-accent-primary text-text-primary') : TONE[m]
+        mod === m ? (m === 2 ? 'border-accent-secondary bg-accent-secondary text-text-inverse' : 'border-accent-primary bg-accent-primary text-on-primary') : TONE[m]
       }`}
     >
       {label}

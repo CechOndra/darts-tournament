@@ -155,12 +155,7 @@ export function CardsSection({ state }: { state: TournamentState }) {
   return (
     <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
       <div className="space-y-4 lg:col-span-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          {s.mode === 'OFF' ? <Notice tone="info">Power Cards are off for this tournament. Turn them on in the settings below.</Notice> : <span />}
-          <Button icon={Printer} onClick={() => openAppWindow('print-cards', state.meta?.id ?? null)}>
-            Print card deck
-          </Button>
-        </div>
+        {s.mode === 'OFF' && <Notice tone="info">Power Cards are off for this tournament. Turn them on in the settings below.</Notice>}
         <Section
           id="section-cards-inv"
           title="Team Hands"
@@ -193,6 +188,12 @@ export function CardsSection({ state }: { state: TournamentState }) {
       <Section id="section-cards-tools" title="Minigame Transfers" icon={Layers} open={open.tools} onToggle={() => setOpen((o) => ({ ...o, tools: !o.tools }))}>
         <GrantTools state={state} />
       </Section>
+      <div className="flex flex-wrap items-center justify-between gap-2 lg:col-span-3">
+        <p className="text-sm text-text-muted">Printable A4 deck: 63 x 88 mm cards with cut lines, copies from the card settings.</p>
+        <Button icon={Printer} onClick={() => openAppWindow('print-cards', state.meta?.id ?? null)}>
+          Print card deck
+        </Button>
+      </div>
     </div>
   );
 }

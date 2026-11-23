@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { EngineAction } from '../engine/actions.ts';
 import { tournamentReducer } from '../engine/reducer.ts';
+import { useThemeSync } from './useTheme.ts';
 import { createEmptyState, migrateState, type TournamentState } from '../engine/state.ts';
 import {
   createTransport,
@@ -123,6 +124,7 @@ function ScopeInner({ tournamentId, children }: { tournamentId: string; children
 
   return (
     <TransportContext.Provider value={{ transport, envelope, hydrated, status, peers, connectError }}>
+      <ThemeSync />
       {children}
     </TransportContext.Provider>
   );
@@ -142,6 +144,13 @@ export function useOptionalTransportContext(): TransportContextValue | null {
 export function useTournamentState(): TournamentState | null {
   const { envelope } = useTransportContext();
   return useMemo(() => (envelope?.state.meta ? migrateState(envelope.state) : null), [envelope]);
+}
+
+/** Applies the tournament's theme to the document (every route inside a tournament). */
+function ThemeSync() {
+  const state = useOptionalTournamentState();
+  useThemeSync(state?.settings.theme);
+  return null;
 }
 
 /** Like useTournamentState, but returns null outside a <TournamentScope> instead of throwing. */

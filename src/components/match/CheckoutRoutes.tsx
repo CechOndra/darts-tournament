@@ -10,7 +10,7 @@ function Route({ labels, title, tone, xl }: { labels: string[]; title: string; t
       <span className={`font-display tracking-widest uppercase ${gold ? 'text-accent-gold' : 'text-text-primary'} ${xl ? 'text-xl' : 'text-xs'}`}>{title}</span>
       <span className="flex gap-2">
         {labels.map((l, i) => (
-          <span key={i} className={`rounded px-2 py-0.5 font-mono font-bold ${gold ? 'bg-accent-gold text-text-inverse' : 'bg-text-primary text-text-inverse'} ${xl ? 'text-3xl' : 'text-sm'}`}>
+          <span key={i} className={`rounded px-2 py-0.5 font-mono font-bold ${gold ? 'bg-accent-gold text-text-inverse' : 'bg-text-primary text-bg-primary'} ${xl ? 'text-3xl' : 'text-sm'}`}>
             {l}
           </span>
         ))}

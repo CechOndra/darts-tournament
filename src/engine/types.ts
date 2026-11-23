@@ -300,6 +300,8 @@ export interface TableSettings {
 }
 
 export interface TournamentSettings {
+  /** Visual theme preset + optional main color (missing = Classic). */
+  theme?: import('./themes.ts').ThemeSettings;
   /** Stage meme overlays (missing = defaults). */
   memes?: Partial<import('./memes.ts').MemeSettings>;
   visibility: VisibilitySettings;

@@ -12,9 +12,9 @@ import {
 // ---------------------------------------------------------------- Button
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'gold';
 const VARIANT: Record<Variant, string> = {
-  primary: 'bg-accent-primary text-text-primary hover:bg-accent-primary-hover border-transparent',
+  primary: 'bg-accent-primary text-on-primary hover:bg-accent-primary-hover border-transparent',
   secondary: 'bg-bg-elevated text-text-primary border-border-subtle hover:border-border-strong',
-  danger: 'bg-accent-danger text-text-primary border-transparent hover:brightness-110',
+  danger: 'bg-accent-danger text-on-primary border-transparent hover:brightness-110',
   ghost: 'bg-transparent text-text-muted border-transparent hover:text-text-primary hover:bg-bg-elevated',
   gold: 'bg-accent-gold text-text-inverse border-transparent hover:brightness-110',
 };
@@ -31,7 +31,7 @@ export function Button({ variant = 'secondary', icon: Icon, size = 'md', busy, c
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-md border font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${sizing} ${VARIANT[variant]} ${className}`}
+      className={`btn btn-${variant} inline-flex items-center justify-center gap-2 rounded-md border font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${sizing} ${VARIANT[variant]} ${className}`}
       disabled={disabled || busy}
       {...rest}
     >
