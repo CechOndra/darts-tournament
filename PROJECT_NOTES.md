@@ -116,3 +116,15 @@ Read this first, then `SPEC.md` (the original specification). Last updated 2026-
   guest 393x852; no console errors, no horizontal overflow.
 - End a milestone with an "ACTION NEEDED FROM USER" block when something is required of them.
 - Ask before risky or destructive changes; settings that affect a live match need confirmation.
+
+## Sounds: how files map to actions
+Files in `public/` are published (public download). `music-IDEAS/` is local-only (git-ignored): subfolders callouts/, memes/, win-songs/, walkouts/, anthems/. To use a song, copy it into `public/` under the exact name below, then commit + push.
+- Match win song: `public/audio/game-win.mp3`
+- Crowd soundboard: `public/sounds/{airhorn,applause,drumroll,oooh,boo,fanfare}.mp3`
+- Meme sound: `public/memes/<meme file name>.mp3` (names in `public/memes/README.md`)
+Admin > Settings > Stage Sounds: upload an mp3 per slot from this browser (saved in IndexedDB, shared with other tabs of the same browser) or "Use default".
+Not wired yet: per-number callouts (e.g. 180 by a referee), per-team walkout songs. `public/audio/darts-anthem.mp3` was pushed once by mistake and removed (still in git history).
+
+## Open / later
+- Sound uploads that work from ANY device (e.g. admin on a phone, stage on a TV): upload to a Supabase Storage bucket (public-read) and keep a slot->URL row in the tournament state so the stage picks it up live; "Use default" clears the URL. Needs a migration, upload policy (anon vs admin-PIN Edge Function), ~3-4x the work of the current browser-only version.
+- Optional: offline backup = run `npm run dev` on the PC and open the Network address on other devices.

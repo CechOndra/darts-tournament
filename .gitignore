@@ -23,5 +23,5 @@ Thumbs.db
 coverage/
 .playwright-mcp/
 
-# Source music folder (only the files copied into public/audio are published)
-music/
+# Local-only song ideas (never pushed); move a pick into public/ to publish it
+music-IDEAS/

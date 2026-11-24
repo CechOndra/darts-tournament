@@ -1,4 +1,5 @@
 import type { CardRarity } from '../../engine/cardCatalog.ts';
+import { overrideUrl } from './overrides.ts';
 
 /**
  * Stage sound: generated Web Audio effects (no files) plus the match-win song.
@@ -9,6 +10,7 @@ import type { CardRarity } from '../../engine/cardCatalog.ts';
 const MUTE_KEY = 'darts.sound.muted';
 let ctx: AudioContext | null = null;
 let winSong: HTMLAudioElement | null = null;
+const winUrl = () => overrideUrl('win') ?? `${import.meta.env.BASE_URL}audio/game-win.mp3`;
 const listeners = new Set<() => void>();
 
 export function isMuted(): boolean {
@@ -52,10 +54,7 @@ function audio(): AudioContext | null {
 export async function unlockAudio(): Promise<void> {
   const c = audio();
   if (c && c.state !== 'running') await c.resume().catch(() => undefined);
-  if (!winSong) {
-    winSong = new Audio(`${import.meta.env.BASE_URL}audio/game-win.mp3`);
-    winSong.preload = 'auto';
-  }
+  ensureWinSong();
   listeners.forEach((l) => l());
 }
 
@@ -104,12 +103,22 @@ export function playCountdown(final: boolean): void {
 }
 
 /** Match-winning dart: play the win song from the start. */
+/** (Re)creates the win song element when the active file (default or uploaded) changed. */
+function ensureWinSong(): void {
+  const url = winUrl();
+  if (winSong && winSong.dataset.url === url) return;
+  winSong?.pause();
+  winSong = new Audio(url);
+  winSong.dataset.url = url;
+  winSong.preload = 'auto';
+}
+
 export function playWinSong(): void {
   if (isMuted() || !isAudioUnlocked()) return;
-  if (!winSong) winSong = new Audio(`${import.meta.env.BASE_URL}audio/game-win.mp3`);
-  winSong.currentTime = 0;
-  winSong.volume = 0.9;
-  void winSong.play().catch(() => undefined);
+  ensureWinSong();
+  winSong!.currentTime = 0;
+  winSong!.volume = 0.9;
+  void winSong!.play().catch(() => undefined);
 }
 
 export function stopWinSong(): void {
@@ -173,6 +182,11 @@ function crowdFile(id: CrowdId): Promise<HTMLAudioElement | null> {
 /** Crowd soundboard: a dropped-in mp3 if present, otherwise a synthesized effect. */
 export function playCrowdSound(id: CrowdId): void {
   if (isMuted() || !isAudioUnlocked()) return;
+  const custom = overrideUrl(`crowd:${id.toLowerCase()}`);
+  if (custom) {
+    void new Audio(custom).play().catch(() => synthCrowd(id));
+    return;
+  }
   void crowdFile(id).then((file) => {
     if (!file) return synthCrowd(id);
     file.currentTime = 0;
@@ -218,3 +232,4 @@ export function playAlert(): void {
     tone(1175, i * 0.45 + 0.2, 0.2, 'square', 0.12);
   }
 }
+

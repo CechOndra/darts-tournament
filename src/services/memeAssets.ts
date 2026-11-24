@@ -1,3 +1,4 @@
+import { overrideUrl } from './audio/overrides.ts';
 import { isAudioUnlocked, isMuted } from './audio/sound.ts';
 
 /** Meme files in public/memes/: user images win over the shipped .svg placeholders. */
@@ -42,7 +43,7 @@ function memeSound(file: string): Promise<string | null> {
 /** The meme's mp3 if there is one, otherwise (optionally) the caption read aloud. */
 export async function playMemeAudio(file: string, caption: string, speech: boolean): Promise<void> {
   if (isMuted() || !isAudioUnlocked()) return;
-  const sound = await memeSound(file);
+  const sound = overrideUrl(`meme:${file}`) ?? (await memeSound(file));
   if (sound) {
     void new Audio(sound).play().catch(() => undefined);
     return;
@@ -54,3 +55,4 @@ export async function playMemeAudio(file: string, caption: string, speech: boole
 }
 
 export const MEME_TEST_EVENT = 'MEME_TEST';
+
