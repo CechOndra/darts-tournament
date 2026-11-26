@@ -1,8 +1,8 @@
-import { displayName } from '../../engine/selectors.ts';
 import { Download, MonitorUp } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { STAT_CODES, STAT_HELP, STAT_LABEL, type FutCard as FutCardData, type UltimateSlot } from '../../engine/stats.ts';
 import type { TournamentState } from '../../engine/state.ts';
+import { FutNameSwitch, futName, useFutNames } from '../../hooks/FutNames.tsx';
 import { useDispatch } from '../../hooks/TransportProvider.tsx';
 import { playerRole } from '../../hooks/useStats.ts';
 import { downloadSvgAsPng } from '../../services/media/customAssets.ts';
@@ -45,20 +45,23 @@ export function StatsGuide({ state }: { state: TournamentState }) {
 
 /** FUT card for a player id (name, team, role, photo, logo looked up from state). */
 export function FutCardFor({ state, card, className }: { state: TournamentState; card: FutCardData; className?: string }) {
+  const { mode } = useFutNames(state);
   const p = state.players[card.playerId];
   const team = state.teams.find((t) => t.id === card.teamId);
-  return <FutCard card={card} name={p ? displayName(p) : ''} teamName={team?.name ?? ''} role={playerRole(state, card.playerId)} avatar={p?.avatarDataUrl ?? null} teamLogo={team?.logoDataUrl} className={className} />;
+  return <FutCard card={card} name={p ? futName(p, mode) : ''} teamName={team?.name ?? ''} role={playerRole(state, card.playerId)} avatar={p?.avatarDataUrl ?? null} teamLogo={team?.logoDataUrl} className={className} />;
 }
 
 /** Big card + radar with "compare with" (teammate by default), PNG download, and (admin) Project to Stage. */
 export function FutDetail({ state, card, cards, onClose, admin = false }: { state: TournamentState; card: FutCardData; cards: FutCardData[]; onClose: () => void; admin?: boolean }) {
   const dispatch = useDispatch();
+  const { mode } = useFutNames(state);
+  const nameOf = (id: string) => (state.players[id] ? futName(state.players[id]!, mode) : '');
   const svgRef = useRef<SVGSVGElement>(null);
   const team = state.teams.find((t) => t.id === card.teamId);
   const mate = cards.find((c) => c.teamId === card.teamId && c.playerId !== card.playerId);
   const [compareId, setCompareId] = useState<string>(mate?.playerId ?? '');
   const compare = cards.find((c) => c.playerId === compareId) ?? null;
-  const name = state.players[card.playerId]?.name ?? '';
+  const name = nameOf(card.playerId);
   return (
     <Modal title={`${name} · ${team?.name ?? ''}`} wide onClose={onClose}>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -73,6 +76,7 @@ export function FutDetail({ state, card, cards, onClose, admin = false }: { stat
           className="mx-auto w-full max-w-xs"
         />
         <div className="min-w-0 space-y-3">
+          <FutNameSwitch state={state} />
           <Field label="Compare with">
             {(id) => (
               <Select id={id} value={compareId} onChange={(e) => setCompareId(e.target.value)}>
@@ -81,13 +85,13 @@ export function FutDetail({ state, card, cards, onClose, admin = false }: { stat
                   .filter((c) => c.playerId !== card.playerId)
                   .map((c) => (
                     <option key={c.playerId} value={c.playerId}>
-                      {state.players[c.playerId]?.name} ({state.teams.find((t) => t.id === c.teamId)?.name})
+                      {nameOf(c.playerId)} ({state.teams.find((t) => t.id === c.teamId)?.name})
                     </option>
                   ))}
               </Select>
             )}
           </Field>
-          <RadarChart card={card} compare={compare} label={name} compareLabel={compare ? state.players[compare.playerId]?.name : undefined} />
+          <RadarChart card={card} compare={compare} label={name} compareLabel={compare ? nameOf(compare.playerId) : undefined} />
           <StatsGuide state={state} />
           <div className="flex flex-wrap gap-2">
             <Button icon={Download} onClick={() => svgRef.current && void downloadSvgAsPng(svgRef.current, `${name.replace(/\W+/g, '_') || 'player'}_fut.png`)}>
@@ -108,6 +112,8 @@ export function FutDetail({ state, card, cards, onClose, admin = false }: { stat
 /** Grid of FUT cards; tapping one opens the detail with the radar chart. */
 export function FutGallery({ state, cards, columns = 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5', admin = false, highlightTeam }: { state: TournamentState; cards: FutCardData[]; columns?: string; admin?: boolean; highlightTeam?: string | null }) {
   const [detail, setDetail] = useState<string | null>(null);
+  const { mode } = useFutNames(state);
+  const nameOf = (id: string) => (state.players[id] ? futName(state.players[id]!, mode) : '');
   const card = cards.find((c) => c.playerId === detail);
   return (
     <>
@@ -117,7 +123,7 @@ export function FutGallery({ state, cards, columns = 'grid-cols-2 sm:grid-cols-3
             key={c.playerId}
             type="button"
             onClick={() => setDetail(c.playerId)}
-            aria-label={`Open ${state.players[c.playerId]?.name} card and radar chart`}
+            aria-label={`Open ${nameOf(c.playerId)} card and radar chart`}
             className={`rounded-lg transition hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-accent-gold ${highlightTeam && c.teamId === highlightTeam ? 'ring-2 ring-accent-gold' : ''}`}
           >
             <FutCardFor state={state} card={c} className="w-full" />
@@ -132,6 +138,8 @@ export function FutGallery({ state, cards, columns = 'grid-cols-2 sm:grid-cols-3
 /** Ultimate Team: one card per stat spot. size xl = stage. */
 export function UltimateTeamView({ state, team, size = 'md', onOpen }: { state: TournamentState; team: UltimateSlot[]; size?: 'md' | 'xl'; onOpen?: (playerId: string) => void }) {
   const xl = size === 'xl';
+  const { mode } = useFutNames(state);
+  const nameOf = (id: string) => (state.players[id] ? futName(state.players[id]!, mode) : '');
   return (
     <div className={`grid gap-3 ${xl ? 'h-full grid-cols-6 items-center gap-6' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'}`}>
       {team.map((slot) => (
@@ -142,7 +150,7 @@ export function UltimateTeamView({ state, team, size = 'md', onOpen }: { state: 
           </p>
           {slot.card ? (
             onOpen ? (
-              <button type="button" className="w-full rounded-lg focus-visible:ring-2 focus-visible:ring-accent-gold" onClick={() => onOpen(slot.card!.playerId)} aria-label={`Open ${state.players[slot.card.playerId]?.name}`}>
+              <button type="button" className="w-full rounded-lg focus-visible:ring-2 focus-visible:ring-accent-gold" onClick={() => onOpen(slot.card!.playerId)} aria-label={`Open ${nameOf(slot.card.playerId)}`}>
                 <FutCardFor state={state} card={slot.card} className="w-full" />
               </button>
             ) : (

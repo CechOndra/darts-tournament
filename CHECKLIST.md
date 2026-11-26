@@ -35,6 +35,7 @@ Measured values (fill in, then I rerun `npm run estimate` with them):
 ## 3. New features from the last sessions (not yet seen on real devices)
 
 - [ ] 3.1 Nicknames show on the projector stage, matchup and FUT cards (not just in my local test)
+- [ ] 3.1b FUT card names: Admin > Settings > Visibility > "Names on FUT cards" (default Full names) and "Guests can switch names". On a phone: switch appears above the cards, choice is remembered, the downloaded PNG uses the chosen name. Stage always uses the admin default
 - [ ] 3.2 Nicknames fit on a phone (guest page) and the scorer tablet
 - [ ] 3.3 Friends' photos load from `local-data/players/players.json` through "Load mock dataset" and show on the phones without a deploy
 - [ ] 3.4 Test tournament created on the real Supabase: switch, simulation buttons, and delete afterwards from the tournament list

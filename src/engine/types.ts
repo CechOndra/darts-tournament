@@ -212,7 +212,13 @@ export interface VisibilitySettings {
   scoreCaller?: boolean;
   /** Caller also says "Anna, you require 40" on a finish. Missing = on. */
   callRequire?: boolean;
+  /** Name on FUT cards (default shown to everyone). Missing = full names. */
+  futNames?: FutNameMode;
+  /** Guests may switch between full names and nicknames on their phone. Missing = off. */
+  futNamesGuestChoice?: boolean;
 }
+
+export type FutNameMode = 'FULL' | 'NICKNAME';
 
 /** What the admin is projecting over the stage (awards ceremony). */
 export type StageOverlay = { kind: 'AWARD'; awardId: string } | { kind: 'FUT'; playerId: string } | { kind: 'QR' } | { kind: 'ULTIMATE' };

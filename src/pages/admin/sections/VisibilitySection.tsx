@@ -39,6 +39,24 @@ export function VisibilitySection({ state }: { state: TournamentState }) {
       <Toggle label="Match ETAs" description="Estimated start times once Round 1 completes." checked={v.showMatchEtas} onChange={(showMatchEtas) => set({ showMatchEtas })} />
       <Toggle label="Awards preview" description="Keep OFF so winners stay secret until the ceremony." checked={v.showAwardsPreview} onChange={(showAwardsPreview) => set({ showAwardsPreview })} />
       <Toggle label="FUT player cards" description="Flip ON for the big reveal." checked={v.showPlayerFutCards} onChange={(showPlayerFutCards) => set({ showPlayerFutCards })} />
+      <div className="space-y-2 py-3">
+        <Field label="Names on FUT cards" hint="Default for everyone: stage, admin and phones.">
+          {() => (
+            <SegmentedControl
+              ariaLabel="Names on FUT cards"
+              value={v.futNames ?? 'FULL'}
+              options={[{ value: 'FULL', label: 'Full names' }, { value: 'NICKNAME', label: 'Nicknames' }]}
+              onChange={(futNames) => set({ futNames })}
+            />
+          )}
+        </Field>
+        <Toggle
+          label="Guests can switch names"
+          description="Phones get a Full names / Nicknames switch on the FUT cards (also decides the name on a downloaded card). Off: everyone sees the default above."
+          checked={v.futNamesGuestChoice === true}
+          onChange={(futNamesGuestChoice) => set({ futNamesGuestChoice })}
+        />
+      </div>
       <Toggle
         label="Ultimate Team"
         description="Reveal the team of the tournament on guest phones (best player per card stat)."

@@ -27,6 +27,7 @@ import { useDuty, useMatchView } from '../hooks/useMatch.ts';
 import { useProjection, useTournamentStats } from '../hooks/useStats.ts';
 import { usePresenceRole } from '../hooks/useTransport.ts';
 import { CROWD_EVENT, sendCrowdSound } from '../services/soundboardOps.ts';
+import { FutNameSwitch, GuestFutNamesProvider } from '../hooks/FutNames.tsx';
 import { FutGallery, StatsGuide, UltimateTeamView, FutDetail } from '../components/fut/FutViews.tsx';
 import { ultimateTeam } from '../engine/stats.ts';
 
@@ -218,7 +219,15 @@ function GuestCards({ state, follow }: { state: TournamentState; follow: string 
   );
 }
 
-function GuestStats({ state, follow }: { state: TournamentState; follow: string | null }) {
+function GuestStats(props: { state: TournamentState; follow: string | null }) {
+  return (
+    <GuestFutNamesProvider>
+      <GuestStatsInner {...props} />
+    </GuestFutNamesProvider>
+  );
+}
+
+function GuestStatsInner({ state, follow }: { state: TournamentState; follow: string | null }) {
   const stats = useTournamentStats(state);
   const [open, setOpen] = useState<string | null>(null);
   const v = state.settings.visibility;
@@ -268,12 +277,14 @@ function GuestStats({ state, follow }: { state: TournamentState; follow: string 
       {v.showUltimateTeam && stats.cards.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-display text-sm tracking-widest text-accent-gold uppercase">Ultimate Team</h3>
+          <FutNameSwitch state={state} />
           <UltimateTeamView state={state} team={ultimateTeam(state, stats.cards)} onOpen={setOpen} />
         </div>
       )}
       {v.showPlayerFutCards && stats.cards.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-display text-sm tracking-widest text-text-muted uppercase">Player cards (tap for the radar chart)</h3>
+          <FutNameSwitch state={state} />
           <StatsGuide state={state} />
           <FutGallery
             state={state}
