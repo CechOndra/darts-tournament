@@ -6,6 +6,7 @@ import { DutyBanner } from '../components/match/DutyBanner.tsx';
 import { MatchSummary } from '../components/match/MatchSummary.tsx';
 import { Scoreboard, VisitSlots } from '../components/match/Scoreboard.tsx';
 import { qualifiersPerGroup, StandingsTable } from '../components/match/StandingsTable.tsx';
+import { PlayerNamesScreen } from '../hooks/PlayerNames.tsx';
 import { Matchup } from '../components/Matchup.tsx';
 import { NoTournament } from '../components/NoTournament.tsx';
 import { FullscreenButton } from '../components/StatusIndicators.tsx';
@@ -67,7 +68,9 @@ export function StagePage() {
         <StageIdle />
       ) : (
         <TournamentScope tournamentId={id}>
-          <StageLive />
+          <PlayerNamesScreen screen="stage">
+            <StageLive />
+          </PlayerNamesScreen>
         </TournamentScope>
       )}
     </div>

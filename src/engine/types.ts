@@ -214,6 +214,8 @@ export interface VisibilitySettings {
   callRequire?: boolean;
   /** Name on FUT cards (default shown to everyone). Missing = full names. */
   futNames?: FutNameMode;
+  /** Stage screens (scoreboard, matchup, caller): nickname when set (default) or always full name. */
+  stageNames?: FutNameMode;
   /** Guests may switch between full names and nicknames on their phone. Missing = off. */
   futNamesGuestChoice?: boolean;
 }

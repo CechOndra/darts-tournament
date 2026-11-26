@@ -1,18 +1,21 @@
-import { displayName } from '../../engine/selectors.ts';
+import { futName, useFutNames } from '../../hooks/FutNames.tsx';
+import type { FutNameMode } from '../../engine/types.ts';
 import { Award as AwardIcon, Trophy, Users } from 'lucide-react';
 import { formatAwardValue, type Award } from '../../engine/awards.ts';
 import type { TournamentState } from '../../engine/state.ts';
 import { Avatar, TeamLogo } from '../ui.tsx';
 
-export function awardWinnerName(state: TournamentState, award: Award, id: string): string {
+/** Award winners follow the FUT-card name setting (admin default, optional guest switch). */
+export function awardWinnerName(state: TournamentState, award: Award, id: string, mode: FutNameMode = state.settings.visibility.futNames ?? 'FULL'): string {
   if (award.kind === 'TEAM') return state.teams.find((t) => t.id === id)?.name ?? id;
   const p = state.players[id];
   const team = p ? state.teams.find((t) => t.id === p.teamId)?.name : '';
-  return p ? `${displayName(p)}${team ? ` (${team})` : ''}` : id;
+  return p ? `${futName(p, mode)}${team ? ` (${team})` : ''}` : id;
 }
 
 /** One award with its winner(s). size xl = stage spotlight. */
 export function AwardCard({ state, award, size = 'md', children }: { state: TournamentState; award: Award; size?: 'md' | 'xl'; children?: React.ReactNode }) {
+  const { mode } = useFutNames(state);
   const xl = size === 'xl';
   const Icon = award.kind === 'TEAM' ? Users : AwardIcon;
   return (
@@ -36,7 +39,7 @@ export function AwardCard({ state, award, size = 'md', children }: { state: Tour
                 {team?.logoDataUrl && <TeamLogo name={team.name} src={team.logoDataUrl} size={xl ? 140 : 32} />}
                 {award.kind === 'TEAM' && !team?.logoDataUrl && <Icon size={xl ? 72 : 18} className="shrink-0 text-accent-gold" aria-hidden />}
                 {player && <Avatar name={player.name} src={player.avatarDataUrl} size={xl ? 160 : 32} />}
-                <span className={`min-w-0 font-semibold ${xl ? 'font-display text-6xl uppercase' : 'truncate text-sm'}`}>{awardWinnerName(state, award, w.id)}</span>
+                <span className={`min-w-0 font-semibold ${xl ? 'font-display text-6xl uppercase' : 'truncate text-sm'}`}>{awardWinnerName(state, award, w.id, mode)}</span>
                 <span className={`font-mono text-accent-gold ${xl ? 'text-4xl' : 'ml-auto shrink-0 text-xs'}`}>{formatAwardValue(award.id, w.value)}</span>
               </li>
             );

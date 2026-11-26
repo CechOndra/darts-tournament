@@ -11,6 +11,7 @@ import { useDispatch, useTournamentState, useTransportContext } from '../../hook
 import { useAsyncAction, usePresenceRole } from '../../hooks/useTransport.ts';
 import { describeControlError } from '../../services/control/index.ts';
 import { countActiveScorers } from '../../services/presence.ts';
+import { PlayerNamesScreen } from '../../hooks/PlayerNames.tsx';
 import { TestModeSection } from './sections/TestModeSection.tsx';
 import { LiveOpsSection, PinRotation } from './sections/LiveOpsSection.tsx';
 import { AwardsSection } from './sections/AwardsSection.tsx';
@@ -100,6 +101,7 @@ export function AdminWorkspace({
   const next = upNextMatch(state);
 
   return (
+    <PlayerNamesScreen screen="admin">
     <div className="min-h-dvh bg-bg-primary pb-24 lg:pb-8" onPointerDown={() => void unlockAudio()}>
       <RouteHeader
         icon={ShieldCheck}
@@ -263,6 +265,7 @@ export function AdminWorkspace({
         </Modal>
       )}
     </div>
+    </PlayerNamesScreen>
   );
 }
 

@@ -5,6 +5,7 @@ import { teamName } from '../../engine/selectors.ts';
 import { matchTeams } from '../../engine/standings.ts';
 import type { TournamentState } from '../../engine/state.ts';
 import type { Side } from '../../engine/types.ts';
+import { usePlayerLabel } from '../../hooks/PlayerNames.tsx';
 import { useDispatch } from '../../hooks/TransportProvider.tsx';
 import { Button, SegmentedControl } from '../ui.tsx';
 
@@ -31,6 +32,7 @@ function orderInLeg(state: TournamentState, matchId: string, legIndex: number, t
  */
 export function PlayerOrderTool({ state, matchId }: { state: TournamentState; matchId: string }) {
   const dispatch = useDispatch();
+  const label = usePlayerLabel(state);
   const match = state.matches.find((m) => m.id === matchId);
   const view = state.live?.matchId === matchId ? computeMatchView(state) : null;
   const legCount = Math.max(view ? view.currentLegIndex + 1 : 0, ...state.throws.filter((t) => t.matchId === matchId).map((t) => t.legIndex + 1), 1);
@@ -62,7 +64,7 @@ export function PlayerOrderTool({ state, matchId }: { state: TournamentState; ma
                 <div key={pid} className="flex items-center gap-2">
                   <span className="rounded-md bg-bg-elevated px-3 py-2 text-sm">
                     <span className="mr-1 text-xs text-text-muted">{i + 1}.</span>
-                    {state.players[pid]?.name}
+                    {state.players[pid] && label(state.players[pid]!)}
                   </span>
                   {i < order.length - 1 && (
                     <Button

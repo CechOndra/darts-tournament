@@ -2,11 +2,13 @@ import { Field, SegmentedControl, Toggle } from '../../../components/ui.tsx';
 import { STATS_SCOPE_LABEL } from '../../../components/admin/labels.ts';
 import type { TournamentState } from '../../../engine/state.ts';
 import type { StatsScope, VisibilitySettings } from '../../../engine/types.ts';
+import { setAdminNicknames, useAdminNicknames } from '../../../hooks/PlayerNames.tsx';
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
 
 export function VisibilitySection({ state }: { state: TournamentState }) {
   const dispatch = useDispatch();
   const v = state.settings.visibility;
+  const adminNicknames = useAdminNicknames();
   const set = (patch: Partial<VisibilitySettings>) => void dispatch({ type: 'UPDATE_VISIBILITY', patch }, { persist: 'immediate' });
 
   return (
@@ -40,7 +42,7 @@ export function VisibilitySection({ state }: { state: TournamentState }) {
       <Toggle label="Awards preview" description="Keep OFF so winners stay secret until the ceremony." checked={v.showAwardsPreview} onChange={(showAwardsPreview) => set({ showAwardsPreview })} />
       <Toggle label="FUT player cards" description="Flip ON for the big reveal." checked={v.showPlayerFutCards} onChange={(showPlayerFutCards) => set({ showPlayerFutCards })} />
       <div className="space-y-2 py-3">
-        <Field label="Names on FUT cards" hint="Default for everyone: stage, admin and phones.">
+        <Field label="Names on FUT cards and awards" hint="Default for everyone: stage projector, admin and phones.">
           {() => (
             <SegmentedControl
               ariaLabel="Names on FUT cards"
@@ -52,11 +54,29 @@ export function VisibilitySection({ state }: { state: TournamentState }) {
         </Field>
         <Toggle
           label="Guests can switch names"
-          description="Phones get a Full names / Nicknames switch on the FUT cards (also decides the name on a downloaded card). Off: everyone sees the default above."
+          description="Phones get a Full names / Nicknames switch on FUT cards and awards (also decides the name on a downloaded card). Off: everyone sees the default above."
           checked={v.futNamesGuestChoice === true}
           onChange={(futNamesGuestChoice) => set({ futNamesGuestChoice })}
         />
       </div>
+      <div className="py-3">
+        <Field label="Names on the stage" hint="Scoreboard, matchup, visit list and the score caller's voice.">
+          {() => (
+            <SegmentedControl
+              ariaLabel="Names on the stage"
+              value={v.stageNames ?? 'NICKNAME'}
+              options={[{ value: 'NICKNAME', label: 'Nickname if set' }, { value: 'FULL', label: 'Full names' }]}
+              onChange={(stageNames) => set({ stageNames })}
+            />
+          )}
+        </Field>
+      </div>
+      <Toggle
+        label="Admin (this device): nicknames next to names"
+        description="Shows 'Anna Novak (Ace)' in admin lists. Only this phone / laptop, not saved in the tournament."
+        checked={adminNicknames}
+        onChange={setAdminNicknames}
+      />
       <Toggle
         label="Ultimate Team"
         description="Reveal the team of the tournament on guest phones (best player per card stat)."

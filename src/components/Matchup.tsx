@@ -1,10 +1,12 @@
-import { describeSlot, displayName, matchLabel, playersOfSlot } from '../engine/selectors.ts';
+import { usePlayerLabel } from '../hooks/PlayerNames.tsx';
+import { describeSlot, matchLabel, playersOfSlot } from '../engine/selectors.ts';
 import type { TournamentState } from '../engine/state.ts';
 import type { Match, TeamSlot } from '../engine/types.ts';
 import { resolveSlot } from '../engine/standings.ts';
 import { Avatar, TeamLogo } from './ui.tsx';
 
 function Side({ state, slot, size, align }: { state: TournamentState; slot: TeamSlot; size: 'md' | 'xl'; align: 'start' | 'end' }) {
+  const label = usePlayerLabel(state);
   const players = playersOfSlot(state, slot);
   const xl = size === 'xl';
   const teamId = resolveSlot(state, slot);
@@ -17,7 +19,7 @@ function Side({ state, slot, size, align }: { state: TournamentState; slot: Team
         {players.map((p) => (
           <div key={p.id} className="flex flex-col items-center gap-1">
             <Avatar name={p.name} src={p.avatarDataUrl} size={xl ? 112 : 48} />
-            <span className={`truncate ${xl ? 'max-w-48 text-xl' : 'max-w-28 text-xs'} text-text-muted`}>{displayName(p)}</span>
+            <span className={`truncate ${xl ? 'max-w-48 text-xl' : 'max-w-28 text-xs'} text-text-muted`}>{label(p)}</span>
           </div>
         ))}
       </div>

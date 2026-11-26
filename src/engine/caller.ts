@@ -1,4 +1,4 @@
-import { displayName } from './selectors.ts';
+import { stageName } from './selectors.ts';
 import { bestCheckout } from './checkout.ts';
 import { rulesFor, type MatchView, type VisitView } from './match.ts';
 import type { TournamentState } from './state.ts';
@@ -30,7 +30,7 @@ export function callerLines(state: TournamentState, view: MatchView, visit: Visi
     const rules = rulesFor(state, view.match);
     if (bestCheckout(turn.remaining, turn.maxDarts, rules.checkoutMode)) {
       const pl = state.players[turn.playerId];
-      const name = pl ? displayName(pl) : '';
+      const name = pl ? stageName(pl, state.settings.visibility.stageNames) : '';
       lines.push(`${name ? `${name}, ` : ''}you require ${turn.remaining}`);
     }
   }

@@ -269,6 +269,7 @@ function GuestStatsInner({ state, follow }: { state: TournamentState; follow: st
       {v.showAwardsPreview && (
         <div className="space-y-2">
           <h3 className="font-display text-sm tracking-widest text-text-muted uppercase">Awards race</h3>
+          <FutNameSwitch state={state} />
           {stats.awards.map((a) => (
             <AwardCard key={a.id} state={state} award={a} />
           ))}
