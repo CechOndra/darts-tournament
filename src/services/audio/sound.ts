@@ -10,6 +10,8 @@ import { overrideUrl } from './overrides.ts';
 const MUTE_KEY = 'darts.sound.muted';
 let ctx: AudioContext | null = null;
 let winSong: HTMLAudioElement | null = null;
+const WIN_SONG_VOLUME = 0.9;
+const WIN_SONG_END_FADE_S = 3;
 const winUrl = () => overrideUrl('win') ?? `${import.meta.env.BASE_URL}audio/game-win.mp3`;
 const listeners = new Set<() => void>();
 
@@ -111,13 +113,19 @@ function ensureWinSong(): void {
   winSong = new Audio(url);
   winSong.dataset.url = url;
   winSong.preload = 'auto';
+  // Fade out over the last seconds so a song that outlasts the draw does not just cut off.
+  const song = winSong;
+  song.addEventListener('timeupdate', () => {
+    const left = song.duration - song.currentTime;
+    if (Number.isFinite(left) && left < WIN_SONG_END_FADE_S) song.volume = Math.min(song.volume, WIN_SONG_VOLUME * Math.max(0, left / WIN_SONG_END_FADE_S));
+  });
 }
 
 export function playWinSong(): void {
   if (isMuted() || !isAudioUnlocked()) return;
   ensureWinSong();
   winSong!.currentTime = 0;
-  winSong!.volume = 0.9;
+  winSong!.volume = WIN_SONG_VOLUME;
   void winSong!.play().catch(() => undefined);
 }
 
