@@ -31,6 +31,10 @@ const { values: v } = parseArgs({
     gap: { type: 'string', default: String(DEFAULT_TIME.gapSec[0]) }, 'gap-sd': { type: 'string', default: String(DEFAULT_TIME.gapSec[1]) },
     breaks: { type: 'string', default: String(DEFAULT_TIME.breaks) }, 'break-min': { type: 'string', default: String(DEFAULT_TIME.breakMin) },
     accident: { type: 'string', default: String(DEFAULT_TIME.accidentChance) }, 'accident-min': { type: 'string', default: String(DEFAULT_TIME.accidentMin) },
+    cards: { type: 'string' }, 'loser-draws': { type: 'string' }, 'winner-draws': { type: 'string' },
+    draw: { type: 'string', default: String(DEFAULT_TIME.cards.drawSec[0]) }, 'draw-sd': { type: 'string', default: String(DEFAULT_TIME.cards.drawSec[1]) },
+    'play-chance': { type: 'string', default: String(DEFAULT_TIME.cards.playChance) },
+    play: { type: 'string', default: String(DEFAULT_TIME.cards.playSec[0]) }, 'play-sd': { type: 'string', default: String(DEFAULT_TIME.cards.playSec[1]) },
     scenarios: { type: 'string', default: '1/1,2/1,2/2' },
   },
 });
@@ -45,6 +49,10 @@ if (v.help) {
                --gap 180 --gap-sd 60      seconds between matches on one board (call teams, scorer swap, stage show)
   Breaks       --breaks 1 --break-min 15  scheduled breaks (all boards stop), spread evenly
   Accidents    --accident 0.05 --accident-min 4   chance per match and mean minutes lost
+  Power Cards  --cards on|groups|off   (default on = all stages; time cost only, results unchanged)
+               --loser-draws 1 --winner-draws 1   draws after every match (a backup supplies its own values)
+               --draw 25 --draw-sd 8      seconds per draw (animation + looking at the card)
+               --play-chance 0.3 --play 30 --play-sd 10   chance per team and leg to play a card, seconds each
   Clock        --start 18:00   --runs 200 (simulated tournaments, each timed 20x)
   Boards       --scenarios 1/1,2/1,2/2    groups/playoffs boards per scenario (the final always uses 1)`);
   process.exit(0);
@@ -58,13 +66,25 @@ const clock = (sec: number) => {
 };
 const hm = (sec: number) => `${Math.floor(sec / 3600)}h ${String(Math.round((sec % 3600) / 60)).padStart(2, '0')}m`;
 
+let cardMode: 'OFF' | 'GROUPS' | 'ALL' = 'ALL';
+let loserDraws = 1;
+let winnerDraws = 1;
 let structure = structuredClone(DEFAULT_STRUCTURE);
 let rules = structuredClone(DEFAULT_RULES);
 if (v.backup) {
   const saved = JSON.parse(readFileSync(v.backup, 'utf8'));
   structure = saved.settings.structure;
   rules = saved.settings.rules;
+  const c = saved.settings.cards;
+  if (c) {
+    cardMode = c.mode === 'OFF' ? 'OFF' : c.mode === 'ALL_STAGES' ? 'ALL' : 'GROUPS';
+    loserDraws = c.loserSpinsPerMatch;
+    winnerDraws = c.winnerSpinsPerMatch;
+  }
 }
+if (v.cards) cardMode = ({ on: 'ALL', groups: 'GROUPS', off: 'OFF' } as const)[v.cards as 'on'] ?? cardMode;
+if (v['loser-draws']) loserDraws = num('loser-draws');
+if (v['winner-draws']) winnerDraws = num('winner-draws');
 if (v.teams) structure.teamCount = num('teams');
 if (v.groups) structure.groupCount = num('groups');
 if (v.players) structure.playersPerTeam = num('players');
@@ -86,10 +106,11 @@ const time = {
   breakMin: num('break-min'),
   accidentChance: num('accident'),
   accidentMin: num('accident-min'),
+  cards: { mode: cardMode, loserDraws, winnerDraws, drawSec: [num('draw'), num('draw-sd')] as [number, number], playChance: num('play-chance'), playSec: [num('play'), num('play-sd')] as [number, number] },
 };
 
 console.log(`${structure.teamCount} teams, ${structure.groupCount} group(s), ${loadSets[0]!.length} matches, avg ${skill.average} +- ${skill.variance}, ${rules.startingScore}, start ${v.start}`);
-console.log(`~${dartsPerMatch.toFixed(0)} darts per match; ${time.breaks} break(s) of ${time.breakMin} min; ${runs} simulated tournaments x 20 time draws\n`);
+console.log(`~${dartsPerMatch.toFixed(0)} darts per match; ${time.breaks} break(s) of ${time.breakMin} min; cards ${cardMode === 'OFF' ? 'off' : `${cardMode === 'ALL' ? 'all stages' : 'groups only'}, draws loser ${loserDraws} / winner ${winnerDraws}`}; ${runs} simulated tournaments x 20 time draws\n`);
 console.log('boards (groups/playoffs)   duration median [5%-95%]        finish median   finish 5%-95%     group stage ends');
 
 let baseline = 0;

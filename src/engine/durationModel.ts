@@ -35,6 +35,18 @@ export interface TimeParams {
   /** Chance per match of an accident (dispute, tablet problem, ...) and its mean minutes. */
   accidentChance: number;
   accidentMin: number;
+  /** Power Cards time cost only (results and darts are not changed). */
+  cards: {
+    mode: 'OFF' | 'GROUPS' | 'ALL';
+    /** Draws after each match. */
+    loserDraws: number;
+    winnerDraws: number;
+    /** Seconds per draw (animation + looking at the card). */
+    drawSec: [number, number];
+    /** Chance per team and leg of playing a card, and seconds per play. */
+    playChance: number;
+    playSec: [number, number];
+  };
 }
 
 export const DEFAULT_TIME: TimeParams = {
@@ -46,6 +58,7 @@ export const DEFAULT_TIME: TimeParams = {
   breakMin: 15,
   accidentChance: 0.05,
   accidentMin: 4,
+  cards: { mode: 'ALL', loserDraws: 1, winnerDraws: 1, drawSec: [25, 8], playChance: 0.3, playSec: [30, 10] },
 };
 
 type Rng = () => number;
@@ -81,6 +94,11 @@ export function matchSeconds(load: MatchLoad, p: TimeParams, rng: Rng): number {
   for (let i = 1; i < load.legs; i++) s += normal(rng, p.legSec);
   for (let i = 0; i < load.darts; i++) s += normal(rng, p.throwSec);
   for (let i = 0; i < load.visits; i++) s += normal(rng, p.visitSec);
+  const c = p.cards;
+  if (c.mode === 'ALL' || (c.mode === 'GROUPS' && load.stage === 'GROUP')) {
+    for (let i = 0; i < c.loserDraws + c.winnerDraws; i++) s += normal(rng, c.drawSec);
+    for (let i = 0; i < load.legs * 2; i++) if (rng() < c.playChance) s += normal(rng, c.playSec);
+  }
   if (rng() < p.accidentChance) s += 60 * p.accidentMin * (0.5 + rng());
   return s;
 }
