@@ -14,7 +14,7 @@ function Side({ state, slot, size, align }: { state: TournamentState; slot: Team
   return (
     <div className={`flex min-w-0 flex-1 flex-col gap-3 ${align === 'end' ? 'items-end text-right' : 'items-start text-left'}`}>
       {team?.logoDataUrl && <TeamLogo name={team.name} src={team.logoDataUrl} size={xl ? 128 : 40} />}
-      <p className={`max-w-full truncate font-display font-bold uppercase ${xl ? 'text-5xl' : 'text-xl'}`}>{describeSlot(state, slot)}</p>
+      <p className={`max-w-full truncate font-display font-bold uppercase ${xl ? (describeSlot(state, slot).length > 20 ? 'text-4xl' : 'text-5xl') : 'text-xl'}`}>{describeSlot(state, slot)}</p>
       <div className={`flex flex-wrap gap-3 ${align === 'end' ? 'justify-end' : ''}`}>
         {players.map((p) => (
           <div key={p.id} className="flex flex-col items-center gap-1">

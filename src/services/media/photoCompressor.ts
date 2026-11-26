@@ -1,7 +1,6 @@
 /**
- * Client-side player photo compressor: center-crop to a square, resize to
- * 256x256 and encode as WebP (JPEG fallback on browsers without WebP encoding,
- * e.g. older Safari) at quality 0.8 => ~15–25 KB data URL stored on the Player.
+ * Client-side image compressors (WebP, transparency kept; JPEG on white where WebP encoding is missing):
+ * profile picture 256x256 square crop, team logo fitted into 256x256, FUT card photo with its proportions.
  */
 
 export const AVATAR_SIZE = 256;
@@ -42,28 +41,74 @@ async function decode(file: Blob): Promise<{ source: CanvasImageSource; width: n
   }
 }
 
-export async function compressAvatar(file: Blob): Promise<string> {
+/** WebP keeps transparency (cut-out photos, logos). Browsers without WebP encoding get JPEG on white. */
+function encode(canvas: HTMLCanvasElement, quality: number): string {
+  const webp = canvas.toDataURL('image/webp', quality);
+  if (webp.startsWith('data:image/webp')) return webp;
+  const flat = document.createElement('canvas');
+  flat.width = canvas.width;
+  flat.height = canvas.height;
+  const ctx = flat.getContext('2d')!;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, flat.width, flat.height);
+  ctx.drawImage(canvas, 0, 0);
+  return flat.toDataURL('image/jpeg', quality);
+}
+
+type Draw = (width: number, height: number) => { canvas: [number, number]; src?: CropRect; dst: [number, number, number, number] };
+
+async function render(file: Blob, plan: Draw, quality: number): Promise<string> {
   if (!file.type.startsWith('image/') && file.type !== '') throw new Error('Please choose an image file.');
   if (file.size > MAX_SOURCE_BYTES) throw new Error('Image is larger than 25 MB.');
   const { source, width, height, close } = await decode(file);
   try {
-    const { sx, sy, size } = centerSquareCrop(width, height);
+    const { canvas: [cw, ch], src, dst } = plan(width, height);
     const canvas = document.createElement('canvas');
-    canvas.width = AVATAR_SIZE;
-    canvas.height = AVATAR_SIZE;
+    canvas.width = cw;
+    canvas.height = ch;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas is not available in this browser.');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.fillStyle = '#ffffff'; // JPEG has no alpha: flatten transparent PNGs onto white
-    ctx.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
-    ctx.drawImage(source, sx, sy, size, size, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
-    const webp = canvas.toDataURL('image/webp', AVATAR_QUALITY);
-    return webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', AVATAR_QUALITY);
+    if (src) ctx.drawImage(source, src.sx, src.sy, src.size, src.size, ...dst);
+    else ctx.drawImage(source, ...dst);
+    return encode(canvas, quality);
   } finally {
     close();
   }
 }
+
+/** Round profile picture: center square crop, 256 x 256 (transparency kept). */
+export const compressAvatar = (file: Blob): Promise<string> =>
+  render(file, (w, h) => ({ canvas: [AVATAR_SIZE, AVATAR_SIZE], src: centerSquareCrop(w, h), dst: [0, 0, AVATAR_SIZE, AVATAR_SIZE] }), AVATAR_QUALITY);
+
+/** Team logo: the whole logo fitted into 256 x 256 (never cropped, so wide or non-round logos survive), transparent padding. */
+export const compressLogo = (file: Blob): Promise<string> =>
+  render(
+    file,
+    (w, h) => {
+      const k = Math.min(AVATAR_SIZE / w, AVATAR_SIZE / h);
+      const dw = Math.round(w * k);
+      const dh = Math.round(h * k);
+      return { canvas: [AVATAR_SIZE, AVATAR_SIZE], dst: [Math.round((AVATAR_SIZE - dw) / 2), Math.round((AVATAR_SIZE - dh) / 2), dw, dh] };
+    },
+    0.9,
+  );
+
+export const FUT_PHOTO_MAX = 720;
+
+/** FUT card photo: keeps the proportions, at most 720 px on the long side (transparency kept). */
+export const compressFutPhoto = (file: Blob): Promise<string> =>
+  render(
+    file,
+    (w, h) => {
+      const k = Math.min(1, FUT_PHOTO_MAX / Math.max(w, h));
+      const dw = Math.round(w * k);
+      const dh = Math.round(h * k);
+      return { canvas: [dw, dh], dst: [0, 0, dw, dh] };
+    },
+    0.85,
+  );
 
 /** Approximate decoded size of a data URL in bytes. */
 export function dataUrlBytes(dataUrl: string): number {

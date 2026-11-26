@@ -111,6 +111,8 @@ export interface Player {
   avatarDataUrl: string | null;
   /** Short name shown on stage/presenter screens instead of `name` when set. */
   nickname?: string;
+  /** Photo for the FUT card (head and shoulders, ideally a cut-out). Missing = the profile picture is used. */
+  futPhotoDataUrl?: string;
 }
 
 export interface DartThrow {

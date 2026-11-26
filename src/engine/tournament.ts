@@ -69,6 +69,7 @@ export function buildRoster(
         isPlaceholderName: !pname,
         avatarDataUrl: roster[i]?.avatarDataUrls?.[p] ?? prevPlayer?.avatarDataUrl ?? null,
         ...(prevPlayer?.nickname ? { nickname: prevPlayer.nickname } : {}),
+        ...(prevPlayer?.futPhotoDataUrl ? { futPhotoDataUrl: prevPlayer.futPhotoDataUrl } : {}),
       };
       playerIds.push(pid);
     }

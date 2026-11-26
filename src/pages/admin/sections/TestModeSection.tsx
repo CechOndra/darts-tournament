@@ -6,9 +6,9 @@ import { hasStarted } from '../../../engine/selectors.ts';
 import { DEFAULT_SKILL, nextSimulatable, simulateMatches } from '../../../engine/simulate.ts';
 import type { TournamentState } from '../../../engine/state.ts';
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
-import { compressAvatar } from '../../../services/media/photoCompressor.ts';
+import { compressAvatar, compressFutPhoto, compressLogo } from '../../../services/media/photoCompressor.ts';
 
-type MockDataset = { teams: { name: string; logo?: string; players: { name?: string; nickname?: string; photo?: string }[] }[] };
+type MockDataset = { teams: { name: string; logo?: string; players: { name?: string; nickname?: string; photo?: string; futPhoto?: string }[] }[] };
 const toBlob = async (dataUrl: string) => (await fetch(dataUrl)).blob();
 
 /** Test tournament switch + simulator + mock dataset loader. The tools only exist while `meta.isTest` is on. */
@@ -44,11 +44,12 @@ export function TestModeSection({ state }: { state: TournamentState }) {
         const src = data.teams[i];
         if (!src) continue;
         await dispatch({ type: 'RENAME_TEAM', teamId: team.id, name: src.name });
-        if (src.logo) await dispatch({ type: 'SET_TEAM_LOGO', teamId: team.id, logoDataUrl: await compressAvatar(await toBlob(src.logo)) });
+        if (src.logo) await dispatch({ type: 'SET_TEAM_LOGO', teamId: team.id, logoDataUrl: await compressLogo(await toBlob(src.logo)) });
         for (const [p, pid] of team.playerIds.entries()) {
           const prof = src.players[p];
           await dispatch({ type: 'RENAME_PLAYER', playerId: pid, name: prof?.name || random[i]?.playerNames[p] || '' });
           if (prof?.nickname) await dispatch({ type: 'SET_PLAYER_NICKNAME', playerId: pid, nickname: prof.nickname });
+          if (prof?.futPhoto) await dispatch({ type: 'SET_PLAYER_FUT_PHOTO', playerId: pid, futPhotoDataUrl: await compressFutPhoto(await toBlob(prof.futPhoto)) });
           if (prof?.photo) await dispatch({ type: 'SET_PLAYER_AVATAR', playerId: pid, avatarDataUrl: await compressAvatar(await toBlob(prof.photo)) });
         }
       }
@@ -101,7 +102,7 @@ export function TestModeSection({ state }: { state: TournamentState }) {
               Load mock dataset (.json)
             </Button>
             <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => void loadDataset(e.target.files?.[0])} />
-            <p className="mt-1 text-xs text-text-muted">Pick local-data/mock-dataset.json (see scripts/build-mock-dataset.mjs). Needs 8 teams; photos and logos stay in the tournament data only.</p>
+            <p className="mt-1 text-xs text-text-muted">Pick local-data/mock-dataset.json (see scripts/build-mock-dataset.py). Needs 8 teams; photos and logos stay in the tournament data only.</p>
           </div>
           {msg && <Notice tone="success">{msg}</Notice>}
         </>

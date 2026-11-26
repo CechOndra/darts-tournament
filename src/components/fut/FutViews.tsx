@@ -48,7 +48,7 @@ export function FutCardFor({ state, card, className }: { state: TournamentState;
   const { mode } = useFutNames(state);
   const p = state.players[card.playerId];
   const team = state.teams.find((t) => t.id === card.teamId);
-  return <FutCard card={card} name={p ? futName(p, mode) : ''} teamName={team?.name ?? ''} role={playerRole(state, card.playerId)} avatar={p?.avatarDataUrl ?? null} teamLogo={team?.logoDataUrl} className={className} />;
+  return <FutCard card={card} name={p ? futName(p, mode) : ''} teamName={team?.name ?? ''} role={playerRole(state, card.playerId)} avatar={p?.futPhotoDataUrl ?? p?.avatarDataUrl ?? null} teamLogo={team?.logoDataUrl} className={className} />;
 }
 
 /** Big card + radar with "compare with" (teammate by default), PNG download, and (admin) Project to Stage. */
@@ -71,7 +71,7 @@ export function FutDetail({ state, card, cards, onClose, admin = false }: { stat
           name={name}
           teamName={team?.name ?? ''}
           role={playerRole(state, card.playerId)}
-          avatar={state.players[card.playerId]?.avatarDataUrl ?? null}
+          avatar={state.players[card.playerId]?.futPhotoDataUrl ?? state.players[card.playerId]?.avatarDataUrl ?? null}
           teamLogo={team?.logoDataUrl}
           className="mx-auto w-full max-w-xs"
         />
@@ -94,7 +94,7 @@ export function FutDetail({ state, card, cards, onClose, admin = false }: { stat
           <RadarChart card={card} compare={compare} label={name} compareLabel={compare ? nameOf(compare.playerId) : undefined} />
           <StatsGuide state={state} />
           <div className="flex flex-wrap gap-2">
-            <Button icon={Download} onClick={() => svgRef.current && void downloadSvgAsPng(svgRef.current, `${name.replace(/\W+/g, '_') || 'player'}_fut.png`)}>
+            <Button icon={Download} onClick={() => svgRef.current && void downloadSvgAsPng(svgRef.current, `${name.replace(/\W+/g, '_') || 'player'}_fut.png`, 2)}>
               Download Card as PNG
             </Button>
             {admin && (

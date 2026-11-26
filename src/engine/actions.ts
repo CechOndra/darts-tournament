@@ -28,6 +28,7 @@ export type EngineAction =
   | { type: 'RENAME_TEAM'; teamId: string; name: string }
   | { type: 'RENAME_PLAYER'; playerId: string; name: string }
   | { type: 'SET_TEST_MODE'; value: boolean }
+  | { type: 'SET_PLAYER_FUT_PHOTO'; playerId: string; futPhotoDataUrl: string | null }
   | { type: 'SET_PLAYER_NICKNAME'; playerId: string; nickname: string }
   | { type: 'SET_PLAYER_AVATAR'; playerId: string; avatarDataUrl: string | null }
   | { type: 'SET_TEAM_LOGO'; teamId: string; logoDataUrl: string | null }

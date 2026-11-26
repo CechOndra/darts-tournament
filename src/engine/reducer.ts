@@ -75,6 +75,12 @@ export function tournamentReducer(input: TournamentState, action: EngineAction):
       return { ...state, meta: { ...state.meta, isTest: action.value || undefined } };
     }
 
+    case 'SET_PLAYER_FUT_PHOTO': {
+      const player = state.players[action.playerId];
+      if (!player) return state;
+      return { ...state, players: { ...state.players, [player.id]: { ...player, futPhotoDataUrl: action.futPhotoDataUrl ?? undefined } } };
+    }
+
     case 'SET_PLAYER_NICKNAME': {
       const player = state.players[action.playerId];
       if (!player) return state;

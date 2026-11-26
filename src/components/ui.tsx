@@ -257,6 +257,6 @@ export function Avatar({ name, src, size = 40 }: { name: string; src: string | n
 export function TeamLogo({ name, src, size = 40 }: { name: string; src: string | null; size?: number }) {
   if (!src) return null;
   return (
-    <img src={src} alt={`${name} logo`} width={size} height={size} className="shrink-0 rounded-md border border-border-subtle object-cover" style={{ width: size, height: size }} />
+    <img src={src} alt={`${name} logo`} width={size} height={size} className="shrink-0 rounded-md border border-border-subtle bg-white object-contain p-[4%]" style={{ width: size, height: size }} />
   );
 }

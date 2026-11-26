@@ -1,4 +1,4 @@
-import { Camera, Dices, FileSpreadsheet, ImagePlus, Shapes, Shield, Trash2 } from 'lucide-react';
+import { Camera, Dices, FileSpreadsheet, IdCard, ImagePlus, Shapes, Shield, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type InputHTMLAttributes } from 'react';
 import { IconPicker } from '../../../components/admin/IconPicker.tsx';
 import { Avatar, Badge, Button, Field, Notice, TeamLogo, TextInput } from '../../../components/ui.tsx';
@@ -8,7 +8,7 @@ import { groupLabel, placeholderCount } from '../../../engine/selectors.ts';
 import type { TournamentState } from '../../../engine/state.ts';
 import type { Player, Team } from '../../../engine/types.ts';
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
-import { compressAvatar, dataUrlBytes } from '../../../services/media/photoCompressor.ts';
+import { compressAvatar, compressFutPhoto, compressLogo, dataUrlBytes } from '../../../services/media/photoCompressor.ts';
 import { randomIconUrls } from '../../../services/media/placeholders.ts';
 
 /** Text input that keeps local edits and commits on blur / Enter (one sync per edit, not per keystroke). */
@@ -52,6 +52,7 @@ export function CommitInput({
 function PlayerRow({ player }: { player: Player }) {
   const dispatch = useDispatch();
   const fileRef = useRef<HTMLInputElement>(null);
+  const futRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +69,21 @@ function PlayerRow({ player }: { player: Player }) {
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const onFutFile = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const futPhotoDataUrl = await compressFutPhoto(file);
+      await dispatch({ type: 'SET_PLAYER_FUT_PHOTO', playerId: player.id, futPhotoDataUrl }, { persist: 'immediate' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+      if (futRef.current) futRef.current.value = '';
     }
   };
 
@@ -93,7 +109,27 @@ function PlayerRow({ player }: { player: Player }) {
           onClick={() => fileRef.current?.click()}
           className="shrink-0"
         />
+        <Button
+          size="sm"
+          icon={IdCard}
+          busy={busy}
+          aria-label={`Upload FUT card photo for ${player.name}`}
+          title="FUT card photo (head and shoulders, a cut-out PNG is best)"
+          onClick={() => futRef.current?.click()}
+          className={`shrink-0 ${player.futPhotoDataUrl ? 'text-accent-gold' : ''}`}
+        />
         <IconPicker kind="player" label={`Pick an icon for ${player.name}`} onPick={(avatarDataUrl) => void dispatch({ type: 'SET_PLAYER_AVATAR', playerId: player.id, avatarDataUrl }, { persist: 'immediate' })} />
+        {player.futPhotoDataUrl && (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={Trash2}
+            aria-label={`Remove FUT card photo of ${player.name}`}
+            title="Remove FUT card photo"
+            onClick={() => void dispatch({ type: 'SET_PLAYER_FUT_PHOTO', playerId: player.id, futPhotoDataUrl: null }, { persist: 'immediate' })}
+            className="shrink-0 text-accent-gold"
+          />
+        )}
         {player.avatarDataUrl && (
           <Button
             size="sm"
@@ -105,6 +141,7 @@ function PlayerRow({ player }: { player: Player }) {
           />
         )}
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
+        <input ref={futRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFutFile(e.target.files?.[0])} />
       </div>
       <div className="pl-14">
       <CommitInput
@@ -133,7 +170,7 @@ function TeamCard({ team, state }: { team: Team; state: TournamentState }) {
     setLogoBusy(true);
     setLogoError(null);
     try {
-      const logoDataUrl = await compressAvatar(file);
+      const logoDataUrl = await compressLogo(file);
       await dispatch({ type: 'SET_TEAM_LOGO', teamId: team.id, logoDataUrl }, { persist: 'immediate' });
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : String(err));
