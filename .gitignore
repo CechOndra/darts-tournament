@@ -28,3 +28,6 @@ music-IDEAS/
 
 # Local-only component/icon ideas
 component-IDEAS/
+
+# Local-only mock data (real photos/profiles, scraped logos) - never commit
+local-data/

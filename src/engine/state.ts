@@ -22,7 +22,7 @@ export const STATE_SCHEMA_VERSION = 6;
 export interface TournamentState {
   schemaVersion: number;
   /** null until the tournament is initialized from the setup wizard. */
-  meta: { id: string; name: string; createdAt: number } | null;
+  meta: { id: string; name: string; createdAt: number; /** Admin switch: shows the match simulator. Never set on a real tournament. */ isTest?: boolean } | null;
   settings: TournamentSettings;
   /** Ordered by seed (index 0 = seed 1). */
   teams: Team[];

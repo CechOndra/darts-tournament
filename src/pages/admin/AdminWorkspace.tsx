@@ -1,4 +1,4 @@
-import { ArrowLeftRight, CalendarClock, Laugh, Palette, Volume2, ToggleRight, Coffee, Crosshair, Eye, Hash, KeyRound, MonitorSmartphone, LayoutGrid, Layers, ListOrdered, Radio, ScrollText, Settings2, ShieldAlert, ShieldCheck, Trophy, Users, type LucideIcon } from 'lucide-react';
+import { FlaskConical, ArrowLeftRight, CalendarClock, Laugh, Palette, Volume2, ToggleRight, Coffee, Crosshair, Eye, Hash, KeyRound, MonitorSmartphone, LayoutGrid, Layers, ListOrdered, Radio, ScrollText, Settings2, ShieldAlert, ShieldCheck, Trophy, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { RouteHeader } from '../../components/RouteHeader.tsx';
 import { ConnectionBadge, PingIndicator } from '../../components/StatusIndicators.tsx';
@@ -11,6 +11,7 @@ import { useDispatch, useTournamentState, useTransportContext } from '../../hook
 import { useAsyncAction, usePresenceRole } from '../../hooks/useTransport.ts';
 import { describeControlError } from '../../services/control/index.ts';
 import { countActiveScorers } from '../../services/presence.ts';
+import { TestModeSection } from './sections/TestModeSection.tsx';
 import { LiveOpsSection, PinRotation } from './sections/LiveOpsSection.tsx';
 import { AwardsSection } from './sections/AwardsSection.tsx';
 import { CardsSection } from './sections/CardsSection.tsx';
@@ -28,7 +29,7 @@ import { RulesSection } from './sections/RulesSection.tsx';
 import { BreakEditor, ScheduleSection } from './sections/ScheduleSection.tsx';
 import { VisibilitySection } from './sections/VisibilitySection.tsx';
 
-type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules' | 'table' | 'cards' | 'screens' | 'adminpin' | 'order' | 'memes' | 'sounds' | 'switches' | 'theme';
+type SectionId = 'live' | 'visibility' | 'roster' | 'schedule' | 'rules' | 'table' | 'cards' | 'screens' | 'adminpin' | 'order' | 'memes' | 'sounds' | 'switches' | 'theme' | 'test';
 type QuickSheet = 'pin' | 'break' | null;
 type TabId = 'live' | 'results' | 'teams' | 'cards' | 'awards' | 'settings';
 
@@ -41,7 +42,7 @@ const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
   { id: 'settings', label: 'Settings', short: 'Settings', icon: Settings2 },
 ];
 
-const TAB_OF: Record<SectionId, TabId> = { live: 'live', schedule: 'live', roster: 'teams', visibility: 'settings', rules: 'settings', table: 'settings', cards: 'cards', screens: 'live', adminpin: 'live', order: 'live', memes: 'settings', sounds: 'settings', switches: 'live', theme: 'settings' };
+const TAB_OF: Record<SectionId, TabId> = { live: 'live', schedule: 'live', roster: 'teams', visibility: 'settings', rules: 'settings', table: 'settings', cards: 'cards', screens: 'live', adminpin: 'live', order: 'live', memes: 'settings', sounds: 'settings', switches: 'live', theme: 'settings', test: 'live' };
 
 export function AdminWorkspace({
   tournamentId,
@@ -61,7 +62,7 @@ export function AdminWorkspace({
   const desktop = useMediaQuery('(min-width: 1024px)');
   const dispatch = useDispatch();
   const [tab, setTab] = useState<TabId>('live');
-  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true, cards: true, screens: true, adminpin: false, order: true, memes: false, sounds: false, switches: true, theme: false });
+  const [open, setOpen] = useState<Record<SectionId, boolean>>({ live: true, visibility: false, roster: true, schedule: true, rules: false, table: true, cards: true, screens: true, adminpin: false, order: true, memes: false, sounds: false, switches: true, theme: false, test: false });
   const [sheet, setSheet] = useState<QuickSheet>(null);
   const { busy, error, run } = useAsyncAction();
 
@@ -180,6 +181,9 @@ export function AdminWorkspace({
               <Section id="section-live" title="Live Operations" icon={KeyRound} open={open.live} onToggle={() => toggle('live')}
                 badge={scorers > 1 ? <Badge tone="danger">{scorers} scorers</Badge> : undefined}>
                 <LiveOpsSection state={state} />
+              </Section>
+              <Section id="section-test" title="Test Tournament" icon={FlaskConical} open={open.test} onToggle={() => toggle('test')} badge={state.meta?.isTest ? <Badge tone="gold">TEST</Badge> : undefined}>
+                <TestModeSection state={state} />
               </Section>
               <Section id="section-adminpin" title="Admin PIN (tablet)" icon={Hash} open={open.adminpin} onToggle={() => toggle('adminpin')}>
                 <AdminPinCard />

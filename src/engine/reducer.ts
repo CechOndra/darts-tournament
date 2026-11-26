@@ -1,6 +1,7 @@
 import type { EngineAction, RulesPatch } from './actions.ts';
 import { cardsReducer, isCardAction } from './cards.ts';
 import { isMatchAction, matchReducer } from './matchReducer.ts';
+import { hasStarted } from './selectors.ts';
 import { createEmptyState, migrateState, type TournamentState } from './state.ts';
 import {
   buildTournament,
@@ -66,6 +67,12 @@ export function tournamentReducer(input: TournamentState, action: EngineAction):
           [player.id]: { ...player, name: name || playerPlaceholderName(Math.max(0, slot)), isPlaceholderName: !name },
         },
       };
+    }
+
+    case 'SET_TEST_MODE': {
+      // A tournament that already has real results cannot become a test one (the simulator would mix in fake darts).
+      if (!state.meta || (action.value && hasStarted(state))) return state;
+      return { ...state, meta: { ...state.meta, isTest: action.value || undefined } };
     }
 
     case 'SET_PLAYER_NICKNAME': {
