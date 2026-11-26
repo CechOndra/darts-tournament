@@ -11,6 +11,7 @@ act on it (e.g. change the estimator defaults). Items marked `[ ]` are open, `[x
 - [ ] 1.2 Win song also fades over its last 3 s if no draw happens (finish a match with cards off, let the song run to the end)
 - [ ] 1.3 A reopened match (undo the last dart) stops the song immediately
 - [ ] 1.4 The same fade also works with a song uploaded in Admin > Settings > Stage Sounds
+- [ ] 1.5 `public/audio/game-win.mp3` now has a 3 s fade baked into its end (ffmpeg, 128 kbps). Listen: smooth ending, no click. The original is in git history (commit before this one) if you want it back
 
 ## 2. Real-life timings (give me numbers, I update the estimator defaults)
 
