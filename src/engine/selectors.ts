@@ -17,6 +17,11 @@ export const ordinal = (n: number) => {
   return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 };
 
+/** Name for stage/presenter screens: the nickname when set. */
+export function displayName(p: { name: string; nickname?: string }): string {
+  return p.nickname || p.name;
+}
+
 export function matchNumber(state: TournamentState, matchId: string): number {
   return state.matches.findIndex((m) => m.id === matchId) + 1;
 }

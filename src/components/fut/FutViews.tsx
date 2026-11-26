@@ -1,3 +1,4 @@
+import { displayName } from '../../engine/selectors.ts';
 import { Download, MonitorUp } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { STAT_CODES, STAT_HELP, STAT_LABEL, type FutCard as FutCardData, type UltimateSlot } from '../../engine/stats.ts';
@@ -46,7 +47,7 @@ export function StatsGuide({ state }: { state: TournamentState }) {
 export function FutCardFor({ state, card, className }: { state: TournamentState; card: FutCardData; className?: string }) {
   const p = state.players[card.playerId];
   const team = state.teams.find((t) => t.id === card.teamId);
-  return <FutCard card={card} name={p?.name ?? ''} teamName={team?.name ?? ''} role={playerRole(state, card.playerId)} avatar={p?.avatarDataUrl ?? null} teamLogo={team?.logoDataUrl} className={className} />;
+  return <FutCard card={card} name={p ? displayName(p) : ''} teamName={team?.name ?? ''} role={playerRole(state, card.playerId)} avatar={p?.avatarDataUrl ?? null} teamLogo={team?.logoDataUrl} className={className} />;
 }
 
 /** Big card + radar with "compare with" (teammate by default), PNG download, and (admin) Project to Stage. */

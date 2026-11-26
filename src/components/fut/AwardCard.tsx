@@ -1,3 +1,4 @@
+import { displayName } from '../../engine/selectors.ts';
 import { Award as AwardIcon, Trophy, Users } from 'lucide-react';
 import { formatAwardValue, type Award } from '../../engine/awards.ts';
 import type { TournamentState } from '../../engine/state.ts';
@@ -7,7 +8,7 @@ export function awardWinnerName(state: TournamentState, award: Award, id: string
   if (award.kind === 'TEAM') return state.teams.find((t) => t.id === id)?.name ?? id;
   const p = state.players[id];
   const team = p ? state.teams.find((t) => t.id === p.teamId)?.name : '';
-  return p ? `${p.name}${team ? ` (${team})` : ''}` : id;
+  return p ? `${displayName(p)}${team ? ` (${team})` : ''}` : id;
 }
 
 /** One award with its winner(s). size xl = stage spotlight. */

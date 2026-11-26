@@ -68,6 +68,12 @@ export function tournamentReducer(input: TournamentState, action: EngineAction):
       };
     }
 
+    case 'SET_PLAYER_NICKNAME': {
+      const player = state.players[action.playerId];
+      if (!player) return state;
+      return { ...state, players: { ...state.players, [player.id]: { ...player, nickname: cleanName(action.nickname) || undefined } } };
+    }
+
     case 'SET_PLAYER_AVATAR': {
       const player = state.players[action.playerId];
       if (!player) return state;

@@ -73,7 +73,7 @@ function PlayerRow({ player }: { player: Player }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
         <Avatar name={player.name} src={player.avatarDataUrl} size={44} />
         <CommitInput
           aria-label={`Player name (${player.id})`}
@@ -81,6 +81,7 @@ function PlayerRow({ player }: { player: Player }) {
           placeholder={player.isPlaceholderName ? player.name : 'Player name'}
           amber={player.isPlaceholderName}
           maxLength={40}
+          className="w-auto min-w-0 flex-1"
           onCommit={(name) => void dispatch({ type: 'RENAME_PLAYER', playerId: player.id, name })}
         />
         <Button
@@ -104,6 +105,16 @@ function PlayerRow({ player }: { player: Player }) {
           />
         )}
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
+      </div>
+      <div className="pl-14">
+      <CommitInput
+        aria-label={`Nickname (${player.id})`}
+        value={player.nickname ?? ''}
+        placeholder="Nickname (shown on stage instead of the name)"
+        maxLength={16}
+        className="min-h-9! text-sm"
+        onCommit={(nickname) => void dispatch({ type: 'SET_PLAYER_NICKNAME', playerId: player.id, nickname })}
+      />
       </div>
       {error && <Notice tone="danger">{error}</Notice>}
     </div>

@@ -1,3 +1,4 @@
+import { displayName } from './selectors.ts';
 import { bestCheckout } from './checkout.ts';
 import { rulesFor, type MatchView, type VisitView } from './match.ts';
 import type { TournamentState } from './state.ts';
@@ -28,7 +29,8 @@ export function callerLines(state: TournamentState, view: MatchView, visit: Visi
   if (state.settings.visibility.callRequire !== false && turn && turn.darts.length === 0 && turn.remaining <= 170) {
     const rules = rulesFor(state, view.match);
     if (bestCheckout(turn.remaining, turn.maxDarts, rules.checkoutMode)) {
-      const name = state.players[turn.playerId]?.name ?? '';
+      const pl = state.players[turn.playerId];
+      const name = pl ? displayName(pl) : '';
       lines.push(`${name ? `${name}, ` : ''}you require ${turn.remaining}`);
     }
   }

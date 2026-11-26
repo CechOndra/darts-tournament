@@ -109,6 +109,8 @@ export interface Player {
   name: string;
   isPlaceholderName: boolean;
   avatarDataUrl: string | null;
+  /** Short name shown on stage/presenter screens instead of `name` when set. */
+  nickname?: string;
 }
 
 export interface DartThrow {

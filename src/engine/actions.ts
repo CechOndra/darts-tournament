@@ -27,6 +27,7 @@ export type EngineAction =
   | { type: 'RENAME_TOURNAMENT'; name: string }
   | { type: 'RENAME_TEAM'; teamId: string; name: string }
   | { type: 'RENAME_PLAYER'; playerId: string; name: string }
+  | { type: 'SET_PLAYER_NICKNAME'; playerId: string; nickname: string }
   | { type: 'SET_PLAYER_AVATAR'; playerId: string; avatarDataUrl: string | null }
   | { type: 'SET_TEAM_LOGO'; teamId: string; logoDataUrl: string | null }
   | { type: 'UPDATE_TABLE_SETTINGS'; patch: Partial<TableSettings> }

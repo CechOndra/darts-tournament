@@ -1,6 +1,6 @@
 import type { MatchView, VisitView } from '../../engine/match.ts';
 import { dartLabel } from '../../engine/scoring.ts';
-import { playersOfTeam, teamName } from '../../engine/selectors.ts';
+import { playersOfTeam, teamName, displayName } from '../../engine/selectors.ts';
 import type { TournamentState } from '../../engine/state.ts';
 import type { Side } from '../../engine/types.ts';
 import { Avatar, TeamLogo } from '../ui.tsx';
@@ -52,7 +52,7 @@ function VisitHistory({ state, visits }: { state: TournamentState; visits: Visit
         return (
           <li key={v.visitIndex} className="grid grid-cols-[3rem_minmax(0,1fr)_auto_6rem_5rem] items-center gap-4 rounded-md bg-bg-elevated/50 px-4 py-1.5 text-2xl">
             <span className="font-mono text-lg text-text-muted">{n}</span>
-            <span className="truncate text-text-muted">{state.players[v.playerId]?.name}</span>
+            <span className="truncate text-text-muted">{state.players[v.playerId] && displayName(state.players[v.playerId]!)}</span>
             <span className="font-mono text-xl text-text-muted">{v.darts.map(dartLabel).join(' ')}</span>
             <span className={`text-right font-display font-bold tabular-nums ${v.bust ? 'text-accent-danger' : v.scored >= 100 || v.checkout ? 'text-accent-gold' : ''}`}>
               {v.bust ? 'BUST' : v.scored}
@@ -105,7 +105,7 @@ function TeamPanel({ state, view, side, size, history }: { state: TournamentStat
           return (
             <div key={p.id} className={`flex items-center gap-2 rounded-full pr-3 ${throwing ? 'bg-accent-gold/15 ring-2 ring-accent-gold' : ''}`}>
               <Avatar name={p.name} src={p.avatarDataUrl} size={xl ? 80 : 36} />
-              <span className={`truncate ${xl ? 'max-w-60 text-3xl' : 'max-w-32 text-sm'} ${throwing ? 'font-semibold text-text-primary' : 'text-text-muted'}`}>{p.name}</span>
+              <span className={`truncate ${xl ? 'max-w-60 text-3xl' : 'max-w-32 text-sm'} ${throwing ? 'font-semibold text-text-primary' : 'text-text-muted'}`}>{displayName(p)}</span>
             </div>
           );
         })}

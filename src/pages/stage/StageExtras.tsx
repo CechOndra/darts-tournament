@@ -1,3 +1,4 @@
+import { displayName } from '../../engine/selectors.ts';
 import { Megaphone, QrCode } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { QrCode as QrImage } from '../../components/JoinQr.tsx';
@@ -66,7 +67,7 @@ export function StageOverlayView({ state }: { state: TournamentState }) {
           card={card}
           compare={mate}
           size={520}
-          label={state.players[card.playerId]?.name}
+          label={state.players[card.playerId] && displayName(state.players[card.playerId]!)}
           compareLabel={mate ? state.players[mate.playerId]?.name : undefined}
         />
       </div>

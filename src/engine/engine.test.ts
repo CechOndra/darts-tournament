@@ -150,6 +150,15 @@ describe('tournamentReducer', () => {
     expect(s.players.player_01a!.avatarDataUrl).toContain('webp');
   });
 
+  it('sets, clears and keeps nicknames across restructure', () => {
+    let s = tournamentReducer(base(), { type: 'SET_PLAYER_NICKNAME', playerId: 'player_01a', nickname: '  The  Power ' });
+    expect(s.players.player_01a!.nickname).toBe('The Power');
+    s = tournamentReducer(s, { type: 'RESTRUCTURE', structure: structure({ teamCount: 6, groupCount: 1, mode: 'GROUPS_ONLY' }) });
+    expect(s.players.player_01a!.nickname).toBe('The Power');
+    s = tournamentReducer(s, { type: 'SET_PLAYER_NICKNAME', playerId: 'player_01a', nickname: '' });
+    expect(s.players.player_01a!.nickname).toBeUndefined();
+  });
+
   it('reorders the queue and sets the next match', () => {
     const s0 = base();
     const target = s0.queue[3]!;

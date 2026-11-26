@@ -68,6 +68,7 @@ export function buildRoster(
         name: pname || playerPlaceholderName(p),
         isPlaceholderName: !pname,
         avatarDataUrl: roster[i]?.avatarDataUrls?.[p] ?? prevPlayer?.avatarDataUrl ?? null,
+        ...(prevPlayer?.nickname ? { nickname: prevPlayer.nickname } : {}),
       };
       playerIds.push(pid);
     }
