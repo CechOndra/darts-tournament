@@ -7,6 +7,12 @@ import type { TournamentState } from './state.ts';
  * "One hundred and eighty!", "Sixty", "No score", "Game shot, and the leg!",
  * then "Anna, you require 40" when the next thrower is on a finish.
  */
+/** File name (without .mp3) of the referee clip for a finished visit: '180', 'noscore', 'gameshot-leg', 'gameshot-match'. */
+export function calloutKey(visit: Pick<VisitView, 'checkout' | 'bust' | 'scored'>, matchWon: boolean): string {
+  if (visit.checkout) return matchWon ? 'gameshot-match' : 'gameshot-leg';
+  return visit.bust || visit.scored === 0 ? 'noscore' : String(visit.scored);
+}
+
 export function callerLines(state: TournamentState, view: MatchView, visit: VisitView): string[] {
   const lines: string[] = [];
   if (visit.checkout) {

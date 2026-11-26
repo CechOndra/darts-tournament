@@ -1,0 +1,171 @@
+/* ==========================================================================
+   Extra looks: "arcade" and "premium"  (the original look is "classic" in power-card.css and is untouched)
+   Use:   renderCard(card, { look: "arcade" | "premium", tone: "navy" | "slate" | "graphite" | "green" })
+   Tier colours (silver / cyan / gold) are shared with classic via the .pc-r-* classes.
+   Card backs: renderBack({ variant: "board" | "emblem" | "lattice", tone })
+   ========================================================================== */
+
+/* ---------- tones (body colours) ---------- */
+.pc-card.pc-v2,.pc-bk.pc-v2{
+  --pc2-b1:#2b303a; --pc2-b2:#0e1116; --pc2-panel:rgba(0,0,0,.4); --pc2-art1:#3b4350; --pc2-art2:#12151b;
+  --pc2-ink:#f2f5f9; --pc2-ink2:#aeb7c5; --pc2-line:rgba(255,255,255,.16);
+  color:var(--pc2-ink);
+}
+.pc-v2.pc-tone-graphite{}  /* = defaults above */
+.pc-v2.pc-tone-slate{
+  --pc2-b1:#2a3b55; --pc2-b2:#0c121b; --pc2-panel:rgba(3,8,16,.5); --pc2-art1:#38506f; --pc2-art2:#0f1722;
+  --pc2-ink:#eef3fa; --pc2-ink2:#aebcd0; --pc2-line:rgba(210,225,250,.2);
+}
+.pc-v2.pc-tone-navy{
+  --pc2-b1:#17488f; --pc2-b2:#071a3a; --pc2-panel:rgba(3,12,32,.62); --pc2-art1:#3a86f0; --pc2-art2:#0a2a5c;
+  --pc2-ink:#eaf3ff; --pc2-ink2:#9fbbe6; --pc2-line:rgba(255,255,255,.22);
+}
+/* navy gets bluer with rarity: common is calmer, rare is full navy */
+.pc-v2.pc-tone-navy.pc-r-common{
+  --pc2-b1:#294466; --pc2-b2:#0b1522; --pc2-panel:rgba(3,9,18,.52); --pc2-art1:#3c5c88; --pc2-art2:#0d1a2b;
+  --pc2-ink2:#a9bad3; --pc2-line:rgba(215,228,250,.2);
+}
+.pc-v2.pc-tone-navy.pc-r-uncommon{
+  --pc2-b1:#1e4684; --pc2-b2:#08182f; --pc2-art1:#3a78d0; --pc2-art2:#0b2549;
+}
+.pc-v2.pc-tone-green{
+  --pc2-b1:#15452f; --pc2-b2:#06150e; --pc2-panel:rgba(2,12,7,.52); --pc2-art1:#238058; --pc2-art2:#082118;
+  --pc2-ink:#edf9f2; --pc2-ink2:#a5ccb6; --pc2-line:rgba(190,255,220,.22);
+}
+/* WHEN colour per tier (distinct from the body text) */
+.pc-v2{--pc2-when:#9ccbff}  /* same WHEN colour on every tier */
+
+/* ---------- shared structure ---------- */
+.pc2-frame{height:100%;border-radius:.8em;padding:.6em;display:flex;flex-direction:column;gap:.55em;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,var(--pc2-b1),var(--pc2-b2))}
+.pc2-head{display:flex;justify-content:space-between;align-items:center;gap:.4em}
+.pc2-name{font-family:"Bebas Neue",sans-serif;font-size:1.95em;line-height:1;letter-spacing:.04em;white-space:nowrap}
+.pc2-gem{width:1.25em;height:1.25em;color:var(--pc-accent);filter:drop-shadow(0 0 .4em rgba(var(--pc-glow),.8))}
+
+.pc2-artwrap{position:relative;flex:0 0 34%}
+.pc2-art{position:absolute;inset:0;border-radius:.6em;overflow:hidden;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 50%,var(--pc2-art1),var(--pc2-art2) 80%);
+  box-shadow:0 0 0 .14em rgba(var(--pc-glow),.75) inset,0 .2em .7em rgba(0,0,0,.4) inset}
+.pc2-board{position:absolute;inset:0;width:100%;height:100%;color:rgba(255,255,255,.26)}
+.pc2-orb{position:relative;width:30%;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;color:var(--pc-accent);
+  background:radial-gradient(circle,rgba(4,8,14,.85),rgba(4,8,14,.55) 72%,transparent 74%);filter:drop-shadow(0 0 .45em rgba(var(--pc-glow),.85))}
+.pc2-orb .pc-ic{width:76%;height:76%}
+.pc2-glyph{font-family:"Bebas Neue",sans-serif;font-size:2.5em;line-height:1;letter-spacing:.04em;padding-top:.04em}
+
+/* type badge: the front-most thing on the card */
+.pc2-kindwrap{position:absolute;left:50%;bottom:0;transform:translate(-50%,52%);z-index:6}
+.pc2-kind{display:inline-flex;align-items:center;gap:.4em;white-space:nowrap;font-weight:700;letter-spacing:.16em}
+.pc2-kind .pc-ic{width:1.15em;height:1.15em}
+
+.pc2-body{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:.4em;padding:1.75em .75em .55em;text-align:center;
+  border-radius:.6em;background:var(--pc2-panel);border:1px solid var(--pc2-line)}
+.pc2-effect{margin:0;font-weight:700;font-size:1.42em;line-height:1.06}
+/* WHEN / LIMIT: no label chips, just an icon + colour */
+.pc2-rule{display:grid;grid-template-columns:auto 1fr;gap:.45em;align-items:center;font-weight:600;font-size:1.12em;line-height:1.1}
+.pc2-rule .pc-ic{width:1.2em;height:1.2em}
+.pc2-when{display:block;text-align:center;color:var(--pc2-when);font-weight:700;padding-bottom:.5em;border-bottom:1px solid rgba(var(--pc-glow),.5)}
+.pc2-limit{color:var(--pc2-ink2);padding-top:.5em;border-top:1px solid var(--pc2-line)}
+.pc2-foot{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.8em;letter-spacing:.12em;color:var(--pc2-ink2)}
+.pc2-tier{display:inline-flex;align-items:center;gap:.35em;color:var(--pc2-ink)}
+.pc2-tier .pc-ic{width:1.15em;height:1.15em;color:var(--pc-accent)}
+
+/* ------------------------------------------------------------------ ARCADE */
+.pc-card.pc-look-arcade{padding:.62em;
+  box-shadow:0 0 0 .16em #05070b,0 1.4em 2.4em -.6em rgba(0,0,0,.75),0 0 2.6em -.1em rgba(var(--pc-glow),.9),0 0 0 1px rgba(255,255,255,.25) inset}
+.pc-look-arcade .pc2-frame{border-radius:.7em;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 .55em,transparent .55em 1.1em),linear-gradient(180deg,var(--pc2-b1),var(--pc2-b2));
+  box-shadow:0 0 0 .14em #05070b inset,0 0 0 .3em rgba(var(--pc-glow),.35) inset}
+.pc-look-arcade .pc2-name{display:inline-block;transform:skewX(-8deg);color:#fff;
+  text-shadow:.07em .07em 0 rgba(0,0,0,.7),0 0 .6em rgba(var(--pc-glow),.75)}
+.pc-look-arcade .pc2-art{box-shadow:0 0 0 .16em #05070b,0 0 0 .3em var(--pc-accent),0 0 1.4em rgba(var(--pc-glow),.65) inset;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(var(--pc-glow),.26) 0 5deg,transparent 5deg 10deg),
+             radial-gradient(circle at 50% 50%,var(--pc2-art1),var(--pc2-art2) 82%)}
+.pc-look-arcade .pc2-artwrap{margin:.3em .3em 0}
+.pc-look-arcade .pc2-board{color:rgba(var(--pc-glow),.55)}
+.pc-look-arcade .pc2-orb{background:radial-gradient(circle,#10141b,#05070b);box-shadow:0 0 0 .13em var(--pc-accent),0 0 1.2em rgba(var(--pc-glow),.95);filter:none}
+.pc-look-arcade .pc2-glyph{color:#fff;text-shadow:0 0 .35em rgba(var(--pc-glow),1)}
+/* ribbon banner with notched ends: bigger than the old chip, so it reads as the card's type */
+.pc-look-arcade .pc2-kind{font-size:.86em;padding:.36em 1.6em;background:var(--pc-accent);color:#05070b;
+  clip-path:polygon(0 0,100% 0,calc(100% - .8em) 50%,100% 100%,0 100%,.8em 50%)}
+.pc-look-arcade .pc2-kindwrap{filter:drop-shadow(0 .14em 0 #05070b) drop-shadow(0 .3em .45em rgba(0,0,0,.65)) drop-shadow(0 0 .5em rgba(var(--pc-glow),.85))}
+.pc-look-arcade .pc2-effect{color:#fff;text-shadow:0 .07em 0 rgba(0,0,0,.65)}
+.pc-look-arcade .pc-sheen{animation-duration:2.6s}
+
+/* ------------------------------------------------------------------ PREMIUM */
+.pc-card.pc-look-premium{padding:.26em;
+  box-shadow:0 1.2em 2.4em -.8em rgba(0,0,0,.75),0 0 0 1px rgba(0,0,0,.45),0 0 1.8em -.6em rgba(var(--pc-glow),.55)}
+.pc-look-premium .pc2-frame{border-radius:.85em;padding:.95em .9em .8em;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+             linear-gradient(180deg,var(--pc2-b1),var(--pc2-b2));
+  background-blend-mode:soft-light,normal}
+.pc-look-premium .pc2-frame::before{content:"";position:absolute;inset:.4em;border:1px solid rgba(var(--pc-glow),.6);border-radius:.55em;pointer-events:none}
+.pc-look-premium .pc2-name{font-size:1.85em;letter-spacing:.1em}
+.pc-look-premium .pc2-name::after{content:"";display:block;height:1px;margin-top:.2em;background:linear-gradient(90deg,var(--pc-accent),transparent)}
+.pc-look-premium .pc2-gem{width:.8em;height:.8em;transform:rotate(45deg);background:var(--pc-accent);filter:drop-shadow(0 0 .35em rgba(var(--pc-glow),.9));margin-right:.3em}
+.pc-look-premium .pc2-art{border-radius:.4em;box-shadow:0 0 0 1px rgba(var(--pc-glow),.75) inset,0 0 2.2em rgba(0,0,0,.75) inset}
+.pc-look-premium .pc2-artwrap::before{content:"";position:absolute;inset:-.28em;border:1px solid rgba(var(--pc-glow),.3);border-radius:.55em;pointer-events:none}
+.pc-look-premium .pc2-board{color:rgba(255,255,255,.17)}
+.pc-look-premium .pc2-orb{background:radial-gradient(circle,rgba(4,8,14,.9),rgba(4,8,14,.6) 72%,transparent 74%);box-shadow:0 0 0 1px var(--pc-accent),0 0 1.4em rgba(var(--pc-glow),.45)}
+.pc-look-premium .pc2-kind{padding:.4em 1.5em;border:1px solid var(--pc-accent);border-radius:99px;color:var(--pc-accent);letter-spacing:.24em;font-size:.88em;
+  background:linear-gradient(#1c2028,#0a0c10);box-shadow:0 .25em .6em rgba(0,0,0,.6)}
+.pc-look-premium .pc2-body{background:rgba(0,0,0,.3);border-color:rgba(var(--pc-glow),.22)}
+.pc-look-premium .pc2-effect{font-weight:600;letter-spacing:.01em}
+.pc-look-premium .pc-sheen{animation-duration:5.5s}
+
+/* ---------- dartboard art (card.board = even | odd | double | triple) ---------- */
+.pc2-dboard{position:relative;height:84%;width:auto;aspect-ratio:1;transform:translateY(-6%);filter:drop-shadow(0 0 .5em rgba(var(--pc-glow),.55))}
+.pc2-dboard .rim{fill:#05070b;stroke:rgba(var(--pc-glow),.7);stroke-width:1.6}
+.pc2-dboard .w,.pc2-dboard .r{stroke:#05070b;stroke-width:.9}
+.pc2-dboard .w.dim{fill:rgba(255,255,255,.05)}
+.pc2-dboard .w.dim.alt{fill:rgba(255,255,255,.16)}
+.pc2-dboard .r.dim{fill:rgba(255,255,255,.1)}
+.pc2-dboard .w.lit{fill:var(--pc-accent);fill-opacity:.9}
+.pc2-dboard .r.lit{fill:#fff;fill-opacity:.95}
+.pc2-dboard[data-mode="double"] .r.lit,.pc2-dboard[data-mode="triple"] .r.lit{fill:var(--pc-accent);fill-opacity:1}
+.pc2-dboard .bull1{fill:rgba(var(--pc-glow),.55);stroke:#05070b;stroke-width:.9}
+.pc2-dboard .bull2{fill:#fff;stroke:#05070b;stroke-width:.9}
+
+/* ---------- RARE: brushed-gold frame + gold foil title (kept simple) ---------- */
+.pc-card.pc-v2.pc-r-rare{
+  background:
+    repeating-linear-gradient(115deg,rgba(255,255,255,.06) 0 1px,transparent 1px 3px),
+    linear-gradient(135deg,#fff7cf 0%,#f8d95e 10%,#b8860b 26%,#ffeaa3 42%,#8f6206 58%,#f4cf55 74%,#fff1b0 88%,#c99a1b 100%)}
+.pc-card.pc-look-arcade.pc-r-rare{box-shadow:0 0 0 .16em #05070b,0 1.4em 2.4em -.6em rgba(0,0,0,.75),0 0 2.2em -.2em rgba(255,200,70,.65),
+    inset .1em .1em .18em rgba(255,255,255,.8),inset -.1em -.1em .18em rgba(110,70,0,.85)}
+.pc-card.pc-look-premium.pc-r-rare{box-shadow:0 1.2em 2.4em -.8em rgba(0,0,0,.8),0 0 0 1px rgba(0,0,0,.5),0 0 1.8em -.5em rgba(255,200,70,.5),
+    inset .08em .08em .14em rgba(255,255,255,.8),inset -.08em -.08em .14em rgba(110,70,0,.85)}
+.pc-r-rare.pc-v2 .pc2-name{color:transparent;background:linear-gradient(180deg,#fff6c4 0%,#ffd24d 42%,#b8860b 54%,#ffe28a 78%,#fff3b8 100%);
+  -webkit-background-clip:text;background-clip:text;text-shadow:none;filter:drop-shadow(0 .06em 0 rgba(0,0,0,.75))}
+.pc-r-rare.pc-v2 .pc-sheen{background:linear-gradient(115deg,transparent 36%,rgba(255,250,215,.9) 50%,transparent 64%);background-size:300% 100%}
+
+/* ------------------------------------------------------------------ CARD BACKS */
+.pc-bk{width:100%;aspect-ratio:5/7;position:relative;border-radius:5%/3.57%;padding:2.4%;box-sizing:border-box;
+  background:linear-gradient(135deg,#eef2f8,#8a9bb3 38%,#dfe7f2 56%,#7d8fa8);box-shadow:0 0 0 1px rgba(0,0,0,.55),0 1.2em 2.4em -.8em rgba(0,0,0,.8)}
+.pc-face .pc-bk{height:100%;aspect-ratio:auto}
+.pc-bk-in{position:relative;width:100%;height:100%;border-radius:4%/2.9%;overflow:hidden;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 42%,var(--pc2-b1),var(--pc2-b2) 82%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6) inset,0 0 0 .5vmin rgba(255,255,255,.07) inset}
+.pc-bk svg.pc-bk-svg{position:absolute;inset:0;width:100%;height:100%}
+/* A: dartboard */
+.pc-bk.pc-bk-board svg.pc-bk-svg{inset:auto;left:50%;top:50%;width:87%;height:auto;aspect-ratio:1;transform:translate(-50%,-50%)}
+.pc-bk-board .rim{fill:none;stroke:rgba(223,232,244,.65);stroke-width:1.4}
+.pc-bk-board .w,.pc-bk-board .r{stroke:rgba(0,0,0,.55);stroke-width:.7}
+.pc-bk-board .bw0{fill:rgba(0,0,0,.38)} .pc-bk-board .bw1{fill:rgba(255,255,255,.08)}
+.pc-bk-board .rw0{fill:rgba(255,255,255,.2)} .pc-bk-board .rw1{fill:rgba(255,255,255,.07)}
+.pc-bk-board .bull1{fill:rgba(223,232,244,.5);stroke:rgba(0,0,0,.55);stroke-width:.7}
+.pc-bk-board .bull2{fill:#eef3fa;stroke:rgba(0,0,0,.55);stroke-width:.7}
+/* B: emblem */
+.pc-bk-emblem .pc-bk-svg{color:rgba(223,232,244,.2)}
+.pc-bk-medal{position:relative;width:34%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;color:#e3eaf4;
+  background:radial-gradient(circle,#10151d,#06080c);box-shadow:0 0 0 .5vmin rgba(223,232,244,.7),0 0 0 1vmin #06080c,0 0 0 1.3vmin rgba(223,232,244,.35)}
+.pc-bk-medal svg{width:62%;height:62%}
+.pc-bk-word{position:absolute;left:0;right:0;bottom:7%;text-align:center;font:400 2.2vmin "Bebas Neue",sans-serif;letter-spacing:.55em;color:rgba(223,232,244,.65);padding-left:.55em}
+/* C: lattice */
+.pc-bk-lattice .pc-bk-in{background:
+  repeating-linear-gradient(45deg,rgba(255,255,255,.075) 0 1px,transparent 1px 13px),
+  repeating-linear-gradient(-45deg,rgba(255,255,255,.075) 0 1px,transparent 1px 13px),
+  radial-gradient(circle at 50% 42%,var(--pc2-b1),var(--pc2-b2) 85%)}
+.pc-bk-lattice .pc-bk-in::before{content:"";position:absolute;inset:5%;border:1px solid rgba(223,232,244,.45);border-radius:3%/2.2%;pointer-events:none}
+.pc-bk-diamond{position:relative;width:30%;aspect-ratio:1;transform:rotate(45deg);display:grid;place-items:center;border-radius:8%;color:#e3eaf4;
+  background:radial-gradient(circle,#10151d,#06080c);box-shadow:0 0 0 .5vmin rgba(223,232,244,.7),0 0 0 1vmin #06080c,0 0 0 1.3vmin rgba(223,232,244,.35)}
+.pc-bk-diamond svg{width:56%;height:56%;transform:rotate(-45deg)}

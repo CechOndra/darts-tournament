@@ -122,8 +122,9 @@ Files in `public/` are published (public download). `music-IDEAS/` is local-only
 - Match win song: `public/audio/game-win.mp3`
 - Crowd soundboard: `public/sounds/{airhorn,applause,drumroll,oooh,boo,fanfare}.mp3`
 - Meme sound: `public/memes/<meme file name>.mp3` (names in `public/memes/README.md`)
+- Referee callouts: `public/callouts/<score>.mp3` (+ `noscore`, `gameshot-leg`, `gameshot-match`). A clip replaces the spoken score; otherwise the computer voice. After a clip, "you require" is spoken only if the admin switch is explicitly on. Voice + speed picker in Stage Sounds (per browser, so a Czech voice can be chosen for Czech names).
 Admin > Settings > Stage Sounds: upload an mp3 per slot from this browser (saved in IndexedDB, shared with other tabs of the same browser) or "Use default".
-Not wired yet: per-number callouts (e.g. 180 by a referee), per-team walkout songs. `public/audio/darts-anthem.mp3` was pushed once by mistake and removed (still in git history).
+Not wired yet: per-team walkout songs, multiple referee packs (GitHub Pages can't list a folder, so a manifest would be needed). `public/audio/darts-anthem.mp3` was pushed once by mistake and removed (still in git history).
 
 ## Open / later
 - Sound uploads that work from ANY device (e.g. admin on a phone, stage on a TV): upload to a Supabase Storage bucket (public-read) and keep a slot->URL row in the tournament state so the stage picks it up live; "Use default" clears the URL. Needs a migration, upload policy (anon vs admin-PIN Edge Function), ~3-4x the work of the current browser-only version.

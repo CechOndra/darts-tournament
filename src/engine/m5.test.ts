@@ -9,7 +9,19 @@ import type { Multiplier } from './scoring.ts';
 import { upNextMatch } from './selectors.ts';
 import { soundboardLock } from './soundboard.ts';
 import { detectMeme } from './memes.ts';
-import { callerLines } from './caller.ts';
+import { callerLines, calloutKey } from './caller.ts';
+
+describe('calloutKey', () => {
+  it('maps a finished visit to its referee clip name', () => {
+    const v = { checkout: false, bust: false, scored: 60 };
+    expect(calloutKey(v, false)).toBe('60');
+    expect(calloutKey({ ...v, scored: 180 }, false)).toBe('180');
+    expect(calloutKey({ ...v, scored: 0 }, false)).toBe('noscore');
+    expect(calloutKey({ ...v, bust: true, scored: 45 }, false)).toBe('noscore');
+    expect(calloutKey({ ...v, checkout: true }, false)).toBe('gameshot-leg');
+    expect(calloutKey({ ...v, checkout: true }, true)).toBe('gameshot-match');
+  });
+});
 import { collectStats, frameFor, futCards, midRankPercentile, playerMetrics, toRating, ultimateTeam } from './stats.ts';
 import type { TournamentState } from './state.ts';
 import { buildTournament } from './tournament.ts';

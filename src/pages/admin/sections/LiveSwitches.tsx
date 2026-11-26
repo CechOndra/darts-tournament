@@ -20,7 +20,7 @@ export function LiveSwitches({ state }: { state: TournamentState }) {
       />
       <Toggle
         label="Caller: you require..."
-        description="Also calls the finish for the next thrower, e.g. Anna, you require 40."
+        description="Also calls the finish for the next thrower, e.g. Anna, you require 40. After a referee clip it only follows if this is switched on."
         checked={v.callRequire !== false}
         disabled={v.scoreCaller !== true}
         onChange={(callRequire) => set({ callRequire })}
