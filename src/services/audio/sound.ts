@@ -125,6 +125,23 @@ export function stopWinSong(): void {
   winSong?.pause();
 }
 
+/** Fade the win song out (e.g. when the loser's card draw starts) so it does not talk over the draw. */
+export function fadeOutWinSong(ms = 1500): void {
+  const song = winSong;
+  if (!song || song.paused) return;
+  const from = song.volume;
+  const steps = 15;
+  let i = 0;
+  const timer = setInterval(() => {
+    i++;
+    song.volume = Math.max(0, from * (1 - i / steps));
+    if (i >= steps || song.paused) {
+      clearInterval(timer);
+      song.pause();
+    }
+  }, ms / steps);
+}
+
 // ------------------------------------------------------------------ crowd soundboard (generated)
 
 function noiseBurst(start: number, duration: number, filterFreq: number, gain = 0.25, q = 0.7): void {

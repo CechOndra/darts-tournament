@@ -100,7 +100,6 @@ Read this first, then `SPEC.md` (the original specification). Last updated 2026-
 
 ## Open follow-ups (owner flagged, not urgent)
 
-- Win song keeps playing during the loser card draw (maybe fade it when a draw starts).
 - Shot Clock card needs a remake.
 - FUT cards "not perfect yet" (owner likes them; details to come).
 - Owner will supply meme images, crowd-sound mp3s, Canva designs, photos and logos.
