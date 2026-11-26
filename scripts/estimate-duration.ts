@@ -22,6 +22,8 @@ const { values: v } = parseArgs({
     help: { type: 'boolean' },
     backup: { type: 'string' },
     teams: { type: 'string' }, groups: { type: 'string' }, players: { type: 'string' }, playoff: { type: 'string' },
+    score: { type: 'string' }, checkout: { type: 'string' },
+    'group-format': { type: 'string' }, 'playoff-format': { type: 'string' }, 'final-format': { type: 'string' }, 'third-place': { type: 'boolean' },
     start: { type: 'string', default: '18:00' },
     runs: { type: 'string', default: '200' },
     avg: { type: 'string', default: '40' }, sd: { type: 'string', default: '8' },
@@ -42,6 +44,10 @@ const { values: v } = parseArgs({
 if (v.help) {
   console.log(`Options (all optional):
   Tournament   --teams 8 --groups 2 --players 2 --playoff 4   or   --backup file.json (rules + format)
+  Format       --group-format BO1 --playoff-format BO3 (quarter + semi) --final-format BO5 --third-place
+               --score 301|501 --checkout STRAIGHT_OUT|DOUBLE_OUT|MASTER_OUT|HYBRID_SUB_50
+               (the rules are one setting for the whole tournament: groups and playoffs always share them)
+               Example, 8 teams in one big group, all into the playoffs:  --groups 1 --playoff 8
   Skill        --avg 40  (3-dart average of the average player)   --sd 8  (spread between players)
   Pace         --throw 4 --throw-sd 1.5   seconds per dart
                --visit 12 --visit-sd 4    seconds per visit (walk to board, pull darts, score, switch player)
@@ -85,6 +91,12 @@ if (v.backup) {
 if (v.cards) cardMode = ({ on: 'ALL', groups: 'GROUPS', off: 'OFF' } as const)[v.cards as 'on'] ?? cardMode;
 if (v['loser-draws']) loserDraws = num('loser-draws');
 if (v['winner-draws']) winnerDraws = num('winner-draws');
+if (v['group-format']) structure.groupFormat = v['group-format'] as typeof structure.groupFormat;
+if (v['playoff-format']) structure.playoff.formats.QF = structure.playoff.formats.SF = v['playoff-format'] as typeof structure.groupFormat;
+if (v['final-format']) structure.playoff.formats.FINAL = v['final-format'] as typeof structure.groupFormat;
+if (v['third-place']) structure.playoff.thirdPlaceMatch = true;
+if (v.score) rules.startingScore = num('score') as typeof rules.startingScore;
+if (v.checkout) rules.checkoutMode = v.checkout as typeof rules.checkoutMode;
 if (v.teams) structure.teamCount = num('teams');
 if (v.groups) structure.groupCount = num('groups');
 if (v.players) structure.playersPerTeam = num('players');
@@ -109,8 +121,29 @@ const time = {
   cards: { mode: cardMode, loserDraws, winnerDraws, drawSec: [num('draw'), num('draw-sd')] as [number, number], playChance: num('play-chance'), playSec: [num('play'), num('play-sd')] as [number, number] },
 };
 
-console.log(`${structure.teamCount} teams, ${structure.groupCount} group(s), ${loadSets[0]!.length} matches, avg ${skill.average} +- ${skill.variance}, ${rules.startingScore}, start ${v.start}`);
-console.log(`~${dartsPerMatch.toFixed(0)} darts per match; ${time.breaks} break(s) of ${time.breakMin} min; cards ${cardMode === 'OFF' ? 'off' : `${cardMode === 'ALL' ? 'all stages' : 'groups only'}, draws loser ${loserDraws} / winner ${winnerDraws}`}; ${runs} simulated tournaments x 20 time draws\n`);
+const count = (pred: (m: (typeof base.matches)[number]) => boolean) => base.matches.filter(pred).length;
+const ROUND = { QF: 'Quarterfinals', SF: 'Semifinals', THIRD_PLACE: '3rd place', FINAL: 'Final' } as const;
+console.log(`FORMAT   ${structure.teamCount} teams (${structure.playersPerTeam} per team), ${structure.groupCount} group${structure.groupCount > 1 ? 's' : ''}, ${loadSets[0]!.length} matches`);
+if (structure.mode !== 'PLAYOFFS_ONLY') console.log(`  Group stage: ${count((m) => m.stage === 'GROUP')} matches, ${structure.groupFormat}`);
+for (const r of ['QF', 'SF', 'THIRD_PLACE', 'FINAL'] as const) {
+  const n = count((m) => m.playoffRound === r);
+  if (n) console.log(`  ${ROUND[r]}: ${n} match${n > 1 ? 'es' : ''}, ${structure.playoff.formats[r]}`);
+}
+console.log(`RULES    ${rules.startingScore}, ${rules.checkoutMode.toLowerCase().replace(/_/g, ' ')} (same in groups and playoffs)`);
+const legs = loadSets.flat();
+const pure = (ls: MatchLoad[]) => {
+  const n = ls.reduce((s, l) => s + l.legs, 0);
+  const darts = ls.reduce((s, l) => s + l.darts, 0) / n;
+  const visits = ls.reduce((s, l) => s + l.visits, 0) / n;
+  return `${darts.toFixed(0)} darts, ${visits.toFixed(0)} visits (both teams), ~${((darts * time.throwSec[0] + visits * time.visitSec[0]) / 60).toFixed(1)} min`;
+};
+console.log(`SKILL    avg ${skill.average} +- ${skill.variance} (3-dart average, spread between players)`);
+console.log(`LEG      average leg: ${pure(legs)} of play (plus ${time.legSec[0]} s between legs)`);
+if (structure.mode !== 'PLAYOFFS_ONLY' && structure.mode !== 'GROUPS_ONLY') console.log(`           groups: ${pure(legs.filter((l) => l.stage === 'GROUP'))};  playoffs: ${pure(legs.filter((l) => l.stage === 'PLAYOFF'))}`);
+console.log(`MATCH    ~${dartsPerMatch.toFixed(0)} darts per match, ${time.gapSec[0]} s between matches`);
+console.log(`EXTRAS   ${time.breaks} break(s) of ${time.breakMin} min; cards ${cardMode === 'OFF' ? 'off' : `${cardMode === 'ALL' ? 'all stages' : 'groups only'}, draws loser ${loserDraws} / winner ${winnerDraws}`}; accidents ${Math.round(time.accidentChance * 100)} % x ${time.accidentMin} min; start ${v.start}`);
+console.log(`         ${runs} simulated tournaments x 20 time draws
+`);
 console.log('boards (groups/playoffs)   duration median [5%-95%]        finish median   finish 5%-95%     group stage ends');
 
 let baseline = 0;
