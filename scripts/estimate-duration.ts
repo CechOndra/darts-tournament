@@ -1,7 +1,7 @@
 // How long will the tournament take? Monte Carlo on your laptop, nothing is played in real time.
 //
 //   node scripts/estimate-duration.ts                       (defaults: 8 teams, 2 groups, 301 double out)
-//   node scripts/estimate-duration.ts --start 18:00 --breaks 2 --break-min 10 --scenarios 1/1,2/1,2/2
+//   node scripts/estimate-duration.ts --start 18:00 --breaks 2 --break-min 10 --scenarios 1/1,2/1
 //   node scripts/estimate-duration.ts --backup my-tournament-backup.json   (rules + format of a real one)
 //   node scripts/estimate-duration.ts --help
 //
@@ -35,7 +35,7 @@ const { values: v } = parseArgs({
     draw: { type: 'string', default: String(DEFAULT_TIME.cards.drawSec[0]) }, 'draw-sd': { type: 'string', default: String(DEFAULT_TIME.cards.drawSec[1]) },
     'play-chance': { type: 'string', default: String(DEFAULT_TIME.cards.playChance) },
     play: { type: 'string', default: String(DEFAULT_TIME.cards.playSec[0]) }, 'play-sd': { type: 'string', default: String(DEFAULT_TIME.cards.playSec[1]) },
-    scenarios: { type: 'string', default: '1/1,2/1,2/2' },
+    scenarios: { type: 'string', default: '1/1,2/1' },
   },
 });
 
@@ -54,7 +54,7 @@ if (v.help) {
                --draw 25 --draw-sd 8      seconds per draw (animation + looking at the card)
                --play-chance 0.3 --play 30 --play-sd 10   chance per team and leg to play a card, seconds each
   Clock        --start 18:00   --runs 200 (simulated tournaments, each timed 20x)
-  Boards       --scenarios 1/1,2/1,2/2    groups/playoffs boards per scenario (the final always uses 1)`);
+  Boards       --scenarios 1/1,2/1        groups/playoffs boards per scenario: 1/1 = one board everywhere, 2/1 = two for groups (the final always uses 1)`);
   process.exit(0);
 }
 
