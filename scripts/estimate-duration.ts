@@ -27,7 +27,7 @@ const { values: v } = parseArgs({
     avg: { type: 'string', default: '40' }, sd: { type: 'string', default: '8' },
     throw: { type: 'string', default: String(DEFAULT_TIME.throwSec[0]) }, 'throw-sd': { type: 'string', default: String(DEFAULT_TIME.throwSec[1]) },
     visit: { type: 'string', default: String(DEFAULT_TIME.visitSec[0]) }, 'visit-sd': { type: 'string', default: String(DEFAULT_TIME.visitSec[1]) },
-    leg: { type: 'string', default: String(DEFAULT_TIME.legSec) },
+    leg: { type: 'string', default: String(DEFAULT_TIME.legSec[0]) }, 'leg-sd': { type: 'string', default: String(DEFAULT_TIME.legSec[1]) },
     gap: { type: 'string', default: String(DEFAULT_TIME.gapSec[0]) }, 'gap-sd': { type: 'string', default: String(DEFAULT_TIME.gapSec[1]) },
     breaks: { type: 'string', default: String(DEFAULT_TIME.breaks) }, 'break-min': { type: 'string', default: String(DEFAULT_TIME.breakMin) },
     accident: { type: 'string', default: String(DEFAULT_TIME.accidentChance) }, 'accident-min': { type: 'string', default: String(DEFAULT_TIME.accidentMin) },
@@ -41,8 +41,8 @@ if (v.help) {
   Skill        --avg 40  (3-dart average of the average player)   --sd 8  (spread between players)
   Pace         --throw 4 --throw-sd 1.5   seconds per dart
                --visit 12 --visit-sd 4    seconds per visit (walk to board, pull darts, score, switch player)
-               --leg 30                   seconds between legs
-               --gap 120 --gap-sd 60      seconds between matches on one board (call teams, scorer swap, stage show)
+               --leg 45 --leg-sd 8        seconds between legs
+               --gap 180 --gap-sd 60      seconds between matches on one board (call teams, scorer swap, stage show)
   Breaks       --breaks 1 --break-min 15  scheduled breaks (all boards stop), spread evenly
   Accidents    --accident 0.05 --accident-min 4   chance per match and mean minutes lost
   Clock        --start 18:00   --runs 200 (simulated tournaments, each timed 20x)
@@ -80,7 +80,7 @@ const dartsPerMatch = loadSets.flat().reduce((s, l) => s + l.darts, 0) / loadSet
 const time = {
   throwSec: [num('throw'), num('throw-sd')] as [number, number],
   visitSec: [num('visit'), num('visit-sd')] as [number, number],
-  legSec: num('leg'),
+  legSec: [num('leg'), num('leg-sd')] as [number, number],
   gapSec: [num('gap'), num('gap-sd')] as [number, number],
   breaks: num('breaks'),
   breakMin: num('break-min'),

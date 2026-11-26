@@ -25,8 +25,8 @@ export interface TimeParams {
   throwSec: [number, number];
   /** Seconds per visit for walking to the board, pulling darts, scoring, switching player. */
   visitSec: [number, number];
-  /** Seconds between legs of one match. */
-  legSec: number;
+  /** Seconds between legs of one match, mean and sd (30-60 s, leaning to 45). */
+  legSec: [number, number];
   /** Seconds between two matches on one board (calling teams, scorer swap, stage show). */
   gapSec: [number, number];
   /** Scheduled breaks: count and minutes each (all boards stop). */
@@ -40,8 +40,8 @@ export interface TimeParams {
 export const DEFAULT_TIME: TimeParams = {
   throwSec: [4, 1.5],
   visitSec: [12, 4],
-  legSec: 30,
-  gapSec: [120, 60],
+  legSec: [45, 8],
+  gapSec: [180, 60],
   breaks: 1,
   breakMin: 15,
   accidentChance: 0.05,
@@ -77,7 +77,8 @@ export function loadsOf(state: TournamentState): MatchLoad[] {
 
 /** Net playing time of one match in seconds (no gap before it). */
 export function matchSeconds(load: MatchLoad, p: TimeParams, rng: Rng): number {
-  let s = Math.max(0, load.legs - 1) * p.legSec;
+  let s = 0;
+  for (let i = 1; i < load.legs; i++) s += normal(rng, p.legSec);
   for (let i = 0; i < load.darts; i++) s += normal(rng, p.throwSec);
   for (let i = 0; i < load.visits; i++) s += normal(rng, p.visitSec);
   if (rng() < p.accidentChance) s += 60 * p.accidentMin * (0.5 + rng());
