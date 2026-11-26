@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "server": "node server/index.js",
+    "estimate": "node scripts/estimate-duration.ts",
     "verify:supabase": "node scripts/verify-supabase.mjs"
   },
   "dependencies": {
