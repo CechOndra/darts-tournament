@@ -8,7 +8,7 @@ import { groupLabel, placeholderCount } from '../../../engine/selectors.ts';
 import type { TournamentState } from '../../../engine/state.ts';
 import type { Player, Team } from '../../../engine/types.ts';
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
-import { compressAvatar, compressFutPhoto, compressLogo, dataUrlBytes } from '../../../services/media/photoCompressor.ts';
+import { compressAvatar, compressAvatarFromBust, compressFutPhoto, compressLogo, dataUrlBytes } from '../../../services/media/photoCompressor.ts';
 import { randomIconUrls } from '../../../services/media/placeholders.ts';
 
 /** Text input that keeps local edits and commits on blur / Enter (one sync per edit, not per keystroke). */
@@ -78,7 +78,9 @@ function PlayerRow({ player }: { player: Player }) {
     setError(null);
     try {
       const futPhotoDataUrl = await compressFutPhoto(file);
-      await dispatch({ type: 'SET_PLAYER_FUT_PHOTO', playerId: player.id, futPhotoDataUrl }, { persist: 'immediate' });
+      await dispatch({ type: 'SET_PLAYER_FUT_PHOTO', playerId: player.id, futPhotoDataUrl });
+      // One photo is enough: the round profile picture is cut from it (the camera button overrides it).
+      await dispatch({ type: 'SET_PLAYER_AVATAR', playerId: player.id, avatarDataUrl: await compressAvatarFromBust(file) }, { persist: 'immediate' });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -113,8 +115,8 @@ function PlayerRow({ player }: { player: Player }) {
           size="sm"
           icon={IdCard}
           busy={busy}
-          aria-label={`Upload FUT card photo for ${player.name}`}
-          title="FUT card photo (head and shoulders, a cut-out PNG is best)"
+          aria-label={`Upload player photo for ${player.name}`}
+          title="Player photo: head and shoulders (FUT card + next-match screen, the round profile picture is cut from it)"
           onClick={() => futRef.current?.click()}
           className={`shrink-0 ${player.futPhotoDataUrl ? 'text-accent-gold' : ''}`}
         />

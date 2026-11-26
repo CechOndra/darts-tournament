@@ -1,0 +1,51 @@
+ROSTER FOLDER: how to arrange teams, players, logos and photos
+==============================================================
+
+One folder per team, one folder per player inside it. Folder names are the names the app shows.
+You never edit a list or a JSON file: drop files in, run the script, load the result in the admin.
+
+  roster/
+    01 Example Falcons/            <- team folder = team name
+      logo.png                        <- team logo (see sizes below)
+      Anna Novakova/                    <- player folder = player's full name
+        photo-studio.jpg              <- the player's photo (see the 3 photo types below)
+        nickname.txt                  <- optional, one line, max 16 characters
+      Petr Svoboda/
+        photo.png
+    02 Example Engineers/
+      logo.png
+      Eva Dvorakova/
+        (no photo yet: the app shows a grey silhouette)
+      ...
+
+Teams
+  - A number in front of the team name ("01 ", "02 ") only sets the order and is not shown.
+  - Teams and players are loaded in alphabetical folder order.
+  - Teams: 8 (or as many as the tournament has), players: the same number in every team.
+
+Team logo (file name: logo.png, logo.jpg or logo.webp)
+  - Square canvas, transparent PNG, 512 x 512 px or larger, logo fitted inside with a little padding.
+  - Non-round and wide logos are fine: the whole logo is shown, never cropped.
+
+Player photo: ONE photo per player. Pick the file name that matches the photo you have:
+  photo.png / photo.jpg     already prepared: head and shoulders, ratio 1.07 : 1 (e.g. 1070 x 1000 px).
+                            Best as a transparent PNG cut-out. Used as is.
+  photo-studio.jpg          waist-up studio portrait, ratio 2 : 3, head in the upper third, face centered
+                            (the same shoot for everybody). Cut to head and shoulders automatically.
+  photo-top.jpg             snapshot, head near the top, face centered. Cut automatically (rough).
+  profile.jpg               OPTIONAL square profile picture. Without it, the round profile picture is cut
+                            out of the photo above.
+The photo is used on the FUT card, on the "next match" screen on the projector, and (cut round) as the
+avatar everywhere else.
+
+Nickname (nickname.txt)
+  - Plain text file, first line = nickname. The stage can show nicknames instead of full names (admin setting).
+
+Build and use
+  1. python scripts/build-mock-dataset.py          (needs Pillow: pip install pillow)
+     optional: python scripts/build-mock-dataset.py --preview preview.png   to check the cut photos first
+  2. Admin > Live > Test Tournament (switch on) > Load mock dataset (.json) > local-data/mock-dataset.json
+     (use a test tournament with 8 teams and doubles)
+  3. To use it on another computer, copy local-data/mock-dataset.json (all images are inside it).
+
+Privacy: this folder lives in local-data/ which is never committed to git (the repository is public).

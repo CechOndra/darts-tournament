@@ -43,7 +43,7 @@ Measured values (fill in, then I rerun `npm run estimate` with them):
 - [ ] 3.6 Random Czech names and random icons look fine on the stage with 16 players (silhouette for no-photo players)
 - [ ] 3.7 `npm run estimate` runs on your PC after `git pull` (needs Node 22.6+)
 - [ ] 3.8 Mock tournament: build with `python scripts/build-mock-dataset.py`, load it in Admin > Live > Test Tournament on a fresh 8-team doubles test tournament; look at stage, FUT cards and phone (logos, photos, nicknames)
-- [ ] 3.9 Upload a real FUT photo with the card icon in Admin > Teams (ideally a transparent PNG cut-out) and check it on a card, in the downloaded PNG (now 1632 x 2000) and on a phone
+- [ ] 3.9 Upload a real player photo with the card icon in Admin > Teams (ideally a transparent PNG cut-out): check it on the FUT card, in the downloaded PNG (now 1632 x 2000), on the stage "next match" screen and the round avatar on a phone
 - [ ] 3.10 Read `docs/ASSET-SPEC.md` and tell me what is unclear or wrong before you design the frames
 
 ## 4. Older open items

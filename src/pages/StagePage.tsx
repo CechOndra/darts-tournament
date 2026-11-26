@@ -180,10 +180,12 @@ function UpNextStage({ state }: { state: TournamentState }) {
     );
   }
   return (
-    <div className="m-auto flex w-full max-w-6xl flex-col items-center gap-10">
+    <div className="m-auto flex w-full max-w-[104rem] flex-col items-center gap-8">
       <p className="font-display text-3xl tracking-[0.4em] text-text-muted uppercase">Next Match</p>
       <Matchup state={state} match={match} size="xl" />
-      <DutyBanner state={state} duty={duty} match={next} size="xl" />
+      <div className="w-full max-w-4xl">
+        <DutyBanner state={state} duty={duty} match={next} size="xl" />
+      </div>
     </div>
   );
 }
@@ -199,12 +201,14 @@ function PreMatchStage({ state, view }: { state: TournamentState; view: MatchVie
     MANUAL_CHOICE: 'Teams decide who throws first',
   };
   return (
-    <div className="m-auto flex w-full max-w-6xl flex-col items-center gap-10">
+    <div className="m-auto flex w-full max-w-[104rem] flex-col items-center gap-8">
       <Matchup state={state} match={view.match} size="xl" />
       <p className="font-display text-4xl tracking-wide text-accent-gold uppercase">
         {setup?.firstTeam ? `${teamName(state, view.teamIds[setup.firstTeam])} throws first` : setup?.decision ? decisionText[setup.decision] : ''}
       </p>
-      <DutyBanner state={state} duty={duty} match={next} size="xl" />
+      <div className="w-full max-w-4xl">
+        <DutyBanner state={state} duty={duty} match={next} size="xl" />
+      </div>
     </div>
   );
 }
@@ -292,7 +296,9 @@ function PostMatchStage({ state, view }: { state: TournamentState; view: MatchVi
   return (
     <div className="m-auto flex w-full max-w-6xl flex-col items-center gap-10">
       <MatchSummary state={state} view={view} size="xl" />
-      <DutyBanner state={state} duty={duty} match={next} size="xl" />
+      <div className="w-full max-w-4xl">
+        <DutyBanner state={state} duty={duty} match={next} size="xl" />
+      </div>
     </div>
   );
 }

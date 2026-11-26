@@ -6,9 +6,9 @@ import { hasStarted } from '../../../engine/selectors.ts';
 import { DEFAULT_SKILL, nextSimulatable, simulateMatches } from '../../../engine/simulate.ts';
 import type { TournamentState } from '../../../engine/state.ts';
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
-import { compressAvatar, compressFutPhoto, compressLogo } from '../../../services/media/photoCompressor.ts';
+import { compressAvatar, compressAvatarFromBust, compressFutPhoto, compressLogo } from '../../../services/media/photoCompressor.ts';
 
-type MockDataset = { teams: { name: string; logo?: string; players: { name?: string; nickname?: string; photo?: string; futPhoto?: string }[] }[] };
+type MockDataset = { teams: { name: string; logo?: string; players: { name?: string; nickname?: string; bust?: string; avatar?: string }[] }[] };
 const toBlob = async (dataUrl: string) => (await fetch(dataUrl)).blob();
 
 /** Test tournament switch + simulator + mock dataset loader. The tools only exist while `meta.isTest` is on. */
@@ -49,8 +49,12 @@ export function TestModeSection({ state }: { state: TournamentState }) {
           const prof = src.players[p];
           await dispatch({ type: 'RENAME_PLAYER', playerId: pid, name: prof?.name || random[i]?.playerNames[p] || '' });
           if (prof?.nickname) await dispatch({ type: 'SET_PLAYER_NICKNAME', playerId: pid, nickname: prof.nickname });
-          if (prof?.futPhoto) await dispatch({ type: 'SET_PLAYER_FUT_PHOTO', playerId: pid, futPhotoDataUrl: await compressFutPhoto(await toBlob(prof.futPhoto)) });
-          if (prof?.photo) await dispatch({ type: 'SET_PLAYER_AVATAR', playerId: pid, avatarDataUrl: await compressAvatar(await toBlob(prof.photo)) });
+          if (prof?.bust) {
+            const bust = await toBlob(prof.bust);
+            await dispatch({ type: 'SET_PLAYER_FUT_PHOTO', playerId: pid, futPhotoDataUrl: await compressFutPhoto(bust) });
+            await dispatch({ type: 'SET_PLAYER_AVATAR', playerId: pid, avatarDataUrl: await compressAvatarFromBust(bust) });
+          }
+          if (prof?.avatar) await dispatch({ type: 'SET_PLAYER_AVATAR', playerId: pid, avatarDataUrl: await compressAvatar(await toBlob(prof.avatar)) });
         }
       }
       await dispatch({ type: 'RENAME_TOURNAMENT', name: state.meta?.name ?? 'Test' }, { persist: 'immediate' });

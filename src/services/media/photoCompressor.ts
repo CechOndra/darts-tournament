@@ -82,6 +82,21 @@ async function render(file: Blob, plan: Draw, quality: number): Promise<string> 
 export const compressAvatar = (file: Blob): Promise<string> =>
   render(file, (w, h) => ({ canvas: [AVATAR_SIZE, AVATAR_SIZE], src: centerSquareCrop(w, h), dst: [0, 0, AVATAR_SIZE, AVATAR_SIZE] }), AVATAR_QUALITY);
 
+/**
+ * Profile picture cut from a FUT photo (head and shoulders, face about 40 % from the top, centered):
+ * so one photo per player is enough.
+ */
+export const compressAvatarFromBust = (file: Blob): Promise<string> =>
+  render(
+    file,
+    (w, h) => {
+      const size = Math.min(w, Math.round(h * 0.76));
+      const sy = Math.min(Math.max(0, Math.round(h * 0.4 - size / 2)), h - size);
+      return { canvas: [AVATAR_SIZE, AVATAR_SIZE], src: { sx: Math.round((w - size) / 2), sy, size }, dst: [0, 0, AVATAR_SIZE, AVATAR_SIZE] };
+    },
+    AVATAR_QUALITY,
+  );
+
 /** Team logo: the whole logo fitted into 256 x 256 (never cropped, so wide or non-round logos survive), transparent padding. */
 export const compressLogo = (file: Blob): Promise<string> =>
   render(

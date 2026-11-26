@@ -3,17 +3,18 @@
 How to make your own FUT card frames and how to prepare photos and logos so they fit the app exactly.
 Everything below mirrors the code (`src/components/fut/FutCard.tsx`, `src/services/media/photoCompressor.ts`).
 
-**Quick answer:** four kinds of image.
+**Quick answer:** one photo per player is enough. Make ONE head-and-shoulders photo; the app uses it on the FUT card and
+on the "next match" screen, and cuts the round profile picture out of it.
 
 | Image | Where it is used | Make it | Format |
 |-------|------------------|---------|--------|
 | FUT card frame (4 rarities) | behind the FUT card | 1632 x 2000 px (ratio 0.816 : 1) | transparent PNG |
-| FUT card photo | inside the card | about 1070 x 1000 px (ratio 1.07 : 1), head and shoulders | transparent PNG (cut-out) is best, JPG works |
-| Profile picture | round avatar on stage, scoreboard, admin, phones | 1024 x 1024 px (1 : 1), head and shoulders | PNG or JPG |
+| **Player photo** (the one photo) | FUT card, "next match" screen on the stage; the round avatar is cut from it | about 1070 x 1000 px (ratio 1.07 : 1), head and shoulders | transparent PNG (cut-out) is best, JPG works |
+| Profile picture (optional) | round avatar on scoreboard, admin, phones. Only needed if you want a different picture than the automatic cut | 1024 x 1024 px (1 : 1) | PNG or JPG |
 | Team logo | stage, scoreboards, FUT card, admin | 512 x 512 px (1 : 1) with padding | transparent PNG |
 
-The app never uses a full-body photo. If you only have a full-body (or waist-up) photo, cut the two
-head-and-shoulders crops out of it (section 4).
+The app never uses a full-body photo. If you only have a waist-up or full-body photo, cut the head-and-shoulders crop out
+of it (section 4). How to arrange the files in folders: `docs/ROSTER-FOLDER.txt`.
 
 ## 1. FUT card frame
 
@@ -48,45 +49,48 @@ Files, one per rarity, in `public/custom-cards/`: `fut-bronze.png`, `fut-silver.
 (Bronze below OVR 66, Silver 66+, Gold 77+, Icon 87+). Missing files fall back to the built-in shield. Files in
 `public/` are published on the website, so everyone can download them.
 
-## 2. FUT card photo
+## 2. Player photo (FUT card + next-match screen)
 
-- **Frame to shoot or cut:** ratio **1.07 : 1** (wide, almost square), the same shape as the photo window (359 x 335).
-  Recommended **1070 x 1000 px**; anything from 720 px wide up is fine. The app keeps at most 720 px on the long side.
-- **What is in it:** head and shoulders. Eyes at about 35 % from the top, face centered horizontally, head about
-  55 to 60 % of the picture height, shoulders touching the left, right and bottom edge. Leave a little air above the hair.
-- **Bottom 25 % fades out** into the card, so nothing important (logos, hands) belongs there.
-- **Fit rule:** the photo is scaled to cover the window and aligned to the bottom center; a different ratio just crops
-  the top and the sides.
-- **Background:** a **transparent PNG cut-out** looks best (the player stands on the card). A normal photo with a
-  background shows as a rectangle. The app keeps transparency (stored as WebP).
-- Upload it per player in Admin > Teams > the card icon next to the player. Without it the profile picture is used.
+- **Frame to shoot or cut:** ratio **1.07 : 1** (wide, almost square), the same shape as the FUT photo window
+  (359 x 335). Recommended **1070 x 1000 px**; anything from 720 px wide up is fine. The app keeps at most 720 px on the
+  long side.
+- **What is in it:** head and shoulders. **Face centered horizontally, eyes at about 35 % from the top**, head about
+  55 to 60 % of the picture height, shoulders touching the left, right and bottom edge. A little air above the hair.
+  Keeping the face in this spot is what lets the app cut the round profile picture out automatically.
+- **FUT card:** the photo is scaled to cover the window and aligned to the bottom center; the **bottom 25 % fades out**
+  into the card, so nothing important (logos, hands) belongs there. A different ratio just crops the top and the sides.
+- **"Next match" screen (stage):** shown 256 px tall (192 px when a team has 3 players) next to the team logo, left team
+  bottom-left, right team bottom-right. Transparent cut-outs look best here too.
+- **Background:** a **transparent PNG cut-out** looks best (the player stands on the card and on the stage). A normal
+  photo with a background shows as a rectangle with rounded corners. The app keeps transparency (stored as WebP).
+- Upload per player in Admin > Teams with the card icon next to the player. The profile picture is cut from it at the
+  same moment.
 
 ## 3. Profile picture (round avatar)
 
-- **Square 1 : 1**, recommended **1024 x 1024 px**, minimum 512. The app stores 256 x 256 px, cropped to the center
-  square, and shows it in a circle (corners are cut off).
-- Head and shoulders, face centered, head about 60 to 65 % of the picture height, a bit of the shoulders visible.
-- Opaque background or transparent, both work (transparent shows the dark app background behind the person).
-- Upload with the camera icon in Admin > Teams. Players without photo get a grey silhouette.
+- Normally **you do not need to make one**: it is cut from the player photo (a square from 2 % to 78 % of the photo
+  height, centered, so head and shoulders).
+- If you want a different one: **square 1 : 1**, **1024 x 1024 px** (minimum 512), head and shoulders, face centered,
+  head about 60 to 65 % of the height. Stored as 256 x 256 px, shown in a circle. Upload it with the camera icon in
+  Admin > Teams (this replaces the automatic one, the player photo stays).
+- Players without any photo get a grey silhouette.
 
-## 4. Getting both crops from one full-body photo
+## 4. Getting the player photo from a bigger photo
 
-Yes, if all photos come from the same kind of shoot (same framing, face in the same place), both crops can be cut
-automatically with fixed fractions. This is what `scripts/build-mock-dataset.py` does for the studio photos
-(waist-up portraits, ratio 2 : 3, head in the upper third):
+If all photos come from the same kind of shoot (same framing, face in the same place), the crop can be cut automatically
+with fixed fractions. This is what `scripts/build-mock-dataset.py` does:
 
-- Profile picture: a square of **62 % of the photo width**, centered on the face at **49 % from the left and 27 % from the top**.
-- FUT photo: a **70 % wide** crop starting 14 % from the left and 0.20 x width from the top, height = width / 1.07.
+- `photo-studio.jpg` (waist-up studio portrait, ratio 2 : 3, head in the upper third, face centered): a crop **70 % of the
+  width wide**, starting 14 % from the left and 0.20 x width from the top, height = width / 1.07.
+- `photo-top.jpg` (snapshot, head near the top): the top part, full width.
 
 For arbitrary photos (face anywhere) the app has no face detection, so it cannot guess. Options, from simplest:
 
-1. Shoot every player the same way (one master photo, ratio 2 : 3, head in the upper third, face centered), and use the
-   fractions above. Best for a tournament where you take the photos yourself.
-2. Cut the square and the wide crop yourself (any image tool) and upload both.
-3. Later: add face detection (for example OpenCV in the prep script) or a drag-to-crop tool in the admin.
+1. Shoot every player the same way (one master photo, ratio 2 : 3, head in the upper third, face centered).
+2. Cut the head-and-shoulders crop yourself (any image tool) following section 2.
+3. Later: face detection (for example OpenCV in the prep script) or a drag-to-crop tool in the admin.
 
-If you upload a tall photo straight as the profile picture, the app takes the center square, which for a 2 : 3 portrait
-is the chest, not the face. Crop it first.
+A tall photo uploaded straight into the app is NOT cropped to the face: the card would show the chest. Crop it first.
 
 ## 5. Team logos
 
@@ -103,7 +107,8 @@ is the chest, not the face. Crop it first.
 
 - [ ] FUT frames 1632 x 2000 px PNG with transparent outside, named `fut-bronze/silver/gold/icon.png`
 - [ ] Checked against `docs/fut-card-template.png` that nothing is drawn under the text areas
-- [ ] FUT photos about 1070 x 1000, transparent PNG if possible, name = the player's name
-- [ ] Profile pictures 1024 x 1024
+- [ ] One player photo per player, about 1070 x 1000, face centered, eyes ~35 % from the top, transparent PNG if possible
+- [ ] (optional) profile pictures 1024 x 1024 only where the automatic cut is not good enough
+- [ ] Files in the folder layout of `docs/ROSTER-FOLDER.txt`
 - [ ] Team logos 512 x 512 transparent with padding
 - [ ] No private photos you do not want on a public website (anything in `public/` is public)
