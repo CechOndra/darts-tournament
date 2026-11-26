@@ -37,6 +37,7 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
   const [cards, setCards] = useState<CardSettings>(() => structuredClone(DEFAULT_CARDS));
   const [makeLive, setMakeLive] = useState(!hasLive);
   const [randomIcons, setRandomIcons] = useState(false);
+  const [isTest, setIsTest] = useState(false);
   const { busy, error, run } = useAsyncAction();
 
   const roster = useMemo(() => parseRosterText(csv), [csv]);
@@ -74,7 +75,7 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
       await createTournamentFromSetup(
         api,
         hostToken,
-        { id, name: tournamentName, createdAt: Date.now(), structure, rules, table, cards, roster: rows },
+        { id, name: tournamentName, createdAt: Date.now(), structure, rules, table, cards, roster: rows, isTest },
         pin,
         getClientId(),
       );
@@ -133,6 +134,7 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
             Fill with random Czech names
           </Button>
         </div>
+        <Toggle label="Test tournament" description="Shows match simulation controls in Admin > Live. Fake darts: for throwaway tournaments only." checked={isTest} onChange={setIsTest} />
         <Toggle label="Random placeholder icons" description="Gives every team and player a random coloured icon (handy for testing)." checked={randomIcons} onChange={setRandomIcons} />
         {roster.length > 0 && (
           <div className="flex flex-wrap items-center gap-3">

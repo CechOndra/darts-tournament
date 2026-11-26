@@ -22,7 +22,8 @@ export interface SimSkill {
 export const DEFAULT_SKILL: SimSkill = { average: 45, variance: 10 };
 
 const RING = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
-const STEP_MS = 500; // virtual time per dart, keeps the schedule ETAs roughly sane
+const STEP_MS = 4000; // virtual time per dart: a simulated BO1 takes about as long as a real one
+const GAP_MS = 60_000; // pause between simulated matches
 const MAX_DARTS = 3000; // guard against a never-ending match
 
 type Rng = () => number;
@@ -103,7 +104,7 @@ export function simulateNextMatch(state: TournamentState, skill: SimSkill = DEFA
   if (!state.meta?.isTest || state.live) return state;
   const match = nextSimulatable(state);
   if (!match) return state;
-  let at = Math.max(Date.now(), ...state.throws.slice(-1).map((t) => t.timestamp + 30_000));
+  let at = Math.max(Date.now(), ...state.throws.slice(-1).map((t) => t.timestamp + GAP_MS));
   let s = tournamentReducer(state, { type: 'START_MATCH', matchId: match.id, at });
   const coin = (legIndex: number) => {
     const v = computeMatchView(s);
@@ -137,6 +138,15 @@ export function simulateNextMatch(state: TournamentState, skill: SimSkill = DEFA
   return tournamentReducer(s, { type: 'CONTINUE_TO_NEXT' });
 }
 
+/** Slide the newly simulated darts back in time so the batch ends a minute ago (never later than now), but after older darts. */
+function shiftToNow(before: TournamentState, after: TournamentState): TournamentState {
+  const fresh = after.throws.slice(before.throws.length);
+  if (!fresh.length) return after;
+  const lastOld = before.throws.at(-1)?.timestamp ?? -Infinity;
+  const shift = Math.max(lastOld + 1000 - fresh[0]!.timestamp, Math.min(0, Date.now() - 60_000 - fresh.at(-1)!.timestamp));
+  return { ...after, throws: [...before.throws, ...fresh.map((t) => ({ ...t, timestamp: t.timestamp + shift }))] };
+}
+
 /** Plays up to `count` matches (Infinity = all), or only group matches with stage 'GROUP'. */
 export function simulateMatches(state: TournamentState, count: number, skill: SimSkill = DEFAULT_SKILL, rng: Rng = Math.random, stage?: 'GROUP'): TournamentState {
   let s = state;
@@ -147,5 +157,5 @@ export function simulateMatches(state: TournamentState, count: number, skill: Si
     if (after === s) break;
     s = after;
   }
-  return s;
+  return shiftToNow(state, s);
 }

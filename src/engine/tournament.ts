@@ -109,7 +109,7 @@ export function buildTournament(setup: TournamentSetup): TournamentState {
   return {
     ...base,
     cards,
-    meta: { id: setup.id, name: setup.name.trim() || 'Tournament', createdAt: setup.createdAt },
+    meta: { id: setup.id, name: setup.name.trim() || 'Tournament', createdAt: setup.createdAt, ...(setup.isTest ? { isTest: true } : {}) },
     settings,
     teams,
     players,

@@ -336,6 +336,8 @@ export interface TournamentSetup {
   table?: Partial<TableSettings>;
   cards?: Partial<CardSettings>;
   roster: RosterRow[];
+  /** Create as a Test tournament (simulator controls on). */
+  isTest?: boolean;
 }
 
 // ------------------------------------------------------------------ live match (Milestone 3)

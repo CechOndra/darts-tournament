@@ -39,6 +39,13 @@ describe('test tournament simulator', () => {
     expect(playerAverage('player_01a', { average: 60, variance: 5 })).toBe(playerAverage('player_01a', { average: 60, variance: 5 }));
   });
 
+  it('stamps simulated darts in the past, in order', () => {
+    const s = simulateMatches(fresh(true), Infinity, undefined, seeded(5));
+    const ts = s.throws.map((t) => t.timestamp);
+    expect(Math.max(...ts)).toBeLessThanOrEqual(Date.now());
+    expect(ts.every((t, i) => i === 0 || t >= ts[i - 1]!)).toBe(true);
+  });
+
   it('cannot turn on test mode after real results exist', () => {
     let s = fresh(true);
     s = simulateMatches(s, 1, undefined, seeded(2));
