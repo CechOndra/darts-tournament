@@ -1,3 +1,4 @@
+import { SILHOUETTE_FUT } from '../../services/media/placeholders.ts';
 import { forwardRef, useEffect, useState } from 'react';
 import type { FutCard as FutCardData, FutFrame } from '../../engine/stats.ts';
 import { STAT_LABEL } from '../../engine/stats.ts';
@@ -117,9 +118,7 @@ export const FutCard = forwardRef<SVGSVGElement, FutCardProps>(function FutCard(
           mask={`url(#${gid}-mask)`}
         />
       ) : (
-        <text x={px(60, W)} y={px(44, H)} textAnchor="middle" fill={ink} fillOpacity="0.5" style={{ font: `700 200px ${font}` }}>
-          {name.slice(0, 1).toUpperCase()}
-        </text>
+        <image href={SILHOUETTE_FUT} x={px(38, W)} y={px(19.5, H)} width={px(44, W)} height={px(33.5, H)} preserveAspectRatio="xMidYMax meet" mask={`url(#${gid}-mask)`} />
       )}
 
       {/* Name banner */}

@@ -318,6 +318,9 @@ export type ScorerDutyOverride = 'ADMIN' | string | null;
 export interface RosterRow {
   teamName: string;
   playerNames: string[];
+  /** Optional pictures (data URLs) set when the tournament is created, e.g. random placeholder icons. */
+  logoDataUrl?: string;
+  avatarDataUrls?: string[];
 }
 
 /** Everything the Admin enters in the setup wizard. */

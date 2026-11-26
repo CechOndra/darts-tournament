@@ -1,12 +1,15 @@
-import { Camera, FileSpreadsheet, ImagePlus, Shield, Trash2 } from 'lucide-react';
+import { Camera, Dices, FileSpreadsheet, ImagePlus, Shapes, Shield, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type InputHTMLAttributes } from 'react';
+import { IconPicker } from '../../../components/admin/IconPicker.tsx';
 import { Avatar, Badge, Button, Field, Notice, TeamLogo, TextInput } from '../../../components/ui.tsx';
+import { randomRosterRows } from '../../../engine/czechNames.ts';
 import { parseRosterText } from '../../../engine/roster.ts';
 import { groupLabel, placeholderCount } from '../../../engine/selectors.ts';
 import type { TournamentState } from '../../../engine/state.ts';
 import type { Player, Team } from '../../../engine/types.ts';
 import { useDispatch } from '../../../hooks/TransportProvider.tsx';
 import { compressAvatar, dataUrlBytes } from '../../../services/media/photoCompressor.ts';
+import { randomIconUrls } from '../../../services/media/placeholders.ts';
 
 /** Text input that keeps local edits and commits on blur / Enter (one sync per edit, not per keystroke). */
 export function CommitInput({
@@ -70,7 +73,7 @@ function PlayerRow({ player }: { player: Player }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Avatar name={player.name} src={player.avatarDataUrl} size={44} />
         <CommitInput
           aria-label={`Player name (${player.id})`}
@@ -89,6 +92,7 @@ function PlayerRow({ player }: { player: Player }) {
           onClick={() => fileRef.current?.click()}
           className="shrink-0"
         />
+        <IconPicker kind="player" label={`Pick an icon for ${player.name}`} onPick={(avatarDataUrl) => void dispatch({ type: 'SET_PLAYER_AVATAR', playerId: player.id, avatarDataUrl }, { persist: 'immediate' })} />
         {player.avatarDataUrl && (
           <Button
             size="sm"
@@ -157,6 +161,7 @@ function TeamCard({ team, state }: { team: Team; state: TournamentState }) {
           onClick={() => logoRef.current?.click()}
           className="shrink-0"
         />
+        <IconPicker kind="team" label={`Pick an icon for ${team.name}`} onPick={(logoDataUrl) => void dispatch({ type: 'SET_TEAM_LOGO', teamId: team.id, logoDataUrl }, { persist: 'immediate' })} />
         {team.logoDataUrl && (
           <Button
             size="sm"
@@ -192,8 +197,29 @@ export function RosterSection({ state }: { state: TournamentState }) {
     setCsv('');
   };
 
+  const randomNames = () =>
+    void dispatch({ type: 'APPLY_ROSTER_NAMES', rows: randomRosterRows(state.teams.length, state.settings.structure.playersPerTeam) }, { persist: 'immediate' });
+
+  const randomIcons = async () => {
+    const players = state.teams.flatMap((t) => t.playerIds);
+    const [logos, avatars] = await Promise.all([randomIconUrls('team', state.teams.length), randomIconUrls('player', players.length)]);
+    const jobs = [
+      ...state.teams.map((t, i) => ({ type: 'SET_TEAM_LOGO' as const, teamId: t.id, logoDataUrl: logos[i]! })),
+      ...players.map((playerId, i) => ({ type: 'SET_PLAYER_AVATAR' as const, playerId, avatarDataUrl: avatars[i]! })),
+    ];
+    for (const [i, job] of jobs.entries()) await dispatch(job, i === jobs.length - 1 ? { persist: 'immediate' } : undefined);
+  };
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" icon={Dices} onClick={randomNames}>
+          Random Czech names
+        </Button>
+        <Button size="sm" icon={Shapes} onClick={() => void randomIcons()}>
+          Random icons for everyone
+        </Button>
+      </div>
       <Field label="Tournament name">
         {(id) => (
           <CommitInput

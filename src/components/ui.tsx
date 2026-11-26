@@ -1,3 +1,4 @@
+import { SILHOUETTE_AVATAR } from '../services/media/placeholders.ts';
 import { ChevronDown, X, type LucideIcon } from 'lucide-react';
 import {
   useEffect,
@@ -249,24 +250,7 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
 
 // ---------------------------------------------------------------- Avatar
 export function Avatar({ name, src, size = 40 }: { name: string; src: string | null; size?: number }) {
-  const initials =
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase())
-      .join('') || '?';
-  return src ? (
-    <img src={src} alt={name} width={size} height={size} className="shrink-0 rounded-full border border-border-subtle object-cover" style={{ width: size, height: size }} />
-  ) : (
-    <span
-      aria-label={name}
-      className="flex shrink-0 items-center justify-center rounded-full border border-border-subtle bg-bg-elevated font-display font-semibold text-accent-gold"
-      style={{ width: size, height: size, fontSize: size * 0.38 }}
-    >
-      {initials}
-    </span>
-  );
+  return <img src={src ?? SILHOUETTE_AVATAR} alt={name} width={size} height={size} className="shrink-0 rounded-full border border-border-subtle object-cover" style={{ width: size, height: size }} />;
 }
 
 // ---------------------------------------------------------------- Team logo

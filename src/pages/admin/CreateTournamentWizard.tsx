@@ -6,6 +6,7 @@ import { CardBasicsForm } from '../../components/admin/CardSettingsForm.tsx';
 import { TableSettingsForm } from '../../components/admin/TableSettingsForm.tsx';
 import { Button, Field, Notice, TextInput, Toggle } from '../../components/ui.tsx';
 import { DEFAULT_CARDS, DEFAULT_RULES, DEFAULT_STRUCTURE, DEFAULT_TABLE, LIMITS } from '../../engine/defaults.ts';
+import { randomRosterRows, rosterRowsToText } from '../../engine/czechNames.ts';
 import { mergeRules } from '../../engine/reducer.ts';
 import { maxPlayersInRoster, parseRosterText } from '../../engine/roster.ts';
 import { makeTournamentId, validateStructure } from '../../engine/tournament.ts';
@@ -14,6 +15,7 @@ import { useControl } from '../../hooks/ControlProvider.tsx';
 import { useAsyncAction } from '../../hooks/useTransport.ts';
 import { describeControlError } from '../../services/control/index.ts';
 import { createId, getClientId } from '../../services/transport/ids.ts';
+import { randomIconUrls } from '../../services/media/placeholders.ts';
 import { createTournamentFromSetup } from '../../services/tournamentOps.ts';
 
 const randomPin = () => {
@@ -34,6 +36,7 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
   const [table, setTable] = useState<TableSettings>(() => ({ ...DEFAULT_TABLE }));
   const [cards, setCards] = useState<CardSettings>(() => structuredClone(DEFAULT_CARDS));
   const [makeLive, setMakeLive] = useState(!hasLive);
+  const [randomIcons, setRandomIcons] = useState(false);
   const { busy, error, run } = useAsyncAction();
 
   const roster = useMemo(() => parseRosterText(csv), [csv]);
@@ -56,10 +59,22 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
     const tournamentName = name.trim() || 'Darts Tournament';
     const id = makeTournamentId(tournamentName, createId().slice(0, 6));
     const done = await run(async () => {
+      let rows = roster;
+      if (randomIcons) {
+        const n = structure.teamCount;
+        const per = structure.playersPerTeam;
+        const [logos, avatars] = await Promise.all([randomIconUrls('team', n), randomIconUrls('player', n * per)]);
+        rows = Array.from({ length: n }, (_, i) => ({
+          teamName: roster[i]?.teamName ?? '',
+          playerNames: roster[i]?.playerNames ?? [],
+          logoDataUrl: logos[i],
+          avatarDataUrls: avatars.slice(i * per, (i + 1) * per),
+        }));
+      }
       await createTournamentFromSetup(
         api,
         hostToken,
-        { id, name: tournamentName, createdAt: Date.now(), structure, rules, table, cards, roster },
+        { id, name: tournamentName, createdAt: Date.now(), structure, rules, table, cards, roster: rows },
         pin,
         getClientId(),
       );
@@ -113,6 +128,12 @@ export function CreateTournamentWizard({ onCreated, onCancel, hasLive }: { onCre
             />
           )}
         </Field>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button size="sm" icon={Dices} onClick={() => setCsv(rosterRowsToText(randomRosterRows(structure.teamCount, structure.playersPerTeam)))}>
+            Fill with random Czech names
+          </Button>
+        </div>
+        <Toggle label="Random placeholder icons" description="Gives every team and player a random coloured icon (handy for testing)." checked={randomIcons} onChange={setRandomIcons} />
         {roster.length > 0 && (
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm text-text-muted">

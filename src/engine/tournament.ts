@@ -67,7 +67,7 @@ export function buildRoster(
         teamId: id,
         name: pname || playerPlaceholderName(p),
         isPlaceholderName: !pname,
-        avatarDataUrl: prevPlayer?.avatarDataUrl ?? null,
+        avatarDataUrl: roster[i]?.avatarDataUrls?.[p] ?? prevPlayer?.avatarDataUrl ?? null,
       };
       playerIds.push(pid);
     }
@@ -77,7 +77,7 @@ export function buildRoster(
       isPlaceholderName: !name,
       groupIndex: i % groups,
       playerIds,
-      logoDataUrl: prevTeam?.logoDataUrl ?? null,
+      logoDataUrl: roster[i]?.logoDataUrl ?? prevTeam?.logoDataUrl ?? null,
     });
   }
   return { teams, players };
