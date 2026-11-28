@@ -48,26 +48,7 @@
   --rarity-rare: #c768e8;
   --rarity-legendary: #e6b32e;
 
-  /* Energy mode: a card the team cannot afford gets a red cost ball. */
-.pc-card[data-short] .pc-cost {
-  --cost-c: #e5252a;
-  color: #fff;
-}
-.pc-card[data-short] .pc-cost[data-shape='orb'],
-.pc-card[data-short] .pc-cost[data-shape='orb'] .pc-ic {
-  color: #fff;
-}
-
-/* Booster pack idle motion (stage, rarity-first draws). */
-@keyframes pack-float {
-  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
-  50% { transform: translateY(-14px) rotate(1.2deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .pack-idle { animation: none !important; }
-}
-
-/* Coin toss coin */
+  /* Coin toss coin */
   --coin-shine: #fde68a;
   --coin-face: #f59e0b;
   --coin-edge: #b45309;
@@ -259,6 +240,25 @@
       transform: translateY(0) scale(1);
     }
   }
+}
+
+/* Energy mode: a card the team cannot afford gets a red cost ball. */
+.pc-card[data-short] .pc-cost {
+  --cost-c: #e5252a;
+  color: #fff;
+}
+.pc-card[data-short] .pc-cost[data-shape='orb'],
+.pc-card[data-short] .pc-cost[data-shape='orb'] .pc-ic {
+  color: #fff;
+}
+
+/* Booster pack idle motion (stage, rarity-first draws). */
+@keyframes pack-float {
+  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+  50% { transform: translateY(-14px) rotate(1.2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pack-idle { animation: none !important; }
 }
 
 /* Printable deck: exact A4 sheets, colors kept, one sheet per page. */
