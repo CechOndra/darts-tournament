@@ -86,7 +86,7 @@ export function playTick(): void {
 export function playReveal(rarity: CardRarity): void {
   const notes: Record<CardRarity, number[]> = {
     COMMON: [523, 659],
-    SILVER: [523, 659, 784],
+    UNCOMMON: [523, 659, 784],
     RARE: [523, 659, 784, 1047],
     LEGENDARY: [392, 523, 659, 784, 1047, 1319],
   };

@@ -1,7 +1,8 @@
-import { ArrowRightLeft, Gift, Layers, Plus, Printer, Settings2, Undo2, Users } from 'lucide-react';
+import { ArrowRightLeft, Gift, Layers, Palette, Plus, Printer, Settings2, Undo2, Users } from 'lucide-react';
 import { openAppWindow } from '../../../services/links.ts';
 import { useState } from 'react';
 import { CardSettingsForm } from '../../../components/admin/CardSettingsForm.tsx';
+import { CardImagesForm, CardStyleForm } from '../../../components/admin/CardLookForm.tsx';
 import { SettingsDraft } from '../../../components/admin/SettingsDraft.tsx';
 import type { CardSettings } from '../../../engine/types.ts';
 import { CardIcon, RARITY_VAR } from '../../../components/cards/PowerCard.tsx';
@@ -148,8 +149,11 @@ function GrantTools({ state }: { state: TournamentState }) {
 /** Admin Cards tab: inventory + side-game transfers, and the card economy settings. */
 export function CardsSection({ state }: { state: TournamentState }) {
   const dispatch = useDispatch();
-  const [open, setOpen] = useState({ inv: true, tools: true, settings: false });
+  const [open, setOpen] = useState({ inv: true, tools: true, settings: false, look: false, pics: false });
   const s = state.settings.cards;
+  // style + pictures are saved on their own (live), not through the settings draft
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { style: _style, images: _images, ...core } = s;
   const inPool = poolInstances(state.cards, 'ANY').length;
   const held = state.cards.instances.filter((i) => i.status === 'IN_HAND').length;
   return (
@@ -171,8 +175,8 @@ export function CardsSection({ state }: { state: TournamentState }) {
           <Inventory state={state} />
         </Section>
         <Section id="section-cards-settings" title="Card Settings" icon={Settings2} open={open.settings} onToggle={() => setOpen((o) => ({ ...o, settings: !o.settings }))}>
-          <SettingsDraft<CardSettings>
-            value={s}
+          <SettingsDraft<Omit<CardSettings, 'style' | 'images'>>
+            value={core}
             labels={{ config: 'Card', params: 'Card numbers' }}
             liveWarning={
               state.live
@@ -183,6 +187,12 @@ export function CardsSection({ state }: { state: TournamentState }) {
           >
             {(d, set) => <CardSettingsForm value={d} onPatch={(patch) => set({ ...d, ...patch })} />}
           </SettingsDraft>
+        </Section>
+        <Section id="section-cards-look" title="Card Style" icon={Palette} open={open.look} onToggle={() => setOpen((o) => ({ ...o, look: !o.look }))}>
+          <CardStyleForm saved={s.style} onSave={(style) => dispatch({ type: 'UPDATE_CARD_SETTINGS', patch: { style } }, { persist: 'immediate' })} />
+        </Section>
+        <Section id="section-cards-pics" title="Card Pictures" icon={Palette} open={open.pics} onToggle={() => setOpen((o) => ({ ...o, pics: !o.pics }))}>
+          <CardImagesForm settings={s} onChange={(images) => dispatch({ type: 'UPDATE_CARD_SETTINGS', patch: { images } }, { persist: 'immediate' })} />
         </Section>
       </div>
       <Section id="section-cards-tools" title="Minigame Transfers" icon={Layers} open={open.tools} onToggle={() => setOpen((o) => ({ ...o, tools: !o.tools }))}>

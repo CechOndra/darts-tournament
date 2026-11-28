@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { CARD_BY_ID, CARD_TYPES, type CardTypeId } from '../../engine/cardCatalog.ts';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { CARD_BY_ID, CARD_TYPES, RARITY_LABEL, type CardRarity, type CardTypeId } from '../../engine/cardCatalog.ts';
 import { hashString, seededRandom } from '../../engine/cardPool.ts';
 import { pickWeighted } from '../../engine/cards.ts';
 import { useRarityOf } from '../../hooks/useCardLook.ts';
@@ -37,7 +37,7 @@ function animate(durationMs: number, frame: (p: number) => void, done: () => voi
  * CS2-style case opening: a 50-tile strip built from the pool weights, the rolled card
  * at tile #42 with legendary near-miss decoys beside it, decelerating under a gold marker.
  */
-export function CaseOpening({ winner, seed, candidates, durationMs = 5500, onDone }: { winner: CardTypeId; seed: string; candidates: Candidate[]; durationMs?: number; onDone: () => void }) {
+export function CaseOpening({ winner, seed, candidates, durationMs = 5500, hidePowers = false, onDone }: { winner: CardTypeId; seed: string; candidates: Candidate[]; durationMs?: number; /** Show only the rarity of each tile (the power is revealed afterwards). */ hidePowers?: boolean; onDone: () => void }) {
   const stripRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const doneRef = useRef(onDone);
@@ -86,11 +86,23 @@ export function CaseOpening({ winner, seed, candidates, durationMs = 5500, onDon
         {tiles.list.map((id, i) => {
           const color = RARITY_VAR[rarityOf(id)];
           return (
-            <div key={i} className="relative flex shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-md bg-bg-elevated pb-4" style={{ width: TILE, height: 200 }}>
-              <span style={{ color }}>
-                <CardIcon id={id} size={64} />
-              </span>
-              <span className="px-2 text-center font-display text-lg leading-tight font-bold uppercase">{CARD_BY_ID[id].name}</span>
+            <div
+              key={i}
+              className="relative flex shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-md bg-bg-elevated pb-4"
+              style={{ width: TILE, height: 200, background: hidePowers ? `color-mix(in srgb, ${color} 24%, var(--bg-elevated))` : undefined }}
+            >
+              {hidePowers ? (
+                <span className="px-2 text-center font-display text-3xl font-bold tracking-widest uppercase" style={{ color }}>
+                  {RARITY_LABEL[rarityOf(id)]}
+                </span>
+              ) : (
+                <>
+                  <span style={{ color }}>
+                    <CardIcon id={id} size={64} />
+                  </span>
+                  <span className="px-2 text-center font-display text-lg leading-tight font-bold uppercase">{CARD_BY_ID[id].name}</span>
+                </>
+              )}
               <span className="absolute inset-x-0 bottom-0 h-3" style={{ background: color }} />
             </div>
           );
@@ -102,32 +114,33 @@ export function CaseOpening({ winner, seed, candidates, durationMs = 5500, onDon
 }
 
 /** Prize wheel: slices sized by pool weight, physics-style deceleration, peg ticks. */
-export function SpinWheel({ winner, seed, candidates, durationMs = 5500, onDone }: { winner: CardTypeId; seed: string; candidates: Candidate[]; durationMs?: number; onDone: () => void }) {
+export function SpinWheel({ winner, seed, candidates, durationMs = 5500, hidePowers = false, onDone }: { winner: CardTypeId; seed: string; candidates: Candidate[]; durationMs?: number; /** One slice per rarity instead of per power. */ hidePowers?: boolean; onDone: () => void }) {
   const wheelRef = useRef<SVGGElement>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
   const rarityOf = useRarityOf();
 
+  const keyOf = useCallback((id: CardTypeId): string => (hidePowers ? rarityOf(id) : id), [hidePowers, rarityOf]);
   const slices = useMemo(() => {
-    const byType = new Map<CardTypeId, number>();
-    for (const c of candidates) byType.set(c.cardTypeId, (byType.get(c.cardTypeId) ?? 0) + c.weight);
-    if (!byType.has(winner)) byType.set(winner, 1);
+    const byType = new Map<string, number>();
+    for (const c of candidates) byType.set(keyOf(c.cardTypeId), (byType.get(keyOf(c.cardTypeId)) ?? 0) + c.weight);
+    if (!byType.has(keyOf(winner))) byType.set(keyOf(winner), 1);
     const total = [...byType.values()].reduce((a, b) => a + b, 0);
     let angle = 0;
     return [...byType.entries()].map(([id, w]) => {
       const sweep = (w / total) * 360;
-      const s = { id, start: angle, sweep };
+      const s = { key: id, start: angle, sweep };
       angle += sweep;
       return s;
     });
-  }, [candidates, winner]);
+  }, [candidates, winner, keyOf]);
 
   const target = useMemo(() => {
     const rand = seededRandom(hashString(seed));
-    const s = slices.find((x) => x.id === winner)!;
+    const s = slices.find((x) => x.key === keyOf(winner))!;
     const inside = s.start + s.sweep * (0.2 + rand() * 0.6);
     return 360 * 6 + (360 - inside); // pointer at 12 o'clock
-  }, [slices, winner, seed]);
+  }, [slices, winner, seed, keyOf]);
 
   useEffect(() => {
     const g = wheelRef.current;
@@ -162,9 +175,9 @@ export function SpinWheel({ winner, seed, candidates, durationMs = 5500, onDone 
           {slices.map((s, i) => {
             const large = s.sweep > 180 ? 1 : 0;
             const mid = s.start + s.sweep / 2;
-            const color = RARITY_VAR[rarityOf(s.id)];
+            const color = RARITY_VAR[hidePowers ? (s.key as CardRarity) : rarityOf(s.key as CardTypeId)];
             return (
-              <g key={s.id}>
+              <g key={s.key}>
                 <path
                   d={slices.length === 1 ? `M ${R} 0 A ${R} ${R} 0 1 1 ${R - 0.01} 0 Z` : `M ${R} ${R} L ${point(s.start)} A ${R} ${R} 0 ${large} 1 ${point(s.start + s.sweep)} Z`}
                   fill={i % 2 ? 'var(--bg-elevated)' : 'var(--bg-surface)'}
@@ -179,7 +192,7 @@ export function SpinWheel({ winner, seed, candidates, durationMs = 5500, onDone 
                   fill={color}
                   style={{ font: '600 15px var(--font-display)', textTransform: 'uppercase' }}
                 >
-                  {s.sweep > 16 ? CARD_BY_ID[s.id].name.slice(0, 16) : ''}
+                  {s.sweep > 16 ? (hidePowers ? RARITY_LABEL[s.key as CardRarity] : CARD_BY_ID[s.key as CardTypeId].name.slice(0, 16)) : ''}
                 </text>
               </g>
             );

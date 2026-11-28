@@ -1,0 +1,281 @@
+/* ==========================================================================
+   Extra looks: "arcade" and "premium"  (the original look is "classic" in power-card.css and is untouched)
+   Use:   renderCard(card, { look: "arcade" | "premium", tone: "navy" | "slate" | "graphite" | "green" })
+   Tier colours (silver / cyan / gold) are shared with classic via the .pc-r-* classes.
+   Card backs: renderBack({ variant: "board" | "emblem" | "lattice", tone })
+   ========================================================================== */
+
+/* ---------- tones (body colours) ---------- */
+.pc-card.pc-v2,.pc-bk.pc-v2{
+  --pc2-b1:#2b303a; --pc2-b2:#0e1116; --pc2-panel:rgba(0,0,0,.4); --pc2-art1:#3b4350; --pc2-art2:#12151b;
+  --pc2-ink:#f2f5f9; --pc2-ink2:#aeb7c5; --pc2-line:rgba(255,255,255,.16);
+  color:var(--pc2-ink);
+}
+.pc-v2.pc-tone-navy{
+  --pc2-b1:#17488f; --pc2-b2:#071a3a; --pc2-panel:rgba(3,12,32,.62); --pc2-art1:#3a86f0; --pc2-art2:#0a2a5c;
+  --pc2-ink:#eaf3ff; --pc2-ink2:#9fbbe6; --pc2-line:rgba(255,255,255,.22);
+}
+/* navy gets bluer with rarity: common is calmer, rare is full navy */
+.pc-v2.pc-tone-navy.pc-r-common{
+  --pc2-b1:#294466; --pc2-b2:#0b1522; --pc2-panel:rgba(3,9,18,.52); --pc2-art1:#3c5c88; --pc2-art2:#0d1a2b;
+  --pc2-ink2:#a9bad3; --pc2-line:rgba(215,228,250,.2);
+}
+.pc-v2.pc-tone-navy.pc-r-uncommon{
+  --pc2-b1:#1e4684; --pc2-b2:#08182f; --pc2-art1:#3a78d0; --pc2-art2:#0b2549;
+}
+/* WHEN colour per tier (distinct from the body text) */
+.pc-v2{--pc2-when:#9ccbff}  /* same WHEN colour on every tier */
+
+/* ---------- shared structure ---------- */
+.pc2-frame{height:100%;border-radius:.8em;padding:.6em;display:flex;flex-direction:column;gap:.55em;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,var(--pc2-b1),var(--pc2-b2))}
+.pc2-head{display:flex;justify-content:space-between;align-items:center;gap:.4em}
+.pc2-name{text-transform:uppercase;font-family:var(--pc-ft,"Bebas Neue"),sans-serif;font-size:calc(1.95em * var(--pc-ts,1));line-height:1;letter-spacing:.04em;white-space:nowrap}
+.pc2-gem{width:1.25em;height:1.25em;color:var(--pc-accent);filter:drop-shadow(0 0 .4em rgba(var(--pc-glow),.8))}
+
+.pc2-artwrap{position:relative;flex:0 0 34%}
+.pc2-art{position:absolute;inset:0;border-radius:.6em;overflow:hidden;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 50%,var(--pc2-art1),var(--pc2-art2) 80%);
+  box-shadow:0 0 0 .14em rgba(var(--pc-glow),.75) inset,0 .2em .7em rgba(0,0,0,.4) inset}
+.pc2-board{position:absolute;inset:0;width:100%;height:100%;color:rgba(255,255,255,.26)}
+.pc2-orb{position:relative;width:30%;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;color:var(--pc-accent);
+  background:radial-gradient(circle,rgba(4,8,14,.85),rgba(4,8,14,.55) 72%,transparent 74%);filter:drop-shadow(0 0 .45em rgba(var(--pc-glow),.85))}
+.pc2-orb .pc-ic{width:76%;height:76%}
+.pc2-glyph{font-family:var(--pc-ft,"Bebas Neue"),sans-serif;font-size:2.5em;line-height:1;letter-spacing:.04em;padding-top:.04em}
+
+/* type badge: the front-most thing on the card */
+.pc2-kindwrap{position:absolute;left:50%;bottom:0;transform:translate(-50%,52%);z-index:6}
+.pc2-kind{display:inline-flex;align-items:center;gap:.4em;white-space:nowrap;font-weight:700;letter-spacing:.16em}
+.pc2-kind .pc-ic{width:1.15em;height:1.15em}
+
+.pc2-body{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:.4em;padding:1.75em .75em .55em;text-align:center;
+  border-radius:.6em;background:var(--pc2-panel);border:1px solid var(--pc2-line)}
+.pc2-effect{margin:0;font-weight:700;font-size:1.42em;line-height:1.06}
+/* WHEN / LIMIT: no label chips, just an icon + colour */
+.pc2-rule{display:grid;grid-template-columns:auto 1fr;gap:.45em;align-items:center;font-weight:600;font-size:1.12em;line-height:1.1}
+.pc2-rule .pc-ic{width:1.2em;height:1.2em}
+.pc2-when{display:block;text-align:center;color:var(--pc2-when);font-weight:700;padding-bottom:.5em;border-bottom:1px solid rgba(var(--pc-glow),.5)}
+.pc2-limit{color:var(--pc2-ink2);padding-top:.5em;border-top:1px solid var(--pc2-line)}
+.pc2-foot{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.8em;letter-spacing:.12em;color:var(--pc2-ink2)}
+.pc2-tier{display:inline-flex;align-items:center;gap:.35em;color:var(--pc2-ink)}
+.pc2-tier .pc-ic{width:1.15em;height:1.15em;color:var(--pc-accent)}
+
+/* ------------------------------------------------------------------ ARCADE */
+.pc-card.pc-look-arcade{--pc-edge-n:.62;--pc-cost-pad:.8;padding:var(--pc-edge-w,.62em);
+  box-shadow:0 0 0 .16em #05070b,0 1.4em 2.4em -.6em rgba(0,0,0,.75),0 0 2.6em -.1em rgba(var(--pc-glow),calc(.9*var(--pc-gk,1))),0 0 0 1px rgba(255,255,255,.25) inset}
+.pc-look-arcade .pc2-frame{border-radius:.7em;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 .55em,transparent .55em 1.1em),linear-gradient(180deg,var(--pc2-b1),var(--pc2-b2));
+  box-shadow:0 0 0 .14em #05070b inset,0 0 0 .3em rgba(var(--pc-glow),.35) inset}
+.pc-look-arcade .pc2-name{display:inline-block;transform:skewX(-8deg);color:#fff;
+  text-shadow:.07em .07em 0 rgba(0,0,0,.7),0 0 .6em rgba(var(--pc-glow),.75)}
+.pc-look-arcade .pc2-art{box-shadow:0 0 0 .16em #05070b,0 0 0 .3em var(--pc-accent),0 0 1.4em rgba(var(--pc-glow),.65) inset;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(var(--pc-glow),.26) 0 5deg,transparent 5deg 10deg),
+             radial-gradient(circle at 50% 50%,var(--pc2-art1),var(--pc2-art2) 82%)}
+.pc-look-arcade .pc2-artwrap{margin:.3em .3em 0}
+.pc-look-arcade .pc2-board{color:rgba(var(--pc-glow),.55)}
+.pc-look-arcade .pc2-orb{background:radial-gradient(circle,#10141b,#05070b);box-shadow:0 0 0 .13em var(--pc-accent),0 0 1.2em rgba(var(--pc-glow),.95);filter:none}
+.pc-look-arcade .pc2-glyph{color:#fff;text-shadow:0 0 .35em rgba(var(--pc-glow),1)}
+/* ribbon banner with notched ends: bigger than the old chip, so it reads as the card's type */
+.pc-look-arcade .pc2-kind{font-size:.86em;padding:.36em 1.6em;background:var(--pc-accent);color:#05070b;
+  clip-path:polygon(0 0,100% 0,calc(100% - .8em) 50%,100% 100%,0 100%,.8em 50%)}
+.pc-look-arcade .pc2-kindwrap{filter:drop-shadow(0 .14em 0 #05070b) drop-shadow(0 .3em .45em rgba(0,0,0,.65)) drop-shadow(0 0 .5em rgba(var(--pc-glow),.85))}
+.pc-look-arcade .pc2-effect{color:#fff;text-shadow:0 .07em 0 rgba(0,0,0,.65)}
+.pc-look-arcade .pc-sheen{animation-duration:2.6s}
+
+/* ------------------------------------------------------------------ PREMIUM */
+.pc-card.pc-look-premium{--pc-edge-n:.26;--pc-cost-pad:1.05;padding:var(--pc-edge-w,.26em);
+  box-shadow:0 1.2em 2.4em -.8em rgba(0,0,0,.75),0 0 0 1px rgba(0,0,0,.45),0 0 1.8em -.6em rgba(var(--pc-glow),calc(.55*var(--pc-gk,1)))}
+.pc-look-premium .pc2-frame{border-radius:.85em;padding:.95em .9em .8em;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+             linear-gradient(180deg,var(--pc2-b1),var(--pc2-b2));
+  background-blend-mode:soft-light,normal}
+.pc-look-premium .pc2-frame::before{content:"";position:absolute;inset:.4em;border:1px solid rgba(var(--pc-glow),.6);border-radius:.55em;pointer-events:none}
+.pc-look-premium .pc2-name{font-size:1.85em;letter-spacing:.1em}
+.pc-look-premium .pc2-name::after{content:"";display:block;height:1px;margin-top:.2em;background:linear-gradient(90deg,var(--pc-accent),transparent)}
+.pc-look-premium .pc2-gem{width:.8em;height:.8em;transform:rotate(45deg);background:var(--pc-accent);filter:drop-shadow(0 0 .35em rgba(var(--pc-glow),.9));margin-right:.3em}
+.pc-look-premium .pc2-art{border-radius:.4em;box-shadow:0 0 0 1px rgba(var(--pc-glow),.75) inset,0 0 2.2em rgba(0,0,0,.75) inset}
+.pc-look-premium .pc2-artwrap::before{content:"";position:absolute;inset:-.28em;border:1px solid rgba(var(--pc-glow),.3);border-radius:.55em;pointer-events:none}
+.pc-look-premium .pc2-board{color:rgba(255,255,255,.17)}
+.pc-look-premium .pc2-orb{background:radial-gradient(circle,rgba(4,8,14,.9),rgba(4,8,14,.6) 72%,transparent 74%);box-shadow:0 0 0 1px var(--pc-accent),0 0 1.4em rgba(var(--pc-glow),.45)}
+.pc-look-premium .pc2-kind{padding:.4em 1.5em;border:1px solid var(--pc-accent);border-radius:99px;color:var(--pc-accent);letter-spacing:.24em;font-size:.88em;
+  background:linear-gradient(#1c2028,#0a0c10);box-shadow:0 .25em .6em rgba(0,0,0,.6)}
+.pc-look-premium .pc2-body{background:rgba(0,0,0,.3);border-color:rgba(var(--pc-glow),.22)}
+.pc-look-premium .pc2-effect{font-weight:600;letter-spacing:.01em}
+.pc-look-premium .pc-sheen{animation-duration:5.5s}
+
+/* ---------- dartboard art (card.board = even | odd | double | triple) ---------- */
+.pc2-dboard{position:relative;height:84%;width:auto;aspect-ratio:1;transform:translateY(-6%);filter:drop-shadow(0 0 .5em rgba(var(--pc-glow),.55))}
+.pc2-dboard .rim{fill:#05070b;stroke:rgba(var(--pc-glow),.7);stroke-width:1.6}
+.pc2-dboard .w,.pc2-dboard .r{stroke:#05070b;stroke-width:.9}
+.pc2-dboard .w.dim{fill:rgba(255,255,255,.05)}
+.pc2-dboard .w.dim.alt{fill:rgba(255,255,255,.16)}
+.pc2-dboard .r.dim{fill:rgba(255,255,255,.1)}
+.pc2-dboard .w.lit{fill:var(--pc-accent);fill-opacity:.9}
+.pc2-dboard .r.lit{fill:#fff;fill-opacity:.95}
+.pc2-dboard[data-mode="double"] .r.lit,.pc2-dboard[data-mode="triple"] .r.lit{fill:var(--pc-accent);fill-opacity:1}
+.pc2-dboard .bull1{fill:rgba(var(--pc-glow),.55);stroke:#05070b;stroke-width:.9}
+.pc2-dboard .bull2{fill:#fff;stroke:#05070b;stroke-width:.9}
+
+/* ---------- RARE: brushed-gold frame + gold foil title (kept simple) ---------- */
+.pc-card.pc-v2.pc-r-rare{
+  background:
+    repeating-linear-gradient(115deg,rgba(255,255,255,.06) 0 1px,transparent 1px 3px),
+    linear-gradient(135deg,var(--pc-r1,#fff7cf) 0%,var(--pc-r2,#f8d95e) 10%,var(--pc-r3,#b8860b) 26%,var(--pc-r4,#ffeaa3) 42%,var(--pc-r5,#8f6206) 58%,var(--pc-r6,#f4cf55) 74%,var(--pc-r7,#fff1b0) 88%,var(--pc-r8,#c99a1b) 100%)}
+.pc-card.pc-look-arcade.pc-r-rare{box-shadow:0 0 0 .16em #05070b,0 1.4em 2.4em -.6em rgba(0,0,0,.75),0 0 2.2em -.2em rgba(var(--pc-glow),calc(.65*var(--pc-gk,1))),
+    inset .1em .1em .18em rgba(255,255,255,.8),inset -.1em -.1em .18em rgba(110,70,0,.85)}
+.pc-card.pc-look-premium.pc-r-rare{box-shadow:0 1.2em 2.4em -.8em rgba(0,0,0,.8),0 0 0 1px rgba(0,0,0,.5),0 0 1.8em -.5em rgba(var(--pc-glow),calc(.5*var(--pc-gk,1))),
+    inset .08em .08em .14em rgba(255,255,255,.8),inset -.08em -.08em .14em rgba(110,70,0,.85)}
+.pc-r-rare.pc-v2 .pc2-name{color:transparent;background:linear-gradient(180deg,var(--pc-t1,#fff6c4) 0%,var(--pc-t2,#ffd24d) 42%,var(--pc-t3,#b8860b) 54%,var(--pc-t4,#ffe28a) 78%,var(--pc-t5,#fff3b8) 100%);
+  -webkit-background-clip:text;background-clip:text;text-shadow:none;filter:drop-shadow(0 .06em 0 rgba(0,0,0,.75))}
+.pc-r-rare.pc-v2 .pc-sheen{background:linear-gradient(115deg,transparent 36%,rgba(255,250,215,.9) 50%,transparent 64%);background-size:300% 100%}
+
+/* ------------------------------------------------------------------ CARD BACKS */
+.pc-bk{width:100%;aspect-ratio:5/7;position:relative;border-radius:5%/3.57%;padding:2.4%;box-sizing:border-box;
+  background:linear-gradient(135deg,#eef2f8,#8a9bb3 38%,#dfe7f2 56%,#7d8fa8);box-shadow:0 0 0 1px rgba(0,0,0,.55),0 1.2em 2.4em -.8em rgba(0,0,0,.8)}
+.pc-face .pc-bk{height:100%;aspect-ratio:auto}
+.pc-bk-in{position:relative;width:100%;height:100%;border-radius:4%/2.9%;overflow:hidden;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 42%,var(--pc2-b1),var(--pc2-b2) 82%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6) inset,0 0 0 .5vmin rgba(255,255,255,.07) inset}
+.pc-bk svg.pc-bk-svg{position:absolute;inset:0;width:100%;height:100%}
+/* A: dartboard */
+.pc-bk.pc-bk-board svg.pc-bk-svg{inset:auto;left:50%;top:50%;width:87%;height:auto;aspect-ratio:1;transform:translate(-50%,-50%)}
+.pc-bk-board .rim{fill:none;stroke:rgba(223,232,244,.65);stroke-width:1.4}
+.pc-bk-board .w,.pc-bk-board .r{stroke:rgba(0,0,0,.55);stroke-width:.7}
+.pc-bk-board .bw0{fill:rgba(0,0,0,.38)} .pc-bk-board .bw1{fill:rgba(255,255,255,.08)}
+.pc-bk-board .rw0{fill:rgba(255,255,255,.2)} .pc-bk-board .rw1{fill:rgba(255,255,255,.07)}
+.pc-bk-board .bull1{fill:rgba(223,232,244,.5);stroke:rgba(0,0,0,.55);stroke-width:.7}
+.pc-bk-board .bull2{fill:#eef3fa;stroke:rgba(0,0,0,.55);stroke-width:.7}
+
+/* ------------------------------------------------------------------ FLAT (solid colours, rarity colour on the edge only)
+   renderCard(card, { look: "flat" }); card.image = "url" fills the art window. */
+.pc-card.pc-look-flat{--pc-edge-n:.5;--pc-cost-pad:.72;padding:var(--pc-edge-w,.5em);border-radius:.9em;background:var(--pc-accent);color:#f3f1ea;--pc-gk:0;
+  box-shadow:0 1.1em 2em -.7em rgba(0,0,0,.75),0 0 0 1px rgba(0,0,0,.6),0 0 1.6em -.1em rgba(var(--pc-glow),calc(.55*var(--pc-gk)))}
+.pc-look-flat.pc-r-uncommon{--pc-gk:1}
+.pc-look-flat .pc-sheen,.pc-look-flat .pc-glare{opacity:.5}
+.pc-look-flat:not(.pc-r-legendary) .pc-sheen{display:none}
+.pc-r-common.pc-look-flat{--pc-accent:#aeb6c2}
+.pc-r-uncommon.pc-look-flat{--pc-accent:#3cc6e6}
+.pc-r-rare.pc-look-flat{--pc-accent:#c768e8;--pc-glow:214,107,255;--pc-gk:.6}
+.pcf-frame{height:100%;border-radius:.55em;background:var(--pcf-frame,#1d1e23);padding:.55em;display:flex;flex-direction:column;gap:.5em;
+  box-shadow:inset 0 0 0 .12em rgba(0,0,0,.55),inset 0 .25em .6em rgba(0,0,0,.45)}
+.pcf-title{text-transform:uppercase;font-family:var(--pc-ft,"Bebas Neue"),sans-serif;font-size:calc(1.9em * var(--pc-ts,1));line-height:1;letter-spacing:.06em;text-align:center;padding:.22em .3em .16em;
+  background:var(--pcf-plate,#2b2d34);border-radius:.3em;box-shadow:inset 0 -.12em 0 rgba(0,0,0,.4),0 .08em 0 rgba(255,255,255,.06)}
+.pcf-artwrap{position:relative;flex:0 0 36%}
+.pcf-art{position:absolute;inset:0;border-radius:.35em;overflow:hidden;display:grid;place-items:center;background:var(--pcf-art,#121317);
+  box-shadow:0 0 0 .14em #08090b,inset 0 .3em .7em rgba(0,0,0,.65),inset 0 -.1em .3em rgba(255,255,255,.04)}
+.pcf-img{width:100%;height:100%;object-fit:cover;display:block}
+.pcf-art .pc2-dboard{height:68%;transform:translateY(-7%);filter:none}
+.pcf-art .pc2-dboard .rim{fill:#0b0c0e;stroke:var(--pc-accent);stroke-width:1.4}
+.pcf-art .pc2-orb{width:27%;transform:translateY(-9%);background:#0b0c0e;filter:none;box-shadow:0 0 0 .14em var(--pc-accent)}
+.pcf-kind{position:absolute;left:50%;bottom:0;transform:translate(-50%,52%);z-index:6;display:inline-flex;align-items:center;gap:.4em;white-space:nowrap;
+  font-weight:700;font-size:.86em;letter-spacing:.18em;padding:.34em 1.5em;background:#e9e3d2;color:#17181c;border-radius:.2em;
+  box-shadow:0 0 0 .13em #08090b,0 .25em .4em rgba(0,0,0,.55)}
+.pcf-kind .pc-ic{width:1.15em;height:1.15em}
+.pcf-body{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:.4em;padding:1.6em .7em .55em;text-align:center;
+  background:var(--pcf-plate,#2b2d34);border-radius:.35em;box-shadow:inset 0 .2em .5em rgba(0,0,0,.4)}
+.pcf-when{color:#e8c872;font-weight:700;font-size:1.12em;line-height:1.1;padding-bottom:.45em;border-bottom:1px solid rgba(255,255,255,.14)}
+.pcf-effect{margin:0;font-weight:700;font-size:1.42em;line-height:1.06;color:#fff}
+.pcf-limit{display:grid;grid-template-columns:auto 1fr;gap:.45em;align-items:center;font-weight:600;font-size:1.12em;line-height:1.1;color:#a3a8b2;
+  padding-top:.45em;border-top:1px solid rgba(255,255,255,.14)}
+.pcf-limit .pc-ic{width:1.2em;height:1.2em}
+.pcf-foot{display:flex;justify-content:space-between;font-weight:700;font-size:.8em;letter-spacing:.12em;color:#8a8f99;text-transform:uppercase}
+
+/* Flat uncommon: smooth holo (follows the tilt), spread wide and kept mostly to the edges so the text stays readable */
+.pc-look-flat.pc-r-uncommon{--pc-sheen:.3}
+.pc-look-flat.pc-r-uncommon .pc-foil{
+  background:linear-gradient(105deg,rgba(var(--pc-glow-deep,40,110,255),.55) 0%,rgba(var(--pc-glow-mid,90,190,255),.6) 28%,rgba(var(--pc-glow-hi,150,235,255),.7) 50%,rgba(var(--pc-glow-mid,90,190,255),.6) 72%,rgba(var(--pc-glow-deep,40,110,255),.55) 100%);
+  background-size:300% 100%;background-position:var(--pc-mx,50%) 0;filter:none;
+  -webkit-mask-image:radial-gradient(ellipse farthest-corner at 50% 55%,rgba(0,0,0,.22) 0%,rgba(0,0,0,.27) 25%,rgba(0,0,0,.4) 45%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.85) 82%,#000 100%);
+  mask-image:radial-gradient(ellipse farthest-corner at 50% 55%,rgba(0,0,0,.22) 0%,rgba(0,0,0,.27) 25%,rgba(0,0,0,.4) 45%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.85) 82%,#000 100%)}
+.pc-look-flat.pc-r-rare{--pc-glow-deep:110,70,255;--pc-glow-mid:200,100,255;--pc-glow-hi:255,160,230}
+.pc-look-flat.pc-r-uncommon .pc-glare,.pc-look-flat.pc-r-rare .pc-glare{opacity:calc(var(--pc-hover,0) * .5)}
+
+/* ------------------------------------------------------------------ OPTIONS (applyOptions) */
+.pc-artimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.pc-card[data-artline] :is(.pc2-art,.pcf-art,.pc-art){box-shadow:0 0 0 var(--pc-ringw) var(--pc-ringc),inset 0 .25em .6em rgba(0,0,0,.45)}
+
+.pc-cost{position:absolute;z-index:8;display:inline-flex;align-items:center;gap:.22em;padding:.2em .62em .1em .5em;border-radius:99px;
+  background:#0b0d12;color:#fff;font:400 1.6em/1 var(--pc-ft,"Bebas Neue"),sans-serif;letter-spacing:.03em;
+  --cost-c:var(--pc-accent);
+  box-shadow:0 0 0 .1em var(--cost-c),0 .15em .4em rgba(0,0,0,.6),0 0 .7em rgba(var(--pc-glow),calc(.45*var(--pc-gk,1)))}
+.pc-card{--pc-cost-pad:.7}
+.pc-card.pc-look-classic{--pc-cost-pad:.95;--pc-cost-dy:2.45}  /* classic: sits on the art's top corner (header has no room) */
+.pc-has-cost[data-costpos^="in-"] .pcf-title{padding-left:calc(2.8em * max(1, var(--pc-cs,1)));padding-right:calc(2.8em * max(1, var(--pc-cs,1)));white-space:nowrap}
+.pc-cost[data-pos="out-right"]{top:-.7em;right:-.55em}
+.pc-cost[data-pos="out-left"]{top:-.7em;left:-.55em}
+/* inside = stays within the card (use this for printing); offsets are in card units so they follow the edge width */
+.pc-cost[data-pos^="in-"]{font-size:calc(var(--pc-u) * 1.4 * var(--pc-cs,1));top:calc(var(--pc-u) * (var(--pc-edge-n) + var(--pc-cost-pad) + var(--pc-cost-dy,0)))}
+.pc-cost[data-pos="in-right"]{right:calc(var(--pc-u) * (var(--pc-edge-n) + var(--pc-cost-pad)))}
+.pc-cost[data-pos="in-left"]{left:calc(var(--pc-u) * (var(--pc-edge-n) + var(--pc-cost-pad)))}
+.pc-cost .pc-ic{width:.8em;height:.8em;color:var(--cost-c)}
+.pc-cost[data-color="neutral"]{--cost-c:#cfd6e0;box-shadow:0 0 0 .1em var(--cost-c),0 .15em .4em rgba(0,0,0,.6)}
+.pc-cost[data-noicon]{padding:.2em .7em .1em}
+/* 3D circle */
+.pc-cost[data-shape="orb"]{width:1.75em;height:1.75em;padding:0;gap:.04em;justify-content:center;flex-direction:column;overflow:hidden;color:#0b0d12;
+  background:radial-gradient(circle at 34% 26%,color-mix(in srgb,var(--cost-c) 35%,#fff) 0%,var(--cost-c) 40%,color-mix(in srgb,var(--cost-c) 45%,#000) 100%);
+  box-shadow:inset -.1em -.16em .26em rgba(0,0,0,.5),inset .08em .1em .16em rgba(255,255,255,.55),0 .14em .4em rgba(0,0,0,.65),0 0 0 .06em rgba(0,0,0,.55)}
+.pc-cost[data-shape="orb"]::before{content:"";position:absolute;left:18%;top:8%;width:46%;height:28%;border-radius:50%;background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,0));pointer-events:none}
+.pc-cost[data-shape="orb"] span{position:relative;line-height:.9;padding-top:.08em}
+.pc-cost[data-shape="orb"] .pc-ic{width:.5em;height:.5em;color:#0b0d12;opacity:.8;margin-top:.05em}
+.pc-cost[data-shape="orb"][data-noicon] span{font-size:1.15em;padding-top:.1em}
+.pc-has-cost .pc2-gem{display:none}
+.pc-has-cost[data-costpos="in-left"] .pc2-name{margin-left:3em}
+
+.pc-card[data-kshow="0"] :is(.pc2-kindwrap,.pcf-kind,.pc-kind){display:none}
+.pc-card[data-kshape] :is(.pc2-kind,.pcf-kind,.pc-kind){clip-path:none;border-radius:0}
+.pc-card[data-kshape="ribbon"] :is(.pc2-kind,.pcf-kind,.pc-kind){clip-path:polygon(0 0,100% 0,calc(100% - .8em) 50%,100% 100%,0 100%,.8em 50%);padding:.4em 2em}
+.pc-card[data-kshape="plate"] :is(.pc2-kind,.pcf-kind,.pc-kind){border-radius:.25em;padding:.36em 1.4em}
+.pc-card[data-kshape="pill"] :is(.pc2-kind,.pcf-kind,.pc-kind){border-radius:999px;padding:.36em 1.5em}
+.pc-card[data-kcolor] :is(.pc2-kind,.pcf-kind,.pc-kind){isolation:isolate;border:0}
+.pc-card[data-kcolor] :is(.pc2-kind,.pc-kind){position:relative}
+.pc-card[data-kcolor="fill"] :is(.pc2-kind,.pcf-kind,.pc-kind){background:var(--pc-accent);color:#07090d}
+.pc-card[data-kcolor="neutral"] :is(.pc2-kind,.pcf-kind,.pc-kind){background:#e9e3d2;color:#17181c}
+.pc-card[data-kcolor="outline"] :is(.pc2-kind,.pcf-kind,.pc-kind){background:var(--pc-accent);color:#fff}
+.pc-card[data-kcolor="outline"] :is(.pc2-kind,.pcf-kind,.pc-kind)::before{content:"";position:absolute;inset:.14em;z-index:-1;background:#0b0d12;border-radius:inherit;clip-path:inherit}
+/* card numbers are hidden unless options.showNumber */
+.pc-card[data-nonum] :is(.pc-foot,.pc2-foot,.pcf-foot)>span:last-child{display:none}
+.pc-card[data-nofoot] :is(.pc-foot,.pc2-foot,.pcf-foot){display:none}
+/* extra space beside the art window (options.artInset) */
+.pc-card[style*="--pc-ai"] .pc2-artwrap{margin-left:var(--pc-ai);margin-right:var(--pc-ai)}
+.pc-card.pc-look-arcade[style*="--pc-ai"] .pc2-artwrap{margin-left:calc(.3em + var(--pc-ai));margin-right:calc(.3em + var(--pc-ai))}
+.pc-card[style*="--pc-ai"] .pcf-artwrap{margin-left:var(--pc-ai);margin-right:var(--pc-ai)}
+.pc-card[style*="--pc-ai"] .pc-art{margin-left:var(--pc-ai);margin-right:var(--pc-ai)}
+/* move the art window lower (options.artDrop) */
+.pc-card[style*="--pc-ad"] :is(.pc2-artwrap,.pcf-artwrap,.pc-art){margin-top:var(--pc-ad)}
+.pc-card.pc-look-arcade[style*="--pc-ad"] .pc2-artwrap{margin-top:calc(.3em + var(--pc-ad))}
+/* subtle texture + scattered icons (sit under the holo layers) */
+.pc-tex,.pc-pat{position:absolute;inset:0;border-radius:inherit;pointer-events:none}
+.pc-tex{background-size:100% 100%;mix-blend-mode:overlay}
+.pc-pat{-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.pc-patglow{position:absolute;inset:0;border-radius:inherit;pointer-events:none;filter:blur(.3em);z-index:1}
+.pc-pat{z-index:1}
+/* layer order: card -> text -> scattered icons -> art window (icons never cover the picture) -> texture / holo */
+.pc-card :is(.pc2-artwrap,.pcf-artwrap,.pc-art){position:relative;z-index:2}
+.pc-card :is(.pc-tex,.pc-foil,.pc-sheen,.pc-glare){z-index:3}
+
+/* title bar: optional solid, darker bar above the texture/icons, optional rarity outline */
+.pc-card[data-tbar] .pcf-title{position:relative;z-index:4;background:color-mix(in srgb,var(--pcf-plate,#2b2d34),#000 calc(var(--pc-tb,0)*60%));
+  box-shadow:inset 0 -.12em 0 rgba(0,0,0,.4),0 .08em 0 rgba(255,255,255,.06)}
+.pc-card[data-tbar="line"] .pcf-title{box-shadow:inset 0 0 0 .12em var(--pc-accent),inset 0 -.2em 0 rgba(0,0,0,.35)}
+.pc-card[data-tbar]:not([data-tnoholo]) :is(.pc-foil,.pc-sheen,.pc-glare){z-index:5}
+.pc-card[data-costholo] .pc-cost{z-index:4}
+.pc-card[data-costholo] :is(.pc-foil,.pc-sheen,.pc-glare){z-index:5}
+.pc-cost[data-pos^="out-"]{font-size:calc(1.6em * var(--pc-cs,1))}
+
+/* ------------------------------------------------------------------ FLAT LEGENDARY
+   Molten edge (animated gradient built from the accent colour), pulsing glow, rainbow holo that follows the tilt, warm title. */
+.pc-r-legendary.pc-look-flat{--pc-accent:#e6b32e;--pc-glow:255,205,80;--pc-gk:1;--pc-sheen:.6;
+  background:linear-gradient(120deg,color-mix(in srgb,var(--pc-accent),#fff 60%) 0%,var(--pc-accent) 26%,color-mix(in srgb,var(--pc-accent),#000 48%) 50%,color-mix(in srgb,var(--pc-accent),#fff 18%) 72%,color-mix(in srgb,var(--pc-accent),#fff 62%) 100%);
+  background-size:300% 100%;animation:pc-lg-edge 7s ease-in-out infinite,pc-lg-glow 3.2s ease-in-out infinite}
+@keyframes pc-lg-edge{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
+@keyframes pc-lg-glow{0%,100%{box-shadow:0 1.1em 2em -.7em rgba(0,0,0,.75),0 0 0 1px rgba(0,0,0,.6),0 0 1.4em -.1em rgba(var(--pc-glow),calc(.5*var(--pc-gk)))}
+  50%{box-shadow:0 1.1em 2em -.7em rgba(0,0,0,.75),0 0 0 1px rgba(0,0,0,.6),0 0 2.6em .1em rgba(var(--pc-glow),calc(.85*var(--pc-gk)))}}
+.pc-look-flat.pc-r-legendary .pc-foil{
+  background:linear-gradient(115deg,#ff0080 8%,#ffbe00 24%,#00ff8a 40%,#00cfff 56%,#7a5cff 72%,#ff00c8 90%);
+  background-size:260% 260%;background-position:var(--pc-mx,50%) var(--pc-my,50%);filter:saturate(.95);
+  -webkit-mask-image:radial-gradient(ellipse farthest-corner at 50% 55%,rgba(0,0,0,.34) 0%,rgba(0,0,0,.4) 30%,rgba(0,0,0,.6) 55%,rgba(0,0,0,.85) 78%,#000 100%);
+  mask-image:radial-gradient(ellipse farthest-corner at 50% 55%,rgba(0,0,0,.34) 0%,rgba(0,0,0,.4) 30%,rgba(0,0,0,.6) 55%,rgba(0,0,0,.85) 78%,#000 100%)}
+.pc-look-flat.pc-r-legendary .pc-glare{opacity:calc(var(--pc-hover,0) * .55)}
+.pc-look-flat.pc-r-legendary .pcf-title{color:#ffe7b8;text-shadow:0 0 .55em rgba(var(--pc-glow),.75),0 .06em 0 rgba(0,0,0,.5)}
+.pc-look-flat.pc-r-legendary .pcf-when{color:#ffc27a}
+@media (prefers-reduced-motion:reduce){.pc-r-legendary.pc-look-flat{animation:none}}

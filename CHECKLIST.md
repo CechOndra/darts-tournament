@@ -45,6 +45,15 @@ Measured values (fill in, then I rerun `npm run estimate` with them):
 - [ ] 3.8 Mock tournament: build with `python scripts/build-mock-dataset.py`, load it in Admin > Live > Test Tournament on a fresh 8-team doubles test tournament; look at stage, FUT cards and phone (logos, photos, nicknames)
 - [ ] 3.9 Upload a real player photo with the card icon in Admin > Teams (ideally a transparent PNG cut-out): check it on the FUT card, in the downloaded PNG (now 1632 x 2000), on the stage "next match" screen and the round avatar on a phone
 - [ ] 3.10 Read `docs/ASSET-SPEC.md` and tell me what is unclear or wrong before you design the frames
+- [ ] 3.11 New power cards: on the stage draw a card (dartboard back, spin, face-up, poof; click skips); the card that appears is the one in the team's hand. Check Common (grey), Uncommon (cyan), Rare (purple), Legendary (gold glow)
+- [ ] 3.12 Admin > Cards: upload a picture for one power (Card Pictures), see it on a second device and on the stage, then Remove it. Change something in Card Style, Save, reload: it stays and shows on stage and in #/print-cards
+- [ ] 3.13 Phone: drag the finger over a card in Cards tab (tilt), the motion-tilt button shows only on the phone; #/print-cards: test print one A4 sheet (colours kept, 63 x 88 mm)
+- [ ] 3.14 Old tournament with Silver cards: they show as Uncommon, admin rarity pickers say Uncommon
+- [ ] 3.15 Admin > Cards > Card Settings > Limit on playing cards: try No limit, Max cards played, Energy (per match / per leg). In Energy mode set a cost on one card, play cards in the scorer: the button says "Needs 2 energy (1 left)", the hand header shows "energy 1/3", cards show a cost badge, and per-leg energy comes back in the next leg
+- [ ] 3.16 Admin > Cards > Card Settings > Draw animation: pick Case opening and Spinning wheel and draw from Minigame Transfers; both should still work on the stage
+- [ ] 3.17 Admin > Cards > Card Settings > Draw shows (with Case opening or Spinning wheel): "Rarity, then reveal" (strip / wheel show only rarity names, then the card reveal animation) and "Rarity, then a pack" (pack in the rarity colour, click it on the stage; it opens by itself after 15 s). "The powers (as before)" also ends with the card reveal animation now. The card sways on its own for a few seconds after it lands
+- [ ] 3.18 Admin > Cards > Card Settings > "Same copies for every card of a rarity": type a number for Legendary, all Legendary cards get it; the per-card list below shows the same value
+- [ ] 3.19 Energy mode: the cost ball is red on a card the team cannot afford (guest page hand, scorer button), grey/white when it can
 
 ## 4. Older open items
 

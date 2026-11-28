@@ -1,9 +1,9 @@
 import { Printer } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { CardIcon, RARITY_VAR } from '../components/cards/PowerCard.tsx';
+import { PowerCard } from '../components/cards/PowerCard.tsx';
 import { RouteHeader } from '../components/RouteHeader.tsx';
 import { Button, Notice, SegmentedControl } from '../components/ui.tsx';
-import { CARD_BY_ID, CARD_TYPES, RARITY_LABEL, type CardTypeId } from '../engine/cardCatalog.ts';
+import { CARD_BY_ID, CARD_TYPES, type CardTypeId } from '../engine/cardCatalog.ts';
 import { cardConfig, printedCopies } from '../engine/cardConfig.ts';
 import { DEFAULT_CARDS } from '../engine/defaults.ts';
 import type { CardSettings } from '../engine/types.ts';
@@ -46,25 +46,9 @@ function useCustomFaces(): Partial<Record<CardTypeId, string>> {
 
 function PrintCard({ id, settings, face }: { id: CardTypeId; settings: CardSettings; face?: string }) {
   const card = CARD_BY_ID[id];
-  const cfg = cardConfig(settings, id);
-  const color = RARITY_VAR[cfg.rarity];
   return (
-    <div className="print-card relative flex flex-col overflow-hidden bg-print-paper text-print-ink" style={{ width: '63mm', height: '88mm' }}>
-      {face ? (
-        <img src={face} alt={card.name} className="h-full w-full object-cover" />
-      ) : (
-        <div className="m-[3mm] flex flex-1 flex-col items-center gap-[2mm] rounded-[2mm] border-[1.2mm] p-[3mm] text-center" style={{ borderColor: color }}>
-          <span className="text-[7pt] font-semibold tracking-widest uppercase" style={{ color }}>
-            {RARITY_LABEL[cfg.rarity]} · {cfg.pool === 'LOSER' ? 'Loser' : 'Winner'} pool
-          </span>
-          <span style={{ color }} className="mt-[2mm]">
-            <CardIcon id={id} size={64} />
-          </span>
-          <span className="font-display text-[15pt] leading-tight font-bold uppercase">{card.name}</span>
-          <span className="text-[8.5pt] leading-snug">{card.rules}</span>
-          <span className="mt-auto h-[3mm] w-full rounded-sm" style={{ background: color }} />
-        </div>
-      )}
+    <div className="print-card relative overflow-hidden bg-print-paper" style={{ width: '63mm', height: '88.2mm' }}>
+      {face ? <img src={face} alt={card.name} className="h-full w-full object-cover" /> : <PowerCard id={id} size="print" settings={settings} />}
     </div>
   );
 }

@@ -130,3 +130,24 @@ export function dataUrlBytes(dataUrl: string): number {
   const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
   return Math.floor((base64.length * 3) / 4);
 }
+
+export const CARD_ART_MAX_BYTES = 300 * 1024;
+
+/** Power card picture: cover-cropped (centered) to the art window `size` (w x h), WebP, shrunk until it fits ~300 KB. */
+export async function compressCardArt(file: Blob, [w, h]: [number, number]): Promise<string> {
+  let out = '';
+  for (const quality of [0.85, 0.7, 0.55, 0.4]) {
+    out = await render(
+      file,
+      (sw, sh) => {
+        const k = Math.max(w / sw, h / sh);
+        const dw = Math.round(sw * k);
+        const dh = Math.round(sh * k);
+        return { canvas: [w, h], dst: [Math.round((w - dw) / 2), Math.round((h - dh) / 2), dw, dh] };
+      },
+      quality,
+    );
+    if (dataUrlBytes(out) <= CARD_ART_MAX_BYTES) break;
+  }
+  return out;
+}

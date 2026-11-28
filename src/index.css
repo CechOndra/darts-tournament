@@ -43,12 +43,31 @@
   --surface-shadow: none;
 
   /* Power Card rarity (CS2-style rarity bars) */
-  --rarity-common: #9ca3af;
-  --rarity-silver: #e2e8f0;
-  --rarity-rare: #3b82f6;
-  --rarity-legendary: #f59e0b;
+  --rarity-common: #aeb6c2;
+  --rarity-uncommon: #2796ce;
+  --rarity-rare: #c768e8;
+  --rarity-legendary: #e6b32e;
 
-  /* Coin toss coin */
+  /* Energy mode: a card the team cannot afford gets a red cost ball. */
+.pc-card[data-short] .pc-cost {
+  --cost-c: #e5252a;
+  color: #fff;
+}
+.pc-card[data-short] .pc-cost[data-shape='orb'],
+.pc-card[data-short] .pc-cost[data-shape='orb'] .pc-ic {
+  color: #fff;
+}
+
+/* Booster pack idle motion (stage, rarity-first draws). */
+@keyframes pack-float {
+  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+  50% { transform: translateY(-14px) rotate(1.2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pack-idle { animation: none !important; }
+}
+
+/* Coin toss coin */
   --coin-shine: #fde68a;
   --coin-face: #f59e0b;
   --coin-edge: #b45309;
@@ -111,7 +130,7 @@
   --color-border-subtle: var(--border-subtle);
   --color-border-strong: var(--border-strong);
   --color-rarity-common: var(--rarity-common);
-  --color-rarity-silver: var(--rarity-silver);
+  --color-rarity-uncommon: var(--rarity-uncommon);
   --color-rarity-rare: var(--rarity-rare);
   --color-rarity-legendary: var(--rarity-legendary);
   --font-sans: var(--font-sans);
@@ -316,7 +335,6 @@
   --border-subtle: #25253d;
   --border-strong: #3c3c63;
   --surface-gradient: radial-gradient(ellipse at 50% -10%, #2a0f3a 0%, #050507 60%);
-  --rarity-legendary: #ffb627;
   --coin-face: #22e4ff;
   --coin-shine: #b8f6ff;
   --coin-edge: #0a8ea3;
@@ -346,7 +364,9 @@
   --border-strong: #aeb9ca;
   --surface-gradient: linear-gradient(160deg, #ffffff 0%, #eef1f6 100%);
   --rarity-common: #6b7280;
-  --rarity-silver: #8a99ad;
+  --rarity-uncommon: #1b7fae;
+  --rarity-rare: #a63bcc;
+  --rarity-legendary: #b88a0b;
   --fut-icon-1: #1e293b;
   color-scheme: light;
 }
@@ -404,7 +424,9 @@
   --radius-md: 0.9rem;
   --radius-lg: 1.25rem;
   --rarity-common: #6b7280;
-  --rarity-silver: #8a99ad;
+  --rarity-uncommon: #1b7fae;
+  --rarity-rare: #a63bcc;
+  --rarity-legendary: #b88a0b;
   --font-sans: 'Nunito', ui-rounded, 'Arial Rounded MT Bold', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Nunito', ui-rounded, 'Arial Rounded MT Bold', ui-sans-serif, system-ui, sans-serif;
   color-scheme: light;

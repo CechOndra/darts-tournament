@@ -3,7 +3,10 @@
  * Effects are applied by the match replay (see cards.ts / match.ts).
  */
 
-export type CardRarity = 'COMMON' | 'SILVER' | 'RARE' | 'LEGENDARY';
+export type CardRarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'LEGENDARY';
+/** Read a stored rarity id: 'SILVER' (the old name of UNCOMMON) is still accepted. */
+export const normalizeRarity = (r: string | undefined, fallback: CardRarity = 'COMMON'): CardRarity =>
+  r === 'SILVER' ? 'UNCOMMON' : r === 'COMMON' || r === 'UNCOMMON' || r === 'RARE' || r === 'LEGENDARY' ? r : fallback;
 export type CardPool = 'LOSER' | 'WINNER';
 
 /**
@@ -153,7 +156,7 @@ export const CARD_TYPES: CardType[] = [
   {
     id: 'PARITY_LOCK_1DART',
     name: 'Parity Lock: Dart 1',
-    rarity: 'SILVER',
+    rarity: 'UNCOMMON',
     pool: 'WINNER',
     timing: 'OPP_VISIT',
     needsParity: true,
@@ -163,7 +166,7 @@ export const CARD_TYPES: CardType[] = [
   {
     id: 'BOTTOM_HALF_1DART',
     name: 'Bottom Half: Dart 1',
-    rarity: 'SILVER',
+    rarity: 'UNCOMMON',
     pool: 'WINNER',
     timing: 'OPP_VISIT',
     short: 'Opponent dart 1: only 1-10 scores',
@@ -172,7 +175,7 @@ export const CARD_TYPES: CardType[] = [
   {
     id: 'WEAK_HAND_1DART',
     name: 'Weak Hand',
-    rarity: 'SILVER',
+    rarity: 'UNCOMMON',
     pool: 'WINNER',
     timing: 'OPP_VISIT',
     short: 'Opponent dart 1 with the other hand',
@@ -181,7 +184,7 @@ export const CARD_TYPES: CardType[] = [
   {
     id: 'STEP_BACK_1DART',
     name: 'Step Back',
-    rarity: 'SILVER',
+    rarity: 'UNCOMMON',
     pool: 'WINNER',
     timing: 'OPP_VISIT',
     short: 'Opponent dart 1 from one step back',
@@ -190,7 +193,7 @@ export const CARD_TYPES: CardType[] = [
   {
     id: 'MULLIGAN_DART1',
     name: 'Mulligan: Dart 1',
-    rarity: 'SILVER',
+    rarity: 'UNCOMMON',
     pool: 'WINNER',
     timing: 'MULLIGAN',
     short: 'Void your dart 1 and rethrow it',
@@ -199,7 +202,7 @@ export const CARD_TYPES: CardType[] = [
   {
     id: 'SHOWBOAT_DOUBLE',
     name: 'Showboat Double',
-    rarity: 'SILVER',
+    rarity: 'UNCOMMON',
     pool: 'WINNER',
     timing: 'OWN_VISIT',
     short: 'Hit any double: +0.5 bonus point',
@@ -210,8 +213,10 @@ export const CARD_TYPES: CardType[] = [
 export const CARD_BY_ID = Object.fromEntries(CARD_TYPES.map((c) => [c.id, c])) as Record<CardTypeId, CardType>;
 export const isCardTypeId = (id: string): id is CardTypeId => id in CARD_BY_ID;
 
-export const RARITY_COPIES: Record<CardRarity, number> = { COMMON: 4, SILVER: 3, RARE: 2, LEGENDARY: 1 };
-export const RARITY_LABEL: Record<CardRarity, string> = { COMMON: 'Common', SILVER: 'Silver', RARE: 'Rare', LEGENDARY: 'Legendary' };
+export const RARITY_COPIES: Record<CardRarity, number> = { COMMON: 4, UNCOMMON: 3, RARE: 2, LEGENDARY: 1 };
+/** Default energy cost per rarity (energy mode); the admin can override each card. */
+export const RARITY_COST: Record<CardRarity, number> = { COMMON: 1, UNCOMMON: 1, RARE: 2, LEGENDARY: 3 };
+export const RARITY_LABEL: Record<CardRarity, string> = { COMMON: 'Common', UNCOMMON: 'Uncommon', RARE: 'Rare', LEGENDARY: 'Legendary' };
 
 export const defaultCopies = (): Record<CardTypeId, number> =>
   Object.fromEntries(CARD_TYPES.map((c) => [c.id, RARITY_COPIES[c.rarity]])) as Record<CardTypeId, number>;

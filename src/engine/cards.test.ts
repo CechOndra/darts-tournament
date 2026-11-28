@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { EngineAction } from './actions.ts';
-import { CARD_TYPES, type CardTypeId } from './cardCatalog.ts';
+import { CARD_TYPES, type CardRarity, type CardTypeId } from './cardCatalog.ts';
+import { cardConfig, cardCost, rarityIn } from './cardConfig.ts';
 import { handOf } from './cardPool.ts';
-import { checkPlay, drawQuota } from './cards.ts';
+import { checkPlay, drawQuota, energyStatus } from './cards.ts';
 import { DEFAULT_RULES, DEFAULT_STRUCTURE } from './defaults.ts';
 import { computeMatchView } from './match.ts';
 import { tournamentReducer } from './reducer.ts';
@@ -136,6 +137,25 @@ describe('visit cards', () => {
     expect(s.cards.instances.filter((i) => i.cardTypeId === 'SHOT_CLOCK').every((i) => i.pool === 'WINNER')).toBe(true);
   });
 
+  it('old saves with the rarity id SILVER read as UNCOMMON', () => {
+    const s = make();
+    const cfg = s.settings.cards.config;
+    const old = { ...s.settings.cards, config: { ...cfg, WEAK_HAND_1DART: { ...cfg.WEAK_HAND_1DART, rarity: 'SILVER' as unknown as CardRarity } } };
+    expect(rarityIn(old, 'WEAK_HAND_1DART')).toBe('UNCOMMON');
+    expect(cardConfig(old, 'WEAK_HAND_1DART').rarity).toBe('UNCOMMON');
+    expect(rarityIn(s.settings.cards, 'WEAK_HAND_1DART')).toBe('UNCOMMON');
+  });
+
+  it('card style and pictures are visual only: updating them keeps hands and pool', () => {
+    const s = make();
+    const next = run(s, { type: 'UPDATE_CARD_SETTINGS', patch: { style: { look: 'flat', colors: {}, opts: {}, back: '#123456' }, images: { SHOT_CLOCK: 'data:image/webp;base64,AAAA' } } });
+    expect(next.settings.cards.style?.back).toBe('#123456');
+    expect(next.cards.instances).toEqual(s.cards.instances);
+    const cleared = run(next, { type: 'UPDATE_CARD_SETTINGS', patch: { style: null, images: {} } });
+    expect(cleared.settings.cards.style).toBeNull();
+    expect(cleared.settings.cards.images).toEqual({});
+  });
+
   it('matches keep the rules they started with', () => {
     let s = start(make());
     s = run(s, { type: 'UPDATE_RULES', patch: { startingScore: 301 } });
@@ -192,6 +212,48 @@ describe('visit cards', () => {
     expect(checkPlay(g.s, t.away, g.instanceId).ok).toBe(false); // home visit already carries a card
     const g2 = grant(s, t.home, 'SHOWBOAT_DOUBLE');
     expect(checkPlay(g2.s, t.home, g2.instanceId)).toMatchObject({ ok: false, reason: 'Limit: 1 per leg' });
+  });
+});
+
+describe('limits: none, max played, energy', () => {
+  it('energy mode: default costs follow rarity, admin overrides win', () => {
+    const s = make({ limitMode: 'ENERGY' });
+    expect(cardCost(s.settings.cards, 'EXTRA_DART')).toBe(3); // Legendary
+    expect(cardCost(s.settings.cards, 'MULLIGAN_ANY')).toBe(2); // Rare
+    expect(cardCost(s.settings.cards, 'WEAK_HAND_1DART')).toBe(1); // Uncommon
+    expect(cardCost(s.settings.cards, 'SHOT_CLOCK')).toBe(1); // Common
+    const cfg = s.settings.cards.config;
+    const custom = { ...s.settings.cards, config: { ...cfg, SHOT_CLOCK: { ...cfg.SHOT_CLOCK, cost: 4 } } };
+    expect(cardCost(custom, 'SHOT_CLOCK')).toBe(4);
+  });
+
+  it('energy per leg: a card is refused when it costs more than what is left; the count limits are ignored', () => {
+    let s = start(make({ limitMode: 'ENERGY', energyScope: 'LEG', energyAmount: 3, maxCardsPlayedPerLeg: 1, maxCardsPlayedPerMatch: 1 }));
+    const t = ids(s);
+    s = play(s, t.home, 'EXTRA_DART'); // costs 3 = the whole leg budget
+    expect(energyStatus(s.settings.cards, view(s), t.home)).toEqual({ amount: 3, spent: 3, left: 0 });
+    const g = grant(s, t.home, 'SHOWBOAT_DOUBLE');
+    expect(checkPlay(g.s, t.home, g.instanceId)).toMatchObject({ ok: false, reason: 'Needs 1 energy (0 left)' });
+    // the opponent has their own budget
+    expect(energyStatus(s.settings.cards, view(s), t.away)).toEqual({ amount: 3, spent: 0, left: 3 });
+  });
+
+  it('energy per match: a cheap card passes while energy is left', () => {
+    let s = start(make({ limitMode: 'ENERGY', energyScope: 'MATCH', energyAmount: 4 }));
+    const t = ids(s);
+    s = play(s, t.home, 'EXTRA_DART'); // 3 of 4
+    expect(energyStatus(s.settings.cards, view(s), t.home)?.left).toBe(1);
+    const g = grant(s, t.home, 'MULLIGAN_ANY'); // costs 2 > 1 left
+    expect(checkPlay(g.s, t.home, g.instanceId)).toMatchObject({ ok: false, reason: 'Needs 2 energy (1 left)' });
+  });
+
+  it('no limit: neither the count limits nor energy apply', () => {
+    let s = start(make({ limitMode: 'NONE', maxCardsPlayedPerLeg: 1, maxCardsPlayedPerMatch: 1 }));
+    const t = ids(s);
+    s = play(s, t.home, 'EXTRA_DART');
+    const g = grant(s, t.home, 'SHOWBOAT_DOUBLE');
+    const check = checkPlay(g.s, t.home, g.instanceId);
+    expect(check.ok === false && /Limit|energy/i.test(check.reason)).toBe(false);
   });
 });
 

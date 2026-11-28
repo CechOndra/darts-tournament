@@ -17,8 +17,13 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react';
-import { CARD_BY_ID, RARITY_LABEL, type CardRarity, type CardTypeId } from '../../engine/cardCatalog.ts';
-import { useRarityOf } from '../../hooks/useCardLook.ts';
+import { useLayoutEffect, useMemo, useRef } from 'react';
+import type { CardSettings } from '../../engine/types.ts';
+import { autoTilt } from './autoTilt.ts';
+import { cardFace } from './cardView.ts';
+import type { CardRarity, CardTypeId } from '../../engine/cardCatalog.ts';
+import { useCardFace } from '../../hooks/useCardLook.ts';
+import { renderCard } from '../../powercards/power-card.js';
 
 
 export const CARD_ICON: Record<CardTypeId, LucideIcon> = {
@@ -44,7 +49,7 @@ export const CARD_ICON: Record<CardTypeId, LucideIcon> = {
 /** Rarity colors come from the theme tokens (--rarity-*). */
 export const RARITY_VAR: Record<CardRarity, string> = {
   COMMON: 'var(--rarity-common)',
-  SILVER: 'var(--rarity-silver)',
+  UNCOMMON: 'var(--rarity-uncommon)',
   RARE: 'var(--rarity-rare)',
   LEGENDARY: 'var(--rarity-legendary)',
 };
@@ -54,35 +59,21 @@ export const CardIcon = ({ id, size = 20 }: { id: CardTypeId; size?: number }) =
   return <Icon size={size} aria-hidden />;
 };
 
-type Size = 'sm' | 'md' | 'lg' | 'xl';
-const DIM: Record<Size, { box: string; icon: number; title: string; text: string; bar: string }> = {
-  sm: { box: 'w-28 p-2 gap-1', icon: 22, title: 'text-xs', text: 'text-[10px]', bar: 'h-1.5' },
-  md: { box: 'w-44 p-3 gap-2', icon: 32, title: 'text-sm', text: 'text-xs', bar: 'h-2' },
-  lg: { box: 'w-56 p-4 gap-2', icon: 48, title: 'text-xl', text: 'text-sm', bar: 'h-3' },
-  xl: { box: 'w-96 p-8 gap-4', icon: 112, title: 'text-4xl', text: 'text-xl', bar: 'h-5' },
-};
+type Size = 'sm' | 'md' | 'lg' | 'xl' | 'print';
+/** Card width per size (the renderer scales everything from --pc-w; the ratio is a fixed 5:7). */
+export const CARD_WIDTH: Record<Size, string> = { sm: '112px', md: '176px', lg: '224px', xl: '384px', print: '63mm' };
 
-/** A Power Card tile: icon, name, rules line and a thick CS2-style rarity bar. */
-export function PowerCard({ id, size = 'md', showRules = true, className = '' }: { id: CardTypeId; size?: Size; showRules?: boolean; className?: string }) {
-  const card = CARD_BY_ID[id];
-  const rarity = useRarityOf()(id);
-  const d = DIM[size];
-  const color = RARITY_VAR[rarity];
-  return (
-    <div
-      className={`relative flex shrink-0 flex-col items-center overflow-hidden rounded-lg border-2 bg-bg-elevated text-center ${d.box} ${className}`}
-      style={{ borderColor: color, boxShadow: rarity === 'LEGENDARY' ? `0 0 24px -6px ${color}` : undefined }}
-    >
-      <span className="text-[0.65em] font-semibold tracking-widest uppercase" style={{ color }}>
-        <span className={d.text}>{RARITY_LABEL[rarity]}</span>
-      </span>
-      <span style={{ color }}>
-        <CardIcon id={id} size={d.icon} />
-      </span>
-      <span className={`font-display leading-tight font-bold uppercase ${d.title}`}>{card.name}</span>
-      {showRules && <span className={`leading-snug text-text-muted ${d.text}`}>{card.short}</span>}
-      <span className={`absolute inset-x-0 bottom-0 ${d.bar}`} style={{ background: color }} />
-      <span className={d.bar} aria-hidden />
-    </div>
-  );
+/** A Power Card: the shared card renderer (src/powercards) mounted in a React host. Text is live DOM text. */
+export function PowerCard({ id, size = 'md', className = '', index = 0, total = 1, settings, short = false, tiltFor }: { id: CardTypeId; settings?: CardSettings; /** Energy mode: the team cannot afford this card (red cost ball). */ short?: boolean; /** Sway on its own for this many seconds. */ tiltFor?: number; size?: Size; showRules?: boolean; className?: string; index?: number; total?: number }) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const fromState = useCardFace()(id);
+  const { card, style } = useMemo(() => (settings ? cardFace(settings, id) : fromState), [settings, id, fromState]);
+  useLayoutEffect(() => {
+    const el = renderCard(card, { index, total, look: style.look, colors: style.colors, options: style.options });
+    el.style.setProperty('--pc-w', CARD_WIDTH[size]);
+    if (short) el.dataset.short = '1';
+    hostRef.current?.replaceChildren(el);
+    return tiltFor ? autoTilt(el, tiltFor) : undefined;
+  }, [card, style, size, index, total, short, tiltFor]);
+  return <div ref={hostRef} className={`shrink-0 ${className}`} style={{ width: CARD_WIDTH[size] }} />;
 }

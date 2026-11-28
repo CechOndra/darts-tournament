@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { CARD_BY_ID } from '../../engine/cardCatalog.ts';
+import { cardCost } from '../../engine/cardConfig.ts';
 import { handOf } from '../../engine/cardPool.ts';
-import { checkPlay } from '../../engine/cards.ts';
+import { checkPlay, energyStatus } from '../../engine/cards.ts';
 import type { MatchView } from '../../engine/match.ts';
 import { teamName } from '../../engine/selectors.ts';
 import type { TournamentState } from '../../engine/state.ts';
@@ -34,15 +35,18 @@ export function CardHands({ state, view, only }: { state: TournamentState; view:
   const hands = sides.map((s) => {
     const teamId = view.teamIds[s];
     const cards = handOf(state.cards, teamId).filter((i) => !only || CARD_BY_ID[i.cardTypeId].timing === only);
-    return { side: s, teamId, cards };
+    return { side: s, teamId, cards, energy: energyStatus(state.settings.cards, view, teamId) };
   });
   if (hands.every((h) => !h.cards.length)) return null;
 
   return (
     <div className="grid grid-cols-2 gap-2" aria-label="Power cards">
-      {hands.map(({ side, teamId, cards }) => (
+      {hands.map(({ side, teamId, cards, energy }) => (
         <div key={side} className="min-w-0 space-y-1">
-          <p className="truncate text-[11px] font-medium tracking-wide text-text-muted uppercase">{teamName(state, teamId)} cards</p>
+          <p className="truncate text-[11px] font-medium tracking-wide text-text-muted uppercase">
+            {teamName(state, teamId)} cards
+            {energy ? ` · energy ${energy.left}/${energy.amount}` : ''}
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {cards.length === 0 && <span className="text-xs text-text-muted">None</span>}
             {cards.map((inst) => {
@@ -59,6 +63,14 @@ export function CardHands({ state, view, only }: { state: TournamentState; view:
                   className="flex min-h-11 max-w-full items-center gap-1.5 rounded-md border-2 bg-bg-elevated px-2 text-left text-xs font-semibold transition active:scale-95 disabled:opacity-35"
                   style={{ borderColor: color }}
                 >
+                  {energy && (
+                    <span
+                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${cardCost(state.settings.cards, inst.cardTypeId) > energy.left ? 'bg-accent-danger text-white' : 'border border-border-strong bg-bg-primary'}`}
+                      title="Energy cost"
+                    >
+                      {cardCost(state.settings.cards, inst.cardTypeId)}
+                    </span>
+                  )}
                   <span style={{ color }} className="shrink-0">
                     <CardIcon id={inst.cardTypeId} size={16} />
                   </span>

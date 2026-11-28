@@ -1,5 +1,5 @@
-import { CARD_BY_ID, CARD_TYPES, RARITY_COPIES, type CardPool, type CardRarity, type CardTypeId } from './cardCatalog.ts';
-import type { CardSettings, CardTypeConfig, Match } from './types.ts';
+import { CARD_BY_ID, CARD_TYPES, normalizeRarity, RARITY_COPIES, RARITY_COST, type CardPool, type CardRarity, type CardTypeId } from './cardCatalog.ts';
+import type { CardLimitMode, CardSettings, CardTypeConfig, EnergyScope, Match } from './types.ts';
 
 /**
  * Per-tournament card tuning: which cards exist, their rarity, pool and copies/odds,
@@ -15,11 +15,20 @@ export const defaultCardConfigs = (): Record<CardTypeId, CardTypeConfig> =>
   Object.fromEntries(CARD_TYPES.map((c) => [c.id, defaultCardConfig(c.id)])) as Record<CardTypeId, CardTypeConfig>;
 
 export function cardConfig(settings: CardSettings, id: CardTypeId): CardTypeConfig {
-  return { ...defaultCardConfig(id), ...settings.config?.[id] };
+  const cfg = { ...defaultCardConfig(id), ...settings.config?.[id] };
+  return { ...cfg, rarity: normalizeRarity(cfg.rarity, CARD_BY_ID[id].rarity) }; // old saves say SILVER
 }
 
 export const rarityIn = (settings: CardSettings, id: CardTypeId): CardRarity => cardConfig(settings, id).rarity;
 export const poolIn = (settings: CardSettings, id: CardTypeId): CardPool => cardConfig(settings, id).pool;
+
+export const limitModeOf = (settings: CardSettings): CardLimitMode => settings.limitMode ?? 'COUNT';
+export const energyRule = (settings: CardSettings): { scope: EnergyScope; amount: number } => ({ scope: settings.energyScope ?? 'LEG', amount: settings.energyAmount ?? 3 });
+/** Energy a card costs (admin override, else the default for its rarity). */
+export function cardCost(settings: CardSettings, id: CardTypeId): number {
+  const c = cardConfig(settings, id);
+  return typeof c.cost === 'number' ? Math.max(0, c.cost) : RARITY_COST[c.rarity];
+}
 
 export type CardStage = Match['stage'];
 

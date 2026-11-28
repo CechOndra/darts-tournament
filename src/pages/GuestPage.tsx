@@ -1,7 +1,8 @@
 import { CalendarClock, ClipboardList, Coffee, Layers, Megaphone, Radio, Star, Trophy, type LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { ActiveEffects } from '../components/cards/ActiveEffects.tsx';
-import { CardIcon, RARITY_VAR } from '../components/cards/PowerCard.tsx';
+import { GyroButton, ICON_CREDIT } from '../components/cards/GyroButton.tsx';
+import { CardIcon, PowerCard, RARITY_VAR } from '../components/cards/PowerCard.tsx';
 import { AwardCard } from '../components/fut/AwardCard.tsx';
 import { CheckoutRoutes } from '../components/match/CheckoutRoutes.tsx';
 import { DutyBanner } from '../components/match/DutyBanner.tsx';
@@ -12,8 +13,10 @@ import { Matchup } from '../components/Matchup.tsx';
 import { NoTournament } from '../components/NoTournament.tsx';
 import { ConnectionBadge } from '../components/StatusIndicators.tsx';
 import { Select } from '../components/ui.tsx';
-import { CARD_BY_ID, CARD_TYPES, RARITY_LABEL } from '../engine/cardCatalog.ts';
+import { CARD_TYPES, RARITY_LABEL } from '../engine/cardCatalog.ts';
+import { cardCost } from '../engine/cardConfig.ts';
 import { handOf } from '../engine/cardPool.ts';
+import { energyStatus } from '../engine/cards.ts';
 import { formatClock, type MatchEta } from '../engine/pace.ts';
 import { describeSlot, matchLabel, matchNumber, queuedMatches, teamName, upNextMatch } from '../engine/selectors.ts';
 import { CROWD_SOUNDS, GLOBAL_COOLDOWN_MS, PHONE_COOLDOWN_MS, soundboardLock, type CrowdSound } from '../engine/soundboard.ts';
@@ -169,27 +172,25 @@ function PlayoffList({ state }: { state: TournamentState }) {
 
 function GuestCards({ state, follow }: { state: TournamentState; follow: string | null }) {
   const rarityOf = useRarityOf();
+  const matchView = useMatchView(state);
   if (state.settings.cards.mode === 'OFF') return <p className="text-sm text-text-muted">Power Cards are off for this tournament.</p>;
   const teams = [...state.teams].sort((a, b) => (a.id === follow ? -1 : b.id === follow ? 1 : 0));
   return (
     <div className="space-y-3">
+      <GyroButton />
       <ul className="space-y-2">
         {teams.map((t) => {
           const hand = handOf(state.cards, t.id);
+          const energy = matchView ? energyStatus(state.settings.cards, matchView, t.id) : null;
           return (
             <li key={t.id} className={`surface p-3 ${t.id === follow ? 'border-accent-gold' : ''}`}>
               <p className="mb-2 truncate text-sm font-semibold">{t.name}</p>
               {hand.length === 0 ? (
                 <p className="text-xs text-text-muted">No cards</p>
               ) : (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {hand.map((i) => (
-                    <span key={i.instanceId} className="inline-flex items-center gap-1.5 rounded-md border-2 bg-bg-elevated px-2 py-1 text-xs font-semibold" style={{ borderColor: RARITY_VAR[rarityOf(i.cardTypeId)] }}>
-                      <span style={{ color: RARITY_VAR[rarityOf(i.cardTypeId)] }}>
-                        <CardIcon id={i.cardTypeId} size={14} />
-                      </span>
-                      {CARD_BY_ID[i.cardTypeId].name}
-                    </span>
+                    <PowerCard key={i.instanceId} id={i.cardTypeId} size="md" short={!!energy && cardCost(state.settings.cards, i.cardTypeId) > energy.left} />
                   ))}
                 </div>
               )}
@@ -215,6 +216,7 @@ function GuestCards({ state, follow }: { state: TournamentState; follow: string 
           ))}
         </ul>
       </details>
+      <p className="text-center text-[11px] text-text-muted">{ICON_CREDIT}</p>
     </div>
   );
 }

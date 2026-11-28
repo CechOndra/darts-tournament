@@ -35,7 +35,9 @@ export type StatsScope = 'ALL_MATCHES' | 'GROUP_STAGE_ONLY';
 export type StatCode = 'AVG' | 'PWR' | 'STR' | 'ACC' | 'CON' | 'FIN' | 'DBL' | 'OPN' | 'CLU';
 
 export type CardsMode = 'OFF' | 'GROUP_STAGE_ONLY' | 'ALL_STAGES';
-export type CardDrawAnimationStyle = 'CS2_CASE_OPENING' | 'SPIN_WHEEL';
+/** What a draw animation shows: the powers themselves, only the rarity (power revealed afterwards), or only the rarity then a pack to click open. */
+export type CardDrawShows = 'POWERS' | 'RARITY' | 'RARITY_PACK';
+export type CardDrawAnimationStyle = 'CARD_REVEAL' | 'CS2_CASE_OPENING' | 'SPIN_WHEEL';
 export type PoolStructure = 'SHARED_POOL' | 'TIERED_POOLS';
 export type SupplyMode = 'FINITE_PHYSICAL_POOL' | 'FIXED_PROBABILITIES';
 
@@ -280,17 +282,41 @@ export interface CardTypeConfig {
   playoffs: boolean;
   /** Fixed odds only: a different weight for playoff draws (null = same as groups). */
   playoffCopies: number | null;
+  /** Energy mode: energy this card costs (missing = the default for its rarity). */
+  cost?: number | null;
+}
+
+/** How playing cards is limited: not at all, by number of cards, or by an energy budget. */
+export type CardLimitMode = 'NONE' | 'COUNT' | 'ENERGY';
+/** Energy budget: one fixed amount per match, or per leg (refills when a new leg starts). */
+export type EnergyScope = 'MATCH' | 'LEG';
+
+/** Card look chosen in the admin (same shape the card playground exports). null / missing = built-in default. */
+export interface CardStyle {
+  look: string;
+  colors: Record<string, Record<string, Record<string, unknown>>>;
+  opts: Record<string, Record<string, unknown>>;
+  back: string;
 }
 
 export interface CardSettings {
+  /** Visual only: card look, and an optional picture per power (data URL). */
+  style?: CardStyle | null;
+  images?: Partial<Record<CardTypeId, string>>;
   config: Record<CardTypeId, CardTypeConfig>;
   params: CardParams;
   mode: CardsMode;
   drawAnimationStyle: CardDrawAnimationStyle;
+  /** Case opening / wheel only. Missing = 'POWERS' (as before). */
+  drawShows?: CardDrawShows;
   startingHandSize: number;
   loserSpinsPerMatch: number;
   winnerSpinsPerMatch: number;
   maxHandSize: number;
+  /** Missing = 'COUNT' (the max-played numbers below). */
+  limitMode?: CardLimitMode;
+  energyScope?: EnergyScope;
+  energyAmount?: number;
   maxCardsPlayedPerMatch: number;
   maxCardsPlayedPerLeg: number;
   expireHandsBeforePlayoffs: boolean;

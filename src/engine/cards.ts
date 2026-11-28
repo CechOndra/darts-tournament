@@ -1,5 +1,5 @@
 import { CARD_BY_ID, CARD_TYPES, isCardTypeId, RANDOM_OPP, RANDOM_OWN, type CardPool, type CardTypeId } from './cardCatalog.ts';
-import { cardAllowed, oddsWeight, poolIn, type CardStage } from './cardConfig.ts';
+import { cardAllowed, cardCost, energyRule, limitModeOf, oddsWeight, poolIn, type CardStage } from './cardConfig.ts';
 import { modsFor } from './cardEffects.ts';
 import { giveTo, handOf, newInstance, poolInstances, syncInstances } from './cardPool.ts';
 import { computeMatchView, initialLegSetup, type MatchView } from './match.ts';
@@ -72,6 +72,15 @@ export function randomPowerPool(state: TournamentState, view: MatchView, side: S
   });
 }
 
+/** Energy budget of a team in the current match / leg (null when energy mode is off). */
+export function energyStatus(settings: CardSettings, view: MatchView, teamId: string): { amount: number; spent: number; left: number } | null {
+  if (limitModeOf(settings) !== 'ENERGY') return null;
+  const { scope, amount } = energyRule(settings);
+  // A pre-match card (First Throw, leg 0) is paid from leg 1's budget.
+  const spent = view.plays.filter((p) => p.teamId === teamId && (scope === 'MATCH' || p.legIndex === view.currentLegIndex)).reduce((n, p) => n + cardCost(settings, p.cardTypeId), 0);
+  return { amount, spent, left: Math.max(0, amount - spent) };
+}
+
 /** Can `teamId` play card `instanceId` right now? Returns the target visit when legal. */
 export function checkPlay(state: TournamentState, teamId: string, instanceId: string, view: MatchView | null = computeMatchView(state)): PlayCheck {
   const inst = state.cards.instances.find((i) => i.instanceId === instanceId);
@@ -85,7 +94,13 @@ export function checkPlay(state: TournamentState, teamId: string, instanceId: st
   const settings = state.settings.cards;
   if (view.match.stage === 'PLAYOFF' && !cardAllowed(settings, inst.cardTypeId, 'PLAYOFF')) return no('Not allowed in the playoffs');
   const mine = view.plays.filter((p) => p.teamId === teamId);
-  if (mine.length >= settings.maxCardsPlayedPerMatch) return no(`Limit: ${settings.maxCardsPlayedPerMatch} per match`);
+  const counting = limitModeOf(settings) === 'COUNT';
+  if (counting && mine.length >= settings.maxCardsPlayedPerMatch) return no(`Limit: ${settings.maxCardsPlayedPerMatch} per match`);
+  const energy = energyStatus(settings, view, teamId);
+  if (energy) {
+    const cost = cardCost(settings, inst.cardTypeId);
+    if (cost > energy.left) return no(`Needs ${cost} energy (${energy.left} left)`);
+  }
   const phase = view.live.phase;
 
   if (card.timing === 'PRE_MATCH') {
@@ -99,7 +114,7 @@ export function checkPlay(state: TournamentState, teamId: string, instanceId: st
   if (!turn) return no('Leg not running');
   const leg = view.currentLegIndex;
   // Pre-match cards (FIRST_THROW, visitIndex -1) count per match only, not against leg 1.
-  if (mine.filter((p) => p.legIndex === leg && p.visitIndex >= 0).length >= settings.maxCardsPlayedPerLeg) return no(`Limit: ${settings.maxCardsPlayedPerLeg} per leg`);
+  if (counting && mine.filter((p) => p.legIndex === leg && p.visitIndex >= 0).length >= settings.maxCardsPlayedPerLeg) return no(`Limit: ${settings.maxCardsPlayedPerLeg} per leg`);
   const opp = otherSide(side);
   const fresh = turn.darts.length === 0 && turn.mods.plays.length === 0 && turn.legIndex === leg;
 

@@ -6,8 +6,7 @@ import type { MatchView } from '../../engine/match.ts';
 import { teamName } from '../../engine/selectors.ts';
 import type { TournamentState } from '../../engine/state.ts';
 import { playCountdown } from '../../services/audio/sound.ts';
-import { useRarityOf } from '../../hooks/useCardLook.ts';
-import { CardIcon, RARITY_VAR } from './PowerCard.tsx';
+import { PowerCard } from './PowerCard.tsx';
 
 type Size = 'md' | 'xl';
 
@@ -58,7 +57,6 @@ export function ShotClock({ seconds, size, sound }: { seconds: number; size: Siz
 /** Card effects on the visit being thrown now, plus cards already queued for upcoming visits. */
 export function ActiveEffects({ state, view, size = 'md', sound }: { state: TournamentState; view: MatchView; size?: Size; sound?: boolean }) {
   const turn = view.turn;
-  const rarityOf = useRarityOf();
   if (!turn) return null;
   const xl = size === 'xl';
   const mods = turn.mods;
@@ -69,18 +67,12 @@ export function ActiveEffects({ state, view, size = 'md', sound }: { state: Tour
 
   return (
     <div className={`flex flex-wrap items-center gap-2 ${xl ? 'gap-4' : ''}`}>
-      {mods.plays.map((p) => {
-        const color = RARITY_VAR[rarityOf(p.effectCardTypeId)];
-        return (
-          <span key={p.id} className={`inline-flex items-center gap-2 rounded-md border-2 bg-bg-elevated px-3 font-display uppercase ${xl ? 'py-2 text-3xl' : 'py-1 text-sm'}`} style={{ borderColor: color }}>
-            <span style={{ color }}>
-              <CardIcon id={p.effectCardTypeId} size={xl ? 32 : 16} />
-            </span>
-            {CARD_BY_ID[p.effectCardTypeId].name}
-            <span className="font-sans text-[0.6em] tracking-normal text-text-muted normal-case">by {teamName(state, p.teamId)}</span>
-          </span>
-        );
-      })}
+      {mods.plays.map((p) => (
+        <span key={p.id} className="inline-flex flex-col items-center gap-1">
+          <PowerCard id={p.effectCardTypeId} size={xl ? 'lg' : 'sm'} />
+          <span className={`text-text-muted ${xl ? 'text-lg' : 'text-[10px]'}`}>by {teamName(state, p.teamId)}</span>
+        </span>
+      ))}
       {lines.map((l) => (
         <span key={l} className={`text-accent-warning ${xl ? 'text-2xl' : 'text-xs'}`}>
           {l}

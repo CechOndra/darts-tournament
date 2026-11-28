@@ -1,6 +1,6 @@
 import { RotateCcw } from 'lucide-react';
-import { CARD_TYPES, RARITY_COPIES, RARITY_LABEL, type CardRarity, type CardTypeId } from '../../engine/cardCatalog.ts';
-import { animationMs, cardConfig, defaultCardConfigs } from '../../engine/cardConfig.ts';
+import { CARD_TYPES, RARITY_COPIES, RARITY_COST, RARITY_LABEL, type CardRarity, type CardTypeId } from '../../engine/cardCatalog.ts';
+import { animationMs, cardConfig, defaultCardConfigs, energyRule, limitModeOf } from '../../engine/cardConfig.ts';
 import { circulationEstimate } from '../../engine/cards.ts';
 import type { CardSettings, CardTypeConfig } from '../../engine/types.ts';
 import { CardIcon, RARITY_VAR } from '../cards/PowerCard.tsx';
@@ -48,10 +48,32 @@ export function CardBasicsForm({ value, onPatch }: { value: CardSettings; onPatc
             ariaLabel="Draw animation"
             value={value.drawAnimationStyle}
             options={[
+              { value: 'CARD_REVEAL', label: 'Card reveal (new)' },
               { value: 'CS2_CASE_OPENING', label: 'Case opening' },
               { value: 'SPIN_WHEEL', label: 'Spinning wheel' },
             ]}
             onChange={(drawAnimationStyle) => onPatch({ drawAnimationStyle })}
+          />
+        )}
+      </Field>
+      <Field
+        label="Draw shows"
+        hint={
+          value.drawAnimationStyle === 'CARD_REVEAL'
+            ? 'Card reveal always hides the power until the card lands. Pick Case opening or Spinning wheel to choose what they show.'
+            : 'The rolling shows only the rarity colour (no power names). The power is revealed afterwards.'
+        }
+      >
+        {() => (
+          <SegmentedControl
+            ariaLabel="Draw shows"
+            value={value.drawShows ?? 'POWERS'}
+            options={[
+              { value: 'POWERS', label: 'The powers (as before)' },
+              { value: 'RARITY', label: 'Rarity, then reveal' },
+              { value: 'RARITY_PACK', label: 'Rarity, then a pack' },
+            ]}
+            onChange={(drawShows) => onPatch({ drawShows })}
           />
         )}
       </Field>
@@ -72,11 +94,11 @@ export function CardBasicsForm({ value, onPatch }: { value: CardSettings; onPatc
   );
 }
 
-function CardRow({ id, cfg, fixed, onChange }: { id: CardTypeId; cfg: CardTypeConfig; fixed: boolean; onChange: (c: CardTypeConfig) => void }) {
+function CardRow({ id, cfg, fixed, energy, onChange }: { id: CardTypeId; cfg: CardTypeConfig; fixed: boolean; energy: boolean; onChange: (c: CardTypeConfig) => void }) {
   const card = CARD_TYPES.find((c) => c.id === id)!;
   const color = RARITY_VAR[cfg.rarity];
   return (
-    <li className={`grid grid-cols-2 items-end gap-2 rounded-md border-l-4 bg-bg-primary p-2 sm:grid-cols-[minmax(0,1.6fr)_repeat(5,minmax(0,1fr))] ${cfg.enabled ? '' : 'opacity-50'}`} style={{ borderColor: color }}>
+    <li className={`grid grid-cols-2 items-end gap-2 rounded-md border-l-4 bg-bg-primary p-2 ${energy ? 'sm:grid-cols-[minmax(0,1.6fr)_repeat(6,minmax(0,1fr))]' : 'sm:grid-cols-[minmax(0,1.6fr)_repeat(5,minmax(0,1fr))]'} ${cfg.enabled ? '' : 'opacity-50'}`} style={{ borderColor: color }}>
       <label className="col-span-2 flex min-h-10 cursor-pointer items-center gap-2 sm:col-span-1" title={card.rules}>
         <input type="checkbox" className="h-5 w-5 accent-[var(--accent-gold)]" checked={cfg.enabled} onChange={(e) => onChange({ ...cfg, enabled: e.target.checked })} aria-label={`${card.name} in the deck`} />
         <span style={{ color }}>
@@ -92,7 +114,7 @@ function CardRow({ id, cfg, fixed, onChange }: { id: CardTypeId; cfg: CardTypeCo
           onChange={(e) => {
             const rarity = e.target.value as CardRarity;
             // Re-tiering also applies that tier's default copies / odds (editable after).
-            onChange({ ...cfg, rarity, copies: RARITY_COPIES[rarity] });
+            onChange({ ...cfg, rarity, copies: RARITY_COPIES[rarity], cost: null });
           }}
         >
           {(Object.keys(RARITY_LABEL) as CardRarity[]).map((r) => (
@@ -113,6 +135,20 @@ function CardRow({ id, cfg, fixed, onChange }: { id: CardTypeId; cfg: CardTypeCo
         {fixed ? 'Odds weight' : 'Copies'}
         <input type="number" min={0} max={20} className={`${smallInput} text-right font-mono`} value={cfg.copies} onChange={(e) => onChange({ ...cfg, copies: num(e.target.value, 0, 20, cfg.copies) })} />
       </label>
+      {energy && (
+        <label className="text-[11px] text-text-muted" title="Energy this card costs (empty = default for its rarity)">
+          Energy cost
+          <input
+            type="number"
+            min={0}
+            max={10}
+            placeholder={String(RARITY_COST[cfg.rarity])}
+            className={`${smallInput} text-right font-mono`}
+            value={cfg.cost ?? ''}
+            onChange={(e) => onChange({ ...cfg, cost: e.target.value === '' ? null : num(e.target.value, 0, 10, 0) })}
+          />
+        </label>
+      )}
       <label className="flex min-h-10 items-center gap-2 text-xs">
         <input type="checkbox" className="h-5 w-5 accent-[var(--accent-gold)]" checked={cfg.playoffs} onChange={(e) => onChange({ ...cfg, playoffs: e.target.checked })} />
         Playoffs
@@ -140,6 +176,8 @@ export function CardSettingsForm({ value, onPatch }: { value: CardSettings; onPa
   const fixed = value.supplyMode === 'FIXED_PROBABILITIES';
   const setCard = (id: CardTypeId, c: CardTypeConfig) => onPatch({ config: { ...value.config, [id]: c } });
   const params = value.params;
+  const limitMode = limitModeOf(value);
+  const energy = energyRule(value);
   const anim = animationMs(params);
   return (
     <div className="space-y-5">
@@ -180,8 +218,48 @@ export function CardSettingsForm({ value, onPatch }: { value: CardSettings; onPa
           <Stepper label="Loser draws / match" value={value.loserSpinsPerMatch} min={0} max={2} onChange={(loserSpinsPerMatch) => onPatch({ loserSpinsPerMatch })} />
           <Stepper label="Winner draws / match" value={value.winnerSpinsPerMatch} min={0} max={1} onChange={(winnerSpinsPerMatch) => onPatch({ winnerSpinsPerMatch })} />
           <Stepper label="Max hand size" value={value.maxHandSize} min={1} max={4} onChange={(maxHandSize) => onPatch({ maxHandSize })} />
-          <Stepper label="Max played / match" value={value.maxCardsPlayedPerMatch} min={1} max={3} onChange={(maxCardsPlayedPerMatch) => onPatch({ maxCardsPlayedPerMatch })} />
-          <Stepper label="Max played / leg" value={value.maxCardsPlayedPerLeg} min={1} max={2} onChange={(maxCardsPlayedPerLeg) => onPatch({ maxCardsPlayedPerLeg })} />
+        </div>
+        <div className="mt-3 space-y-3 rounded-lg border border-border-subtle p-3">
+          <Field label="Limit on playing cards">
+            {() => (
+              <SegmentedControl
+                ariaLabel="Limit on playing cards"
+                value={limitMode}
+                options={[
+                  { value: 'NONE', label: 'No limit' },
+                  { value: 'COUNT', label: 'Max cards played' },
+                  { value: 'ENERGY', label: 'Energy' },
+                ]}
+                onChange={(limitMode) => onPatch({ limitMode })}
+              />
+            )}
+          </Field>
+          {limitMode === 'COUNT' && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Stepper label="Max played / match" value={value.maxCardsPlayedPerMatch} min={1} max={3} onChange={(maxCardsPlayedPerMatch) => onPatch({ maxCardsPlayedPerMatch })} />
+              <Stepper label="Max played / leg" value={value.maxCardsPlayedPerLeg} min={1} max={2} onChange={(maxCardsPlayedPerLeg) => onPatch({ maxCardsPlayedPerLeg })} />
+            </div>
+          )}
+          {limitMode === 'ENERGY' && (
+            <div className="space-y-3">
+              <Field label="Energy budget" hint="Every card costs energy (set per card below). A team can play a card only if it has enough energy left. First Throw is paid from leg 1.">
+                {() => (
+                  <SegmentedControl
+                    ariaLabel="Energy budget"
+                    value={energy.scope}
+                    options={[
+                      { value: 'MATCH', label: 'Fixed energy per match' },
+                      { value: 'LEG', label: 'Energy per leg (refills each leg)' },
+                    ]}
+                    onChange={(energyScope) => onPatch({ energyScope })}
+                  />
+                )}
+              </Field>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <Stepper label={energy.scope === 'MATCH' ? 'Energy / match' : 'Energy / leg'} value={energy.amount} min={1} max={20} onChange={(energyAmount) => onPatch({ energyAmount })} />
+              </div>
+            </div>
+          )}
         </div>
         <Toggle
           label="Hands expire before the playoffs"
@@ -217,11 +295,40 @@ export function CardSettingsForm({ value, onPatch }: { value: CardSettings; onPa
           </Button>
         </div>
         <p className="mb-2 text-xs text-text-muted">
-          Untick a card to remove it. Changing rarity re-colors the card and sets that tier's default {fixed ? 'odds' : 'copies'} (Common 4, Silver 3, Rare 2, Legendary 1).
+          Untick a card to remove it. Changing rarity re-colors the card and sets that tier's default {fixed ? 'odds' : 'copies'} (Common 4, Uncommon 3, Rare 2, Legendary 1). Energy cost follows the rarity too (Common 1, Uncommon 1, Rare 2, Legendary 3) until you type your own.
         </p>
+        <div className="mb-3 rounded-lg border border-border-subtle p-3">
+          <p className="mb-2 text-xs font-medium tracking-wide text-text-muted uppercase">Same {fixed ? 'odds weight' : 'copies'} for every card of a rarity</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(Object.keys(RARITY_LABEL) as CardRarity[]).map((r) => {
+              const ids = CARD_TYPES.filter((c) => cardConfig(value, c.id).rarity === r).map((c) => c.id);
+              if (!ids.length) return null;
+              const amounts = new Set(ids.map((id) => cardConfig(value, id).copies));
+              return (
+                <label key={r} className="text-[11px] text-text-muted">
+                  {RARITY_LABEL[r]} ({ids.length} cards, each)
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    className={`${smallInput} text-right font-mono`}
+                    placeholder="mixed"
+                    value={amounts.size === 1 ? [...amounts][0] : ''}
+                    onChange={(e) => {
+                      if (e.target.value === '') return;
+                      const n = num(e.target.value, 0, 20, 0);
+                      onPatch({ config: { ...value.config, ...Object.fromEntries(ids.map((id) => [id, { ...cardConfig(value, id), copies: n }])) } });
+                    }}
+                  />
+                </label>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-text-muted">Typing a number sets it for all cards of that rarity, so every card in a tier is equally likely. "mixed" means the cards differ (you can still set each one below).</p>
+        </div>
         <ul className="space-y-1.5">
           {CARD_TYPES.map((c) => (
-            <CardRow key={c.id} id={c.id} cfg={cardConfig(value, c.id)} fixed={fixed} onChange={(cfg) => setCard(c.id, cfg)} />
+            <CardRow key={c.id} id={c.id} cfg={cardConfig(value, c.id)} fixed={fixed} energy={limitMode === 'ENERGY'} onChange={(cfg) => setCard(c.id, cfg)} />
           ))}
         </ul>
       </div>
